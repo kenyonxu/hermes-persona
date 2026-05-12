@@ -1,0 +1,2023 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "id": "readme_md",
+      "community": 4,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "hermes-agent-guide",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "id": "hermes_agent_guide_readme_hermes_agent_guide",
+      "community": 4,
+      "norm_label": "hermes-agent-guide"
+    },
+    {
+      "label": "\u9879\u76ee\u7b80\u4ecb",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L5",
+      "id": "hermes_agent_guide_readme_\u9879\u76ee\u7b80\u4ecb",
+      "community": 4,
+      "norm_label": "\u9879\u76ee\u7b80\u4ecb"
+    },
+    {
+      "label": "\u76ee\u5f55\u7ed3\u6784",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L15",
+      "id": "hermes_agent_guide_readme_\u76ee\u5f55\u7ed3\u6784",
+      "community": 4,
+      "norm_label": "\u76ee\u5f55\u7ed3\u6784"
+    },
+    {
+      "label": "code:block1 (amphoreus-personas/)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L17",
+      "id": "hermes_agent_guide_readme_codeblock_1",
+      "community": 4,
+      "norm_label": "code:block1 (amphoreus-personas/)"
+    },
+    {
+      "label": "\u6570\u636e\u6765\u6e90",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L40",
+      "id": "hermes_agent_guide_readme_\u6570\u636e\u6765\u6e90",
+      "community": 4,
+      "norm_label": "\u6570\u636e\u6765\u6e90"
+    },
+    {
+      "label": "\u514d\u8d23\u58f0\u660e",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L47",
+      "id": "hermes_agent_guide_readme_\u514d\u8d23\u58f0\u660e",
+      "community": 4,
+      "norm_label": "\u514d\u8d23\u58f0\u660e"
+    },
+    {
+      "label": "License",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L51",
+      "id": "hermes_agent_guide_readme_license",
+      "community": 4,
+      "norm_label": "license"
+    },
+    {
+      "label": "00-overview.md",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L1",
+      "id": "amphoreus_personas_00_overview_md",
+      "community": 1,
+      "norm_label": "00-overview.md"
+    },
+    {
+      "label": "\u7fc1\u6cd5\u7f57\u65af\uff08Amphoreus\uff09\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4 \u2014\u2014 \u6982\u89c8",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L1",
+      "id": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "community": 1,
+      "norm_label": "\u7fc1\u6cd5\u7f57\u65af(amphoreus)\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4 \u2014\u2014 \u6982\u89c8"
+    },
+    {
+      "label": "\u4e00\u3001\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L7",
+      "id": "amphoreus_personas_00_overview_\u4e00_\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "community": 1,
+      "norm_label": "\u4e00\u3001\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a"
+    },
+    {
+      "label": "1.1 \u57fa\u672c\u5b9a\u4e49",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L9",
+      "id": "amphoreus_personas_00_overview_1_1_\u57fa\u672c\u5b9a\u4e49",
+      "community": 1,
+      "norm_label": "1.1 \u57fa\u672c\u5b9a\u4e49"
+    },
+    {
+      "label": "1.2 \u4e16\u754c\u5386\u53f2\u4e0e\u89c4\u5219",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L19",
+      "id": "amphoreus_personas_00_overview_1_2_\u4e16\u754c\u5386\u53f2\u4e0e\u89c4\u5219",
+      "community": 1,
+      "norm_label": "1.2 \u4e16\u754c\u5386\u53f2\u4e0e\u89c4\u5219"
+    },
+    {
+      "label": "1.3 \u4e5d\u5927\u57ce\u90a6",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L29",
+      "id": "amphoreus_personas_00_overview_1_3_\u4e5d\u5927\u57ce\u90a6",
+      "community": 1,
+      "norm_label": "1.3 \u4e5d\u5927\u57ce\u90a6"
+    },
+    {
+      "label": "1.4 \u5341\u4e8c\u6cf0\u5766\u4e0e\u706b\u79cd",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L41",
+      "id": "amphoreus_personas_00_overview_1_4_\u5341\u4e8c\u6cf0\u5766\u4e0e\u706b\u79cd",
+      "community": 1,
+      "norm_label": "1.4 \u5341\u4e8c\u6cf0\u5766\u4e0e\u706b\u79cd"
+    },
+    {
+      "label": "\u4e8c\u3001\u5341\u4e09\u9ec4\u91d1\u88d4 \u603b\u89c8",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L60",
+      "id": "amphoreus_personas_00_overview_\u4e8c_\u5341\u4e09\u9ec4\u91d1\u88d4_\u603b\u89c8",
+      "community": 1,
+      "norm_label": "\u4e8c\u3001\u5341\u4e09\u9ec4\u91d1\u88d4 \u603b\u89c8"
+    },
+    {
+      "label": "\u89d2\u8272\u5206\u7c7b\u4e0e persona \u6f5c\u529b",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L80",
+      "id": "amphoreus_personas_00_overview_\u89d2\u8272\u5206\u7c7b\u4e0e_persona_\u6f5c\u529b",
+      "community": 1,
+      "norm_label": "\u89d2\u8272\u5206\u7c7b\u4e0e persona \u6f5c\u529b"
+    },
+    {
+      "label": "\u4e09\u3001\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L95",
+      "id": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "community": 2,
+      "norm_label": "\u4e09\u3001\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981"
+    },
+    {
+      "label": "01 \u7f07\u5b9d\uff08Tribios\uff09\u2014\u2014 \u547d\u8fd0\u7684\u4e09\u5b50",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L97",
+      "id": "amphoreus_personas_00_overview_01_\u7f07\u5b9d_tribios_\u547d\u8fd0\u7684\u4e09\u5b50",
+      "community": 2,
+      "norm_label": "01 \u7f07\u5b9d(tribios)\u2014\u2014 \u547d\u8fd0\u7684\u4e09\u5b50"
+    },
+    {
+      "label": "02 \u523b\u5f8b\u5fb7\u83c8\uff08Cerydra\uff09\u2014\u2014 \u6267\u68cb\u7684\u541b\u4e3b",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L104",
+      "id": "amphoreus_personas_00_overview_02_\u523b\u5f8b\u5fb7\u83c8_cerydra_\u6267\u68cb\u7684\u541b\u4e3b",
+      "community": 2,
+      "norm_label": "02 \u523b\u5f8b\u5fb7\u83c8(cerydra)\u2014\u2014 \u6267\u68cb\u7684\u541b\u4e3b"
+    },
+    {
+      "label": "03 Terravox \u2014\u2014 \u9707\u5730\u4e4b\u9f99",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L111",
+      "id": "amphoreus_personas_00_overview_03_terravox_\u9707\u5730\u4e4b\u9f99",
+      "community": 2,
+      "norm_label": "03 terravox \u2014\u2014 \u9707\u5730\u4e4b\u9f99"
+    },
+    {
+      "label": "04 \u6d77\u745f\u97f3\uff08Helektra\uff09\u2014\u2014 \u629a\u6d6a\u7684\u9a91\u58eb",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L117",
+      "id": "amphoreus_personas_00_overview_04_\u6d77\u745f\u97f3_helektra_\u629a\u6d6a\u7684\u9a91\u58eb",
+      "community": 2,
+      "norm_label": "04 \u6d77\u745f\u97f3(helektra)\u2014\u2014 \u629a\u6d6a\u7684\u9a91\u58eb"
+    },
+    {
+      "label": "05 \u98ce\u5807\uff08Hyacinthia\uff09\u2014\u2014 \u5149\u4e4b\u6108\u8005",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L123",
+      "id": "amphoreus_personas_00_overview_05_\u98ce\u5807_hyacinthia_\u5149\u4e4b\u6108\u8005",
+      "community": 2,
+      "norm_label": "05 \u98ce\u5807(hyacinthia)\u2014\u2014 \u5149\u4e4b\u6108\u8005"
+    },
+    {
+      "label": "06 \u767d\u5384\uff08Phainon / Khaslana\uff09\u2014\u2014 \u65e0\u540d\u82f1\u96c4",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L129",
+      "id": "amphoreus_personas_00_overview_06_\u767d\u5384_phainon_khaslana_\u65e0\u540d\u82f1\u96c4",
+      "community": 2,
+      "norm_label": "06 \u767d\u5384(phainon / khaslana)\u2014\u2014 \u65e0\u540d\u82f1\u96c4"
+    },
+    {
+      "label": "07 \u90a3\u523b\u590f\uff08Anaxagoras / Anaxa\uff09\u2014\u2014 \u6b81\u4e16\u7684\u5b66\u58eb",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L136",
+      "id": "amphoreus_personas_00_overview_07_\u90a3\u523b\u590f_anaxagoras_anaxa_\u6b81\u4e16\u7684\u5b66\u58eb",
+      "community": 2,
+      "norm_label": "07 \u90a3\u523b\u590f(anaxagoras / anaxa)\u2014\u2014 \u6b81\u4e16\u7684\u5b66\u58eb"
+    },
+    {
+      "label": "08 \u963f\u683c\u83b1\u96c5\uff08Aglaea\uff09\u2014\u2014 \u91d1\u7ec7",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L143",
+      "id": "amphoreus_personas_00_overview_08_\u963f\u683c\u83b1\u96c5_aglaea_\u91d1\u7ec7",
+      "community": 2,
+      "norm_label": "08 \u963f\u683c\u83b1\u96c5(aglaea)\u2014\u2014 \u91d1\u7ec7"
+    },
+    {
+      "label": "09 \u4e07\u654c\uff08Mydeimos / Mydei\uff09\u2014\u2014 \u4ea1\u56fd\u7684\u738b\u50a8",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L150",
+      "id": "amphoreus_personas_00_overview_09_\u4e07\u654c_mydeimos_mydei_\u4ea1\u56fd\u7684\u738b\u50a8",
+      "community": 2,
+      "norm_label": "09 \u4e07\u654c(mydeimos / mydei)\u2014\u2014 \u4ea1\u56fd\u7684\u738b\u50a8"
+    },
+    {
+      "label": "10 \u9050\u8776\uff08Castorice\uff09\u2014\u2014 \u6b7b\u4ea1\u7684\u4ec6\u4ece",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L157",
+      "id": "amphoreus_personas_00_overview_10_\u9050\u8776_castorice_\u6b7b\u4ea1\u7684\u4ec6\u4ece",
+      "community": 2,
+      "norm_label": "10 \u9050\u8776(castorice)\u2014\u2014 \u6b7b\u4ea1\u7684\u4ec6\u4ece"
+    },
+    {
+      "label": "11 \u8d5b\u98de\u513f\uff08Cipher\uff09\u2014\u2014 \u6377\u8db3\u7684\u65c5\u4eba",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L164",
+      "id": "amphoreus_personas_00_overview_11_\u8d5b\u98de\u513f_cipher_\u6377\u8db3\u7684\u65c5\u4eba",
+      "community": 2,
+      "norm_label": "11 \u8d5b\u98de\u513f(cipher)\u2014\u2014 \u6377\u8db3\u7684\u65c5\u4eba"
+    },
+    {
+      "label": "12 \u6614\u6d9f\uff08Cyrene\uff09\u2014\u2014 \u6700\u521d\u7684\u534a\u795e",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L171",
+      "id": "amphoreus_personas_00_overview_12_\u6614\u6d9f_cyrene_\u6700\u521d\u7684\u534a\u795e",
+      "community": 2,
+      "norm_label": "12 \u6614\u6d9f(cyrene)\u2014\u2014 \u6700\u521d\u7684\u534a\u795e"
+    },
+    {
+      "label": "13 \u4e09\u6708\u4e03 / \u4e39\u6052\uff08\u53d8\u91cf\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L177",
+      "id": "amphoreus_personas_00_overview_13_\u4e09\u6708\u4e03_\u4e39\u6052_\u53d8\u91cf",
+      "community": 2,
+      "norm_label": "13 \u4e09\u6708\u4e03 / \u4e39\u6052(\u53d8\u91cf)"
+    },
+    {
+      "label": "\u56db\u3001\u5176\u4ed6\u91cd\u8981\u5bf9\u5e94\u5173\u7cfb",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L185",
+      "id": "amphoreus_personas_00_overview_\u56db_\u5176\u4ed6\u91cd\u8981\u5bf9\u5e94\u5173\u7cfb",
+      "community": 1,
+      "norm_label": "\u56db\u3001\u5176\u4ed6\u91cd\u8981\u5bf9\u5e94\u5173\u7cfb"
+    },
+    {
+      "label": "\u4e0e\u5d29\u574f3\u9010\u706b\u5341\u4e09\u82f1\u5091\u7684\u5f71\u5b50",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L187",
+      "id": "amphoreus_personas_00_overview_\u4e0e\u5d29\u574f3\u9010\u706b\u5341\u4e09\u82f1\u5091\u7684\u5f71\u5b50",
+      "community": 1,
+      "norm_label": "\u4e0e\u5d29\u574f3\u9010\u706b\u5341\u4e09\u82f1\u5091\u7684\u5f71\u5b50"
+    },
+    {
+      "label": "\u89d2\u8272\u5173\u7cfb\u7f51",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L198",
+      "id": "amphoreus_personas_00_overview_\u89d2\u8272\u5173\u7cfb\u7f51",
+      "community": 1,
+      "norm_label": "\u89d2\u8272\u5173\u7cfb\u7f51"
+    },
+    {
+      "label": "\u4e94\u3001\u5f85\u8865\u5145\u4fe1\u606f",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L207",
+      "id": "amphoreus_personas_00_overview_\u4e94_\u5f85\u8865\u5145\u4fe1\u606f",
+      "community": 1,
+      "norm_label": "\u4e94\u3001\u5f85\u8865\u5145\u4fe1\u606f"
+    },
+    {
+      "label": "\u9644\u5f55\uff1a\u6587\u6863\u7ed3\u6784\u89c4\u5212",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L224",
+      "id": "amphoreus_personas_00_overview_\u9644\u5f55_\u6587\u6863\u7ed3\u6784\u89c4\u5212",
+      "community": 1,
+      "norm_label": "\u9644\u5f55:\u6587\u6863\u7ed3\u6784\u89c4\u5212"
+    },
+    {
+      "label": "code:block1 (amphoreus-personas/)",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L228",
+      "id": "amphoreus_personas_00_overview_codeblock_1",
+      "community": 1,
+      "norm_label": "code:block1 (amphoreus-personas/)"
+    },
+    {
+      "label": "aglaea-raw.md",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L1",
+      "id": "amphoreus_personas_raw_materials_aglaea_raw_md",
+      "community": 0,
+      "norm_label": "aglaea-raw.md"
+    },
+    {
+      "label": "\u963f\u683c\u83b1\u96c5\uff08Aglaea\uff09\u2014\u2014 \u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L1",
+      "id": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "community": 0,
+      "norm_label": "\u963f\u683c\u83b1\u96c5(aglaea)\u2014\u2014 \u539f\u59cb\u7d20\u6750\u6536\u96c6"
+    },
+    {
+      "label": "\u4e00\u3001\u57fa\u7840\u8d44\u6599",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L9",
+      "id": "raw_materials_aglaea_raw_\u4e00_\u57fa\u7840\u8d44\u6599",
+      "community": 0,
+      "norm_label": "\u4e00\u3001\u57fa\u7840\u8d44\u6599"
+    },
+    {
+      "label": "\u4e8c\u3001\u5916\u8c8c\u63cf\u5199\uff08\u539f\u6587\u6458\u5f55\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L27",
+      "id": "raw_materials_aglaea_raw_\u4e8c_\u5916\u8c8c\u63cf\u5199_\u539f\u6587\u6458\u5f55",
+      "community": 0,
+      "norm_label": "\u4e8c\u3001\u5916\u8c8c\u63cf\u5199(\u539f\u6587\u6458\u5f55)"
+    },
+    {
+      "label": "\u4e09\u3001\u80cc\u666f\u6545\u4e8b\uff08\u65f6\u95f4\u7ebf\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L44",
+      "id": "raw_materials_aglaea_raw_\u4e09_\u80cc\u666f\u6545\u4e8b_\u65f6\u95f4\u7ebf",
+      "community": 9,
+      "norm_label": "\u4e09\u3001\u80cc\u666f\u6545\u4e8b(\u65f6\u95f4\u7ebf)"
+    },
+    {
+      "label": "\u8d77\u6e90",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L46",
+      "id": "raw_materials_aglaea_raw_\u8d77\u6e90",
+      "community": 9,
+      "norm_label": "\u8d77\u6e90"
+    },
+    {
+      "label": "\u5343\u5e74\u7edf\u6cbb",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L52",
+      "id": "raw_materials_aglaea_raw_\u5343\u5e74\u7edf\u6cbb",
+      "community": 9,
+      "norm_label": "\u5343\u5e74\u7edf\u6cbb"
+    },
+    {
+      "label": "\u4e0e\u5f00\u62d3\u8005\u7684\u4ea4\u96c6\uff083.0 \u4e3b\u7ebf\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L58",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u5f00\u62d3\u8005\u7684\u4ea4\u96c6_3_0_\u4e3b\u7ebf",
+      "community": 9,
+      "norm_label": "\u4e0e\u5f00\u62d3\u8005\u7684\u4ea4\u96c6(3.0 \u4e3b\u7ebf)"
+    },
+    {
+      "label": "\u6b7b\u4ea1",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L65",
+      "id": "raw_materials_aglaea_raw_\u6b7b\u4ea1",
+      "community": 9,
+      "norm_label": "\u6b7b\u4ea1"
+    },
+    {
+      "label": "\u56db\u3001\u6027\u683c\u7279\u5f81\uff08\u591a\u89d2\u5ea6\u6458\u5f55\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L72",
+      "id": "raw_materials_aglaea_raw_\u56db_\u6027\u683c\u7279\u5f81_\u591a\u89d2\u5ea6\u6458\u5f55",
+      "community": 11,
+      "norm_label": "\u56db\u3001\u6027\u683c\u7279\u5f81(\u591a\u89d2\u5ea6\u6458\u5f55)"
+    },
+    {
+      "label": "\u4ece\u5b98\u65b9\u63cf\u8ff0\u4e2d\u63d0\u53d6",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L74",
+      "id": "raw_materials_aglaea_raw_\u4ece\u5b98\u65b9\u63cf\u8ff0\u4e2d\u63d0\u53d6",
+      "community": 11,
+      "norm_label": "\u4ece\u5b98\u65b9\u63cf\u8ff0\u4e2d\u63d0\u53d6"
+    },
+    {
+      "label": "\u4ece\u8bed\u97f3\u4e2d\u63d0\u53d6",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L81",
+      "id": "raw_materials_aglaea_raw_\u4ece\u8bed\u97f3\u4e2d\u63d0\u53d6",
+      "community": 11,
+      "norm_label": "\u4ece\u8bed\u97f3\u4e2d\u63d0\u53d6"
+    },
+    {
+      "label": "\u4ece\u73a9\u5bb6\u8ba8\u8bba\u4e2d\u63d0\u53d6",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L87",
+      "id": "raw_materials_aglaea_raw_\u4ece\u73a9\u5bb6\u8ba8\u8bba\u4e2d\u63d0\u53d6",
+      "community": 11,
+      "norm_label": "\u4ece\u73a9\u5bb6\u8ba8\u8bba\u4e2d\u63d0\u53d6"
+    },
+    {
+      "label": "\u4e94\u3001\u6807\u5fd7\u6027\u53f0\u8bcd\uff08\u539f\u6587\u6458\u5f55\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L94",
+      "id": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "community": 5,
+      "norm_label": "\u4e94\u3001\u6807\u5fd7\u6027\u53f0\u8bcd(\u539f\u6587\u6458\u5f55)"
+    },
+    {
+      "label": "\u81ea\u6211\u4ecb\u7ecd",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L96",
+      "id": "raw_materials_aglaea_raw_\u81ea\u6211\u4ecb\u7ecd",
+      "community": 5,
+      "norm_label": "\u81ea\u6211\u4ecb\u7ecd"
+    },
+    {
+      "label": "\u5bf9\u4e07\u654c\u7684\u8bc4\u4ef7",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L100",
+      "id": "raw_materials_aglaea_raw_\u5bf9\u4e07\u654c\u7684\u8bc4\u4ef7",
+      "community": 5,
+      "norm_label": "\u5bf9\u4e07\u654c\u7684\u8bc4\u4ef7"
+    },
+    {
+      "label": "\u5bf9\u9050\u8776\u7684\u8bc4\u4ef7",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L104",
+      "id": "raw_materials_aglaea_raw_\u5bf9\u9050\u8776\u7684\u8bc4\u4ef7",
+      "community": 5,
+      "norm_label": "\u5bf9\u9050\u8776\u7684\u8bc4\u4ef7"
+    },
+    {
+      "label": "\u5bf9\u8bca\u5b9e\u4e0e\u8c0e\u8a00\u7684\u770b\u6cd5",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L107",
+      "id": "raw_materials_aglaea_raw_\u5bf9\u8bca\u5b9e\u4e0e\u8c0e\u8a00\u7684\u770b\u6cd5",
+      "community": 5,
+      "norm_label": "\u5bf9\u8bca\u5b9e\u4e0e\u8c0e\u8a00\u7684\u770b\u6cd5"
+    },
+    {
+      "label": "\u5bf9\u5f00\u62d3\u8005\u7684\u8003\u9a8c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L111",
+      "id": "raw_materials_aglaea_raw_\u5bf9\u5f00\u62d3\u8005\u7684\u8003\u9a8c",
+      "community": 5,
+      "norm_label": "\u5bf9\u5f00\u62d3\u8005\u7684\u8003\u9a8c"
+    },
+    {
+      "label": "\u5173\u4e8e\u81ea\u8eab\u4f7f\u547d",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L115",
+      "id": "raw_materials_aglaea_raw_\u5173\u4e8e\u81ea\u8eab\u4f7f\u547d",
+      "community": 5,
+      "norm_label": "\u5173\u4e8e\u81ea\u8eab\u4f7f\u547d"
+    },
+    {
+      "label": "\u516d\u3001\u80fd\u529b\u4e0e\u8bc5\u5492",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L120",
+      "id": "raw_materials_aglaea_raw_\u516d_\u80fd\u529b\u4e0e\u8bc5\u5492",
+      "community": 0,
+      "norm_label": "\u516d\u3001\u80fd\u529b\u4e0e\u8bc5\u5492"
+    },
+    {
+      "label": "\u80fd\u529b\uff1a\u91d1\u7ec7",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L122",
+      "id": "raw_materials_aglaea_raw_\u80fd\u529b_\u91d1\u7ec7",
+      "community": 0,
+      "norm_label": "\u80fd\u529b:\u91d1\u7ec7"
+    },
+    {
+      "label": "\u8bc5\u5492 / \u7f3a\u9677\uff08Hamartia\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L128",
+      "id": "raw_materials_aglaea_raw_\u8bc5\u5492_\u7f3a\u9677_hamartia",
+      "community": 0,
+      "norm_label": "\u8bc5\u5492 / \u7f3a\u9677(hamartia)"
+    },
+    {
+      "label": "\u4e03\u3001\u4eba\u9645\u5173\u7cfb\uff08\u6458\u5f55\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L136",
+      "id": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "community": 6,
+      "norm_label": "\u4e03\u3001\u4eba\u9645\u5173\u7cfb(\u6458\u5f55)"
+    },
+    {
+      "label": "\u4e0e\u4e07\u654c\uff08Mydei\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L138",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u4e07\u654c_mydei",
+      "community": 6,
+      "norm_label": "\u4e0e\u4e07\u654c(mydei)"
+    },
+    {
+      "label": "\u4e0e\u767d\u5384\uff08Phainon\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L143",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u767d\u5384_phainon",
+      "community": 6,
+      "norm_label": "\u4e0e\u767d\u5384(phainon)"
+    },
+    {
+      "label": "\u4e0e\u7f07\u5b9d\uff08Tribbie\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L148",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u7f07\u5b9d_tribbie",
+      "community": 6,
+      "norm_label": "\u4e0e\u7f07\u5b9d(tribbie)"
+    },
+    {
+      "label": "\u4e0e\u9050\u8776\uff08Castorice\uff09\uff1f",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L152",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u9050\u8776_castorice",
+      "community": 6,
+      "norm_label": "\u4e0e\u9050\u8776(castorice)?"
+    },
+    {
+      "label": "\u4e0e\u5f00\u62d3\u8005\uff08Trailblazer\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L156",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u5f00\u62d3\u8005_trailblazer",
+      "community": 6,
+      "norm_label": "\u4e0e\u5f00\u62d3\u8005(trailblazer)"
+    },
+    {
+      "label": "\u4e0e\u90a3\u523b\u590f\uff08Anaxa\uff09\uff1f",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L161",
+      "id": "raw_materials_aglaea_raw_\u4e0e\u90a3\u523b\u590f_anaxa",
+      "community": 6,
+      "norm_label": "\u4e0e\u90a3\u523b\u590f(anaxa)?"
+    },
+    {
+      "label": "\u516b\u3001\u5267\u60c5\u9ad8\u5149\u65f6\u523b",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L167",
+      "id": "raw_materials_aglaea_raw_\u516b_\u5267\u60c5\u9ad8\u5149\u65f6\u523b",
+      "community": 0,
+      "norm_label": "\u516b\u3001\u5267\u60c5\u9ad8\u5149\u65f6\u523b"
+    },
+    {
+      "label": "3.0 \u4e3b\u7ebf\uff1a\u6d74\u573a\u5bf9\u8bdd",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L169",
+      "id": "raw_materials_aglaea_raw_3_0_\u4e3b\u7ebf_\u6d74\u573a\u5bf9\u8bdd",
+      "community": 0,
+      "norm_label": "3.0 \u4e3b\u7ebf:\u6d74\u573a\u5bf9\u8bdd"
+    },
+    {
+      "label": "3.0 \u4e3b\u7ebf\uff1a\u5ba1\u5224/\u8003\u9a8c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L175",
+      "id": "raw_materials_aglaea_raw_3_0_\u4e3b\u7ebf_\u5ba1\u5224_\u8003\u9a8c",
+      "community": 0,
+      "norm_label": "3.0 \u4e3b\u7ebf:\u5ba1\u5224/\u8003\u9a8c"
+    },
+    {
+      "label": "\u6b7b\u4ea1\uff083.7 \u4e3b\u7ebf\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L181",
+      "id": "raw_materials_aglaea_raw_\u6b7b\u4ea1_3_7_\u4e3b\u7ebf",
+      "community": 0,
+      "norm_label": "\u6b7b\u4ea1(3.7 \u4e3b\u7ebf)"
+    },
+    {
+      "label": "\u4e5d\u3001\u4e0e\u795e\u8bdd/\u5386\u53f2\u539f\u578b\u7684\u5173\u8054",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L188",
+      "id": "raw_materials_aglaea_raw_\u4e5d_\u4e0e\u795e\u8bdd_\u5386\u53f2\u539f\u578b\u7684\u5173\u8054",
+      "community": 0,
+      "norm_label": "\u4e5d\u3001\u4e0e\u795e\u8bdd/\u5386\u53f2\u539f\u578b\u7684\u5173\u8054"
+    },
+    {
+      "label": "\u5341\u3001\u9002\u5408\u8f6c\u5316\u4e3a Persona \u7684\u7279\u70b9",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L197",
+      "id": "raw_materials_aglaea_raw_\u5341_\u9002\u5408\u8f6c\u5316\u4e3a_persona_\u7684\u7279\u70b9",
+      "community": 0,
+      "norm_label": "\u5341\u3001\u9002\u5408\u8f6c\u5316\u4e3a persona \u7684\u7279\u70b9"
+    },
+    {
+      "label": "\u4f18\u52bf",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L199",
+      "id": "raw_materials_aglaea_raw_\u4f18\u52bf",
+      "community": 0,
+      "norm_label": "\u4f18\u52bf"
+    },
+    {
+      "label": "\u6f5c\u5728\u5c55\u793a\u65b9\u5411",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L205",
+      "id": "raw_materials_aglaea_raw_\u6f5c\u5728\u5c55\u793a\u65b9\u5411",
+      "community": 0,
+      "norm_label": "\u6f5c\u5728\u5c55\u793a\u65b9\u5411"
+    },
+    {
+      "label": "\u5341\u4e00\u3001\u5f85\u8865\u5145\u7d20\u6750",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L213",
+      "id": "raw_materials_aglaea_raw_\u5341\u4e00_\u5f85\u8865\u5145\u7d20\u6750",
+      "community": 0,
+      "norm_label": "\u5341\u4e00\u3001\u5f85\u8865\u5145\u7d20\u6750"
+    },
+    {
+      "label": "\u5341\u4e8c\u3001\u641c\u7d22\u6765\u6e90\u8bb0\u5f55",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L225",
+      "id": "raw_materials_aglaea_raw_\u5341\u4e8c_\u641c\u7d22\u6765\u6e90\u8bb0\u5f55",
+      "community": 0,
+      "norm_label": "\u5341\u4e8c\u3001\u641c\u7d22\u6765\u6e90\u8bb0\u5f55"
+    },
+    {
+      "label": "aglaea-hoyolab-wiki.md",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L1",
+      "id": "amphoreus_personas_raw_materials_aglaea_hoyolab_wiki_md",
+      "community": 3,
+      "norm_label": "aglaea-hoyolab-wiki.md"
+    },
+    {
+      "label": "\u963f\u683c\u83b1\u96c5\uff08Aglaea\uff09\u2014\u2014 HoYoLAB WIKI \u539f\u59cb\u7d20\u6750",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L1",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "community": 3,
+      "norm_label": "\u963f\u683c\u83b1\u96c5(aglaea)\u2014\u2014 hoyolab wiki \u539f\u59cb\u7d20\u6750"
+    },
+    {
+      "label": "\u4e00\u3001\u57fa\u7840\u4fe1\u606f\u9762\u677f",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L10",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u4e00_\u57fa\u7840\u4fe1\u606f\u9762\u677f",
+      "community": 3,
+      "norm_label": "\u4e00\u3001\u57fa\u7840\u4fe1\u606f\u9762\u677f"
+    },
+    {
+      "label": "\u4e8c\u3001\u89d2\u8272\u6545\u4e8b\uff08\u5b8c\u6574\u6587\u672c\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L25",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u4e8c_\u89d2\u8272\u6545\u4e8b_\u5b8c\u6574\u6587\u672c",
+      "community": 10,
+      "norm_label": "\u4e8c\u3001\u89d2\u8272\u6545\u4e8b(\u5b8c\u6574\u6587\u672c)"
+    },
+    {
+      "label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u4e00",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L27",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u4e00",
+      "community": 10,
+      "norm_label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u4e00"
+    },
+    {
+      "label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u4e8c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L59",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u4e8c",
+      "community": 10,
+      "norm_label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u4e8c"
+    },
+    {
+      "label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u4e09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L83",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u4e09",
+      "community": 10,
+      "norm_label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u4e09"
+    },
+    {
+      "label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u56db",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L105",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u56db",
+      "community": 10,
+      "norm_label": "\u89d2\u8272\u6545\u4e8b\u00b7\u5176\u56db"
+    },
+    {
+      "label": "\u4e09\u3001\u8bed\u97f3\u53f0\u8bcd\uff08\u6458\u5f55\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L137",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u4e09_\u8bed\u97f3\u53f0\u8bcd_\u6458\u5f55",
+      "community": 3,
+      "norm_label": "\u4e09\u3001\u8bed\u97f3\u53f0\u8bcd(\u6458\u5f55)"
+    },
+    {
+      "label": "\u57fa\u7840\u4e92\u52a8",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L139",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u57fa\u7840\u4e92\u52a8",
+      "community": 3,
+      "norm_label": "\u57fa\u7840\u4e92\u52a8"
+    },
+    {
+      "label": "\u6218\u6597\u8bed\u97f3",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L144",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u6218\u6597\u8bed\u97f3",
+      "community": 3,
+      "norm_label": "\u6218\u6597\u8bed\u97f3"
+    },
+    {
+      "label": "\u56db\u3001\u89d2\u8272\u5173\u7cfb\uff08\u7248\u672c\u66f4\u65b0\u8bb0\u5f55\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L151",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "community": 7,
+      "norm_label": "\u56db\u3001\u89d2\u8272\u5173\u7cfb(\u7248\u672c\u66f4\u65b0\u8bb0\u5f55)"
+    },
+    {
+      "label": "3.0 \u7248\u672c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L153",
+      "id": "raw_materials_aglaea_hoyolab_wiki_3_0_\u7248\u672c",
+      "community": 7,
+      "norm_label": "3.0 \u7248\u672c"
+    },
+    {
+      "label": "3.1 \u7248\u672c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L159",
+      "id": "raw_materials_aglaea_hoyolab_wiki_3_1_\u7248\u672c",
+      "community": 7,
+      "norm_label": "3.1 \u7248\u672c"
+    },
+    {
+      "label": "3.2 \u7248\u672c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L164",
+      "id": "raw_materials_aglaea_hoyolab_wiki_3_2_\u7248\u672c",
+      "community": 7,
+      "norm_label": "3.2 \u7248\u672c"
+    },
+    {
+      "label": "3.3 \u7248\u672c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L167",
+      "id": "raw_materials_aglaea_hoyolab_wiki_3_3_\u7248\u672c",
+      "community": 7,
+      "norm_label": "3.3 \u7248\u672c"
+    },
+    {
+      "label": "3.5 \u7248\u672c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L171",
+      "id": "raw_materials_aglaea_hoyolab_wiki_3_5_\u7248\u672c",
+      "community": 7,
+      "norm_label": "3.5 \u7248\u672c"
+    },
+    {
+      "label": "3.7 \u7248\u672c",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L189",
+      "id": "raw_materials_aglaea_hoyolab_wiki_3_7_\u7248\u672c",
+      "community": 7,
+      "norm_label": "3.7 \u7248\u672c"
+    },
+    {
+      "label": "\u4e94\u3001\u6280\u80fd\u76f8\u5173\uff08\u53ef\u8f6c\u5316\u4e3a Agent \u80fd\u529b\u8fb9\u754c\u53c2\u8003\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L195",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u4e94_\u6280\u80fd\u76f8\u5173_\u53ef\u8f6c\u5316\u4e3a_agent_\u80fd\u529b\u8fb9\u754c\u53c2\u8003",
+      "community": 3,
+      "norm_label": "\u4e94\u3001\u6280\u80fd\u76f8\u5173(\u53ef\u8f6c\u5316\u4e3a agent \u80fd\u529b\u8fb9\u754c\u53c2\u8003)"
+    },
+    {
+      "label": "\u7ec8\u7ed3\u6280\uff1a\u5171\u821e\u5427\uff0c\u547d\u5b9a\u7684\u8863\u5320",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L197",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u7ec8\u7ed3\u6280_\u5171\u821e\u5427_\u547d\u5b9a\u7684\u8863\u5320",
+      "community": 3,
+      "norm_label": "\u7ec8\u7ed3\u6280:\u5171\u821e\u5427,\u547d\u5b9a\u7684\u8863\u5320"
+    },
+    {
+      "label": "\u5929\u8d4b\uff1a\u95f4\u9699\u7ec7\u7ebf",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L204",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5929\u8d4b_\u95f4\u9699\u7ec7\u7ebf",
+      "community": 3,
+      "norm_label": "\u5929\u8d4b:\u95f4\u9699\u7ec7\u7ebf"
+    },
+    {
+      "label": "\u53ec\u5524\u7269\u7279\u6027\uff08\u8863\u5320\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L209",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u53ec\u5524\u7269\u7279\u6027_\u8863\u5320",
+      "community": 3,
+      "norm_label": "\u53ec\u5524\u7269\u7279\u6027(\u8863\u5320)"
+    },
+    {
+      "label": "\u516d\u3001\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9\uff08\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L217",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "community": 8,
+      "norm_label": "\u516d\u3001\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9(\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145)"
+    },
+    {
+      "label": "\u5173\u4e8e\u300c\u7f8e\u300d\u7684\u8ffd\u6c42",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L219",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e_\u7f8e_\u7684\u8ffd\u6c42",
+      "community": 8,
+      "norm_label": "\u5173\u4e8e\u300c\u7f8e\u300d\u7684\u8ffd\u6c42"
+    },
+    {
+      "label": "\u5173\u4e8e\u300c\u5931\u5374\u300d",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L225",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e_\u5931\u5374",
+      "community": 8,
+      "norm_label": "\u5173\u4e8e\u300c\u5931\u5374\u300d"
+    },
+    {
+      "label": "\u5173\u4e8e\u7edf\u6cbb",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L231",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u7edf\u6cbb",
+      "community": 8,
+      "norm_label": "\u5173\u4e8e\u7edf\u6cbb"
+    },
+    {
+      "label": "\u5173\u4e8e\u5b64\u72ec",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L238",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u5b64\u72ec",
+      "community": 8,
+      "norm_label": "\u5173\u4e8e\u5b64\u72ec"
+    },
+    {
+      "label": "\u5173\u4e8e\u8d5b\u98de\u513f\uff08\u91cd\u8981\u8865\u5145\uff01\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L244",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u8d5b\u98de\u513f_\u91cd\u8981\u8865\u5145",
+      "community": 8,
+      "norm_label": "\u5173\u4e8e\u8d5b\u98de\u513f(\u91cd\u8981\u8865\u5145!)"
+    },
+    {
+      "label": "\u5173\u4e8e\u5f00\u62d3\u8005\uff08\u91cd\u8981\u8865\u5145\uff01\uff09",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L251",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u5f00\u62d3\u8005_\u91cd\u8981\u8865\u5145",
+      "community": 8,
+      "norm_label": "\u5173\u4e8e\u5f00\u62d3\u8005(\u91cd\u8981\u8865\u5145!)"
+    },
+    {
+      "label": "\u4e03\u3001\u5173\u952e\u6027\u683c\u77e9\u9635",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L259",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u4e03_\u5173\u952e\u6027\u683c\u77e9\u9635",
+      "community": 3,
+      "norm_label": "\u4e03\u3001\u5173\u952e\u6027\u683c\u77e9\u9635"
+    },
+    {
+      "label": "\u516b\u3001\u5f85\u5b8c\u5584",
+      "file_type": "document",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L271",
+      "id": "raw_materials_aglaea_hoyolab_wiki_\u516b_\u5f85\u5b8c\u5584",
+      "community": 3,
+      "norm_label": "\u516b\u3001\u5f85\u5b8c\u5584"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "readme_md",
+      "target": "hermes_agent_guide_readme_hermes_agent_guide",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "hermes_agent_guide_readme_hermes_agent_guide",
+      "target": "hermes_agent_guide_readme_\u9879\u76ee\u7b80\u4ecb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "hermes_agent_guide_readme_hermes_agent_guide",
+      "target": "hermes_agent_guide_readme_\u76ee\u5f55\u7ed3\u6784",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "hermes_agent_guide_readme_hermes_agent_guide",
+      "target": "hermes_agent_guide_readme_\u6570\u636e\u6765\u6e90",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L47",
+      "weight": 1.0,
+      "source": "hermes_agent_guide_readme_hermes_agent_guide",
+      "target": "hermes_agent_guide_readme_\u514d\u8d23\u58f0\u660e",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "hermes_agent_guide_readme_hermes_agent_guide",
+      "target": "hermes_agent_guide_readme_license",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "hermes_agent_guide_readme_\u76ee\u5f55\u7ed3\u6784",
+      "target": "hermes_agent_guide_readme_codeblock_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_md",
+      "target": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "target": "amphoreus_personas_00_overview_\u4e00_\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L60",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "target": "amphoreus_personas_00_overview_\u4e8c_\u5341\u4e09\u9ec4\u91d1\u88d4_\u603b\u89c8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "target": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L185",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "target": "amphoreus_personas_00_overview_\u56db_\u5176\u4ed6\u91cd\u8981\u5bf9\u5e94\u5173\u7cfb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L207",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "target": "amphoreus_personas_00_overview_\u4e94_\u5f85\u8865\u5145\u4fe1\u606f",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L224",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u7fc1\u6cd5\u7f57\u65af_amphoreus_\u4e16\u754c\u89c2\u4e0e\u5341\u4e09\u9ec4\u91d1\u88d4_\u6982\u89c8",
+      "target": "amphoreus_personas_00_overview_\u9644\u5f55_\u6587\u6863\u7ed3\u6784\u89c4\u5212",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e00_\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "target": "amphoreus_personas_00_overview_1_1_\u57fa\u672c\u5b9a\u4e49",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e00_\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "target": "amphoreus_personas_00_overview_1_2_\u4e16\u754c\u5386\u53f2\u4e0e\u89c4\u5219",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e00_\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "target": "amphoreus_personas_00_overview_1_3_\u4e5d\u5927\u57ce\u90a6",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L41",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e00_\u4e16\u754c\u89c2\u6838\u5fc3\u8bbe\u5b9a",
+      "target": "amphoreus_personas_00_overview_1_4_\u5341\u4e8c\u6cf0\u5766\u4e0e\u706b\u79cd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L80",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e8c_\u5341\u4e09\u9ec4\u91d1\u88d4_\u603b\u89c8",
+      "target": "amphoreus_personas_00_overview_\u89d2\u8272\u5206\u7c7b\u4e0e_persona_\u6f5c\u529b",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L97",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_01_\u7f07\u5b9d_tribios_\u547d\u8fd0\u7684\u4e09\u5b50",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L104",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_02_\u523b\u5f8b\u5fb7\u83c8_cerydra_\u6267\u68cb\u7684\u541b\u4e3b",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_03_terravox_\u9707\u5730\u4e4b\u9f99",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_04_\u6d77\u745f\u97f3_helektra_\u629a\u6d6a\u7684\u9a91\u58eb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_05_\u98ce\u5807_hyacinthia_\u5149\u4e4b\u6108\u8005",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L129",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_06_\u767d\u5384_phainon_khaslana_\u65e0\u540d\u82f1\u96c4",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L136",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_07_\u90a3\u523b\u590f_anaxagoras_anaxa_\u6b81\u4e16\u7684\u5b66\u58eb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_08_\u963f\u683c\u83b1\u96c5_aglaea_\u91d1\u7ec7",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L150",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_09_\u4e07\u654c_mydeimos_mydei_\u4ea1\u56fd\u7684\u738b\u50a8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L157",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_10_\u9050\u8776_castorice_\u6b7b\u4ea1\u7684\u4ec6\u4ece",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L164",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_11_\u8d5b\u98de\u513f_cipher_\u6377\u8db3\u7684\u65c5\u4eba",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L171",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_12_\u6614\u6d9f_cyrene_\u6700\u521d\u7684\u534a\u795e",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L177",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u4e09_\u5404\u89d2\u8272\u7b80\u8981\u8bbe\u5b9a\u6458\u8981",
+      "target": "amphoreus_personas_00_overview_13_\u4e09\u6708\u4e03_\u4e39\u6052_\u53d8\u91cf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L187",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u56db_\u5176\u4ed6\u91cd\u8981\u5bf9\u5e94\u5173\u7cfb",
+      "target": "amphoreus_personas_00_overview_\u4e0e\u5d29\u574f3\u9010\u706b\u5341\u4e09\u82f1\u5091\u7684\u5f71\u5b50",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L198",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u56db_\u5176\u4ed6\u91cd\u8981\u5bf9\u5e94\u5173\u7cfb",
+      "target": "amphoreus_personas_00_overview_\u89d2\u8272\u5173\u7cfb\u7f51",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/00-overview.md",
+      "source_location": "L228",
+      "weight": 1.0,
+      "source": "amphoreus_personas_00_overview_\u9644\u5f55_\u6587\u6863\u7ed3\u6784\u89c4\u5212",
+      "target": "amphoreus_personas_00_overview_codeblock_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "amphoreus_personas_raw_materials_aglaea_raw_md",
+      "target": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u4e00_\u57fa\u7840\u8d44\u6599",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u4e8c_\u5916\u8c8c\u63cf\u5199_\u539f\u6587\u6458\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u4e09_\u80cc\u666f\u6545\u4e8b_\u65f6\u95f4\u7ebf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u56db_\u6027\u683c\u7279\u5f81_\u591a\u89d2\u5ea6\u6458\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u516d_\u80fd\u529b\u4e0e\u8bc5\u5492",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L136",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L167",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u516b_\u5267\u60c5\u9ad8\u5149\u65f6\u523b",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L188",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u4e5d_\u4e0e\u795e\u8bdd_\u5386\u53f2\u539f\u578b\u7684\u5173\u8054",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u5341_\u9002\u5408\u8f6c\u5316\u4e3a_persona_\u7684\u7279\u70b9",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L213",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u5341\u4e00_\u5f85\u8865\u5145\u7d20\u6750",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L225",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u963f\u683c\u83b1\u96c5_aglaea_\u539f\u59cb\u7d20\u6750\u6536\u96c6",
+      "target": "raw_materials_aglaea_raw_\u5341\u4e8c_\u641c\u7d22\u6765\u6e90\u8bb0\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e09_\u80cc\u666f\u6545\u4e8b_\u65f6\u95f4\u7ebf",
+      "target": "raw_materials_aglaea_raw_\u8d77\u6e90",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e09_\u80cc\u666f\u6545\u4e8b_\u65f6\u95f4\u7ebf",
+      "target": "raw_materials_aglaea_raw_\u5343\u5e74\u7edf\u6cbb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L58",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e09_\u80cc\u666f\u6545\u4e8b_\u65f6\u95f4\u7ebf",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u5f00\u62d3\u8005\u7684\u4ea4\u96c6_3_0_\u4e3b\u7ebf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e09_\u80cc\u666f\u6545\u4e8b_\u65f6\u95f4\u7ebf",
+      "target": "raw_materials_aglaea_raw_\u6b7b\u4ea1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u56db_\u6027\u683c\u7279\u5f81_\u591a\u89d2\u5ea6\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4ece\u5b98\u65b9\u63cf\u8ff0\u4e2d\u63d0\u53d6",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u56db_\u6027\u683c\u7279\u5f81_\u591a\u89d2\u5ea6\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4ece\u8bed\u97f3\u4e2d\u63d0\u53d6",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u56db_\u6027\u683c\u7279\u5f81_\u591a\u89d2\u5ea6\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4ece\u73a9\u5bb6\u8ba8\u8bba\u4e2d\u63d0\u53d6",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L96",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u81ea\u6211\u4ecb\u7ecd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u5bf9\u4e07\u654c\u7684\u8bc4\u4ef7",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L104",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u5bf9\u9050\u8776\u7684\u8bc4\u4ef7",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L107",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u5bf9\u8bca\u5b9e\u4e0e\u8c0e\u8a00\u7684\u770b\u6cd5",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u5bf9\u5f00\u62d3\u8005\u7684\u8003\u9a8c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L115",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e94_\u6807\u5fd7\u6027\u53f0\u8bcd_\u539f\u6587\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u5173\u4e8e\u81ea\u8eab\u4f7f\u547d",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L122",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u516d_\u80fd\u529b\u4e0e\u8bc5\u5492",
+      "target": "raw_materials_aglaea_raw_\u80fd\u529b_\u91d1\u7ec7",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L128",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u516d_\u80fd\u529b\u4e0e\u8bc5\u5492",
+      "target": "raw_materials_aglaea_raw_\u8bc5\u5492_\u7f3a\u9677_hamartia",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L138",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u4e07\u654c_mydei",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u767d\u5384_phainon",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u7f07\u5b9d_tribbie",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L152",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u9050\u8776_castorice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L156",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u5f00\u62d3\u8005_trailblazer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L161",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u4e03_\u4eba\u9645\u5173\u7cfb_\u6458\u5f55",
+      "target": "raw_materials_aglaea_raw_\u4e0e\u90a3\u523b\u590f_anaxa",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L169",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u516b_\u5267\u60c5\u9ad8\u5149\u65f6\u523b",
+      "target": "raw_materials_aglaea_raw_3_0_\u4e3b\u7ebf_\u6d74\u573a\u5bf9\u8bdd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u516b_\u5267\u60c5\u9ad8\u5149\u65f6\u523b",
+      "target": "raw_materials_aglaea_raw_3_0_\u4e3b\u7ebf_\u5ba1\u5224_\u8003\u9a8c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L181",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u516b_\u5267\u60c5\u9ad8\u5149\u65f6\u523b",
+      "target": "raw_materials_aglaea_raw_\u6b7b\u4ea1_3_7_\u4e3b\u7ebf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L199",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u5341_\u9002\u5408\u8f6c\u5316\u4e3a_persona_\u7684\u7279\u70b9",
+      "target": "raw_materials_aglaea_raw_\u4f18\u52bf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-raw.md",
+      "source_location": "L205",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_raw_\u5341_\u9002\u5408\u8f6c\u5316\u4e3a_persona_\u7684\u7279\u70b9",
+      "target": "raw_materials_aglaea_raw_\u6f5c\u5728\u5c55\u793a\u65b9\u5411",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "amphoreus_personas_raw_materials_aglaea_hoyolab_wiki_md",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u4e00_\u57fa\u7840\u4fe1\u606f\u9762\u677f",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u4e8c_\u89d2\u8272\u6545\u4e8b_\u5b8c\u6574\u6587\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L137",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u4e09_\u8bed\u97f3\u53f0\u8bcd_\u6458\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L151",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L195",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u4e94_\u6280\u80fd\u76f8\u5173_\u53ef\u8f6c\u5316\u4e3a_agent_\u80fd\u529b\u8fb9\u754c\u53c2\u8003",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L217",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L259",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u4e03_\u5173\u952e\u6027\u683c\u77e9\u9635",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L271",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u963f\u683c\u83b1\u96c5_aglaea_hoyolab_wiki_\u539f\u59cb\u7d20\u6750",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u516b_\u5f85\u5b8c\u5584",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e8c_\u89d2\u8272\u6545\u4e8b_\u5b8c\u6574\u6587\u672c",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u4e00",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e8c_\u89d2\u8272\u6545\u4e8b_\u5b8c\u6574\u6587\u672c",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u4e8c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e8c_\u89d2\u8272\u6545\u4e8b_\u5b8c\u6574\u6587\u672c",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u4e09",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L105",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e8c_\u89d2\u8272\u6545\u4e8b_\u5b8c\u6574\u6587\u672c",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u89d2\u8272\u6545\u4e8b_\u5176\u56db",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L139",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e09_\u8bed\u97f3\u53f0\u8bcd_\u6458\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u57fa\u7840\u4e92\u52a8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L144",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e09_\u8bed\u97f3\u53f0\u8bcd_\u6458\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u6218\u6597\u8bed\u97f3",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L153",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_3_0_\u7248\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L159",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_3_1_\u7248\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L164",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_3_2_\u7248\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L167",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_3_3_\u7248\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L171",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_3_5_\u7248\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L189",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u56db_\u89d2\u8272\u5173\u7cfb_\u7248\u672c\u66f4\u65b0\u8bb0\u5f55",
+      "target": "raw_materials_aglaea_hoyolab_wiki_3_7_\u7248\u672c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e94_\u6280\u80fd\u76f8\u5173_\u53ef\u8f6c\u5316\u4e3a_agent_\u80fd\u529b\u8fb9\u754c\u53c2\u8003",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u7ec8\u7ed3\u6280_\u5171\u821e\u5427_\u547d\u5b9a\u7684\u8863\u5320",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L204",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e94_\u6280\u80fd\u76f8\u5173_\u53ef\u8f6c\u5316\u4e3a_agent_\u80fd\u529b\u8fb9\u754c\u53c2\u8003",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5929\u8d4b_\u95f4\u9699\u7ec7\u7ebf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L209",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u4e94_\u6280\u80fd\u76f8\u5173_\u53ef\u8f6c\u5316\u4e3a_agent_\u80fd\u529b\u8fb9\u754c\u53c2\u8003",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u53ec\u5524\u7269\u7279\u6027_\u8863\u5320",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L219",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e_\u7f8e_\u7684\u8ffd\u6c42",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L225",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e_\u5931\u5374",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L231",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u7edf\u6cbb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L238",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u5b64\u72ec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L244",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u8d5b\u98de\u513f_\u91cd\u8981\u8865\u5145",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md",
+      "source_location": "L251",
+      "weight": 1.0,
+      "source": "raw_materials_aglaea_hoyolab_wiki_\u516d_\u65b0\u589e\u5173\u952e\u8bbe\u5b9a\u70b9_\u4e0e\u4e4b\u524d\u7d20\u6750\u7684\u8865\u5145",
+      "target": "raw_materials_aglaea_hoyolab_wiki_\u5173\u4e8e\u5f00\u62d3\u8005_\u91cd\u8981\u8865\u5145",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "e919522a12a9fcee137cb375d47c84715b4c6b5c"
+}

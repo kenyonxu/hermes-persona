@@ -17,3 +17,6 @@ __pycache__/
 
 # Misc
 *.log
+
+# graphify cache (heavy, not needed in repo)
+graphify-out/cache
