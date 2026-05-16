@@ -147,11 +147,54 @@ def _recall_memories(user_message: str, mem_cfg: dict) -> str | None:
 
 
 def _read_kanban(kanban_path: str, label: str) -> str | None:
-    """P3 stub. Read project kanban status from the filesystem.
+    """Read project kanban status from the filesystem.
 
-    Currently returns None. Full implementation deferred to P3-T1.
+    Scans *kanban_path* for ``*.md`` files, reads each file and extracts the
+    first line containing ``"优先级:"``. Results are formatted as:
+
+        "- {filename}: {priority_line}"
+
+    At most 5 items are returned.  Every I/O or parsing error is caught and
+    results in graceful degradation (returns ``None``).
+
+    Args:
+        kanban_path: Filesystem path to the kanban directory.
+        label: Section header text.  When empty, defaults to ``"📋 项目状态:"``.
+
+    Returns:
+        Formatted kanban section string or ``None`` when there is nothing to
+        inject.
     """
-    return None
+    if not kanban_path:
+        return None
+
+    try:
+        kb = Path(kanban_path)
+        if not kb.is_dir():
+            return None
+
+        md_files = sorted(kb.glob("*.md"))
+        if not md_files:
+            return None
+
+        items: list[str] = []
+        for md_file in md_files:
+            if len(items) >= 5:
+                break
+            try:
+                first_line = md_file.read_text(encoding="utf-8").split("\n")[0].strip()
+                if "优先级:" in first_line:
+                    items.append(f"- {md_file.stem}: {first_line}")
+            except OSError:
+                continue
+
+        if not items:
+            return None
+
+        header = label or "📋 项目状态:"
+        return header + "\n" + "\n".join(items)
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------

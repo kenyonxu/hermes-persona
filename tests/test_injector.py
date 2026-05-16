@@ -385,3 +385,204 @@ class TestInjectContextP2:
         # Result may still have time context
         if result is not None:
             assert "📝 相关记忆" not in result["context"]
+
+
+# ── _read_kanban (P3) ──────────────────────────────────────────────────
+
+
+class TestKanbanDirect:
+    """Unit tests for _read_kanban() called directly."""
+
+    def test_path_not_found(self, tmp_path):
+        """Non-existent kanban_path → returns None, no exception."""
+        bad_path = str(tmp_path / "does_not_exist")
+        result = injector._read_kanban(bad_path, "")
+        assert result is None
+
+    def test_empty_string_path(self):
+        """Empty kanban_path → returns None."""
+        result = injector._read_kanban("", "")
+        assert result is None
+
+    def test_empty_dir(self, tmp_path):
+        """Directory exists but contains no *.md files → returns None."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        result = injector._read_kanban(str(kanban_dir), "")
+        assert result is None
+
+    def test_priority_extraction(self, tmp_path):
+        """Correctly extracts the first line containing '优先级:'."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task1.md").write_text("优先级: 高 - 修复登录页面\n详情略", encoding="utf-8")
+        (kanban_dir / "task2.md").write_text("优先级: 中 - 重构API\n详情略", encoding="utf-8")
+
+        result = injector._read_kanban(str(kanban_dir), "")
+        assert result is not None
+        assert "task1" in result
+        assert "优先级: 高 - 修复登录页面" in result
+        assert "task2" in result
+        assert "优先级: 中 - 重构API" in result
+
+    def test_no_priority_line(self, tmp_path):
+        """Files without '优先级:' in the first line are skipped."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "notes.md").write_text("Just some notes\nNo priority here", encoding="utf-8")
+
+        result = injector._read_kanban(str(kanban_dir), "")
+        assert result is None
+
+    def test_max_five(self, tmp_path):
+        """More than 5 markdown files → only the first 5 (sorted) are returned."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        for i in range(10):
+            (kanban_dir / f"task{i:02d}.md").write_text(
+                f"优先级: {i}\ncontent", encoding="utf-8"
+            )
+
+        result = injector._read_kanban(str(kanban_dir), "")
+        assert result is not None
+        # Count '-' bullet entries (but not the header line)
+        bullet_count = sum(1 for line in result.split("\n") if line.startswith("- "))
+        assert bullet_count == 5
+        # Only first 5 files alphabetically
+        assert "task00" in result
+        assert "task04" in result
+        assert "task05" not in result
+        assert "task09" not in result
+
+    def test_custom_label(self, tmp_path):
+        """Custom label replaces the default header."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
+
+        result = injector._read_kanban(str(kanban_dir), "🗂️ 自定义看板:")
+        assert result is not None
+        assert result.startswith("🗂️ 自定义看板:")
+        assert "📋 项目状态:" not in result
+
+    def test_default_label(self, tmp_path):
+        """Empty label → uses default '📋 项目状态:'."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
+
+        result = injector._read_kanban(str(kanban_dir), "")
+        assert result is not None
+        assert result.startswith("📋 项目状态:")
+
+
+# ── inject_context P3 integration ──────────────────────────────────────
+
+
+class TestInjectContextP3:
+    @patch("hermes_persona.injector._load_config")
+    def test_kanban_first_turn_injects(self, mock_load, inject_context_defaults, tmp_path):
+        """Kanban is injected when is_first_turn=True and project.enabled=True."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
+
+        mock_load.return_value = {
+            "project": {
+                "enabled": True,
+                "kanban_path": str(kanban_dir),
+            },
+        }
+        inject_context_defaults["is_first_turn"] = True
+        result = inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "📋 项目状态:" in result["context"]
+        assert "task" in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    def test_kanban_not_first_turn(self, mock_load, inject_context_defaults, tmp_path):
+        """Kanban is NOT injected when is_first_turn=False."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
+
+        mock_load.return_value = {
+            "project": {
+                "enabled": True,
+                "kanban_path": str(kanban_dir),
+            },
+        }
+        inject_context_defaults["is_first_turn"] = False
+        result = inject_context(**inject_context_defaults)
+        if result is not None:
+            assert "📋 项目状态:" not in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    def test_kanban_path_not_found_degradation(self, mock_load, inject_context_defaults, tmp_path):
+        """Non-existent kanban directory → graceful degradation, no exception."""
+        bad_path = str(tmp_path / "does_not_exist")
+        mock_load.return_value = {
+            "project": {
+                "enabled": True,
+                "kanban_path": bad_path,
+            },
+        }
+        inject_context_defaults["is_first_turn"] = True
+        result = inject_context(**inject_context_defaults)
+        # Should not crash; result may have time context but no kanban
+        if result is not None:
+            assert "📋 项目状态:" not in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    def test_kanban_empty_dir_no_injection(self, mock_load, inject_context_defaults, tmp_path):
+        """Empty kanban directory → no kanban content injected."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+
+        mock_load.return_value = {
+            "project": {
+                "enabled": True,
+                "kanban_path": str(kanban_dir),
+            },
+        }
+        inject_context_defaults["is_first_turn"] = True
+        result = inject_context(**inject_context_defaults)
+        if result is not None:
+            assert "📋 项目状态:" not in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    def test_kanban_custom_label_active(self, mock_load, inject_context_defaults, tmp_path):
+        """Custom label from config is used in the injected context."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
+
+        mock_load.return_value = {
+            "project": {
+                "enabled": True,
+                "kanban_path": str(kanban_dir),
+                "label": "🗂️ 团队看板:",
+            },
+        }
+        inject_context_defaults["is_first_turn"] = True
+        result = inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "🗂️ 团队看板:" in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    def test_kanban_disabled_no_injection(self, mock_load, inject_context_defaults, tmp_path):
+        """When project.enabled=False, kanban is never injected even on first turn."""
+        kanban_dir = tmp_path / "kanban"
+        kanban_dir.mkdir()
+        (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
+
+        mock_load.return_value = {
+            "project": {
+                "enabled": False,
+                "kanban_path": str(kanban_dir),
+            },
+        }
+        inject_context_defaults["is_first_turn"] = True
+        result = inject_context(**inject_context_defaults)
+        if result is not None:
+            assert "📋 项目状态:" not in result["context"]
