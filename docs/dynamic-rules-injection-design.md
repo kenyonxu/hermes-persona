@@ -257,7 +257,131 @@ def _match_keyword(keywords, user_message):
 
 ---
 
-## 五、性能考量
+## 五、随机性与表达变化 `variance`
+
+> 静态规则保证人格底限，动态规则适配情景变化——但还需要一层「随机性」来**打破机械感**。
+
+### 5.1 为什么需要随机性
+
+如果每回合 LLM 收到的提示完全一样，它就会把提示当成「必须完成的任务」，导致表达刻板：
+
+```
+❌ 每回合：「🦊 狐耳/尾巴=情绪外显，每回合至少用一个身体语言描述」
+   → 每条回复都带「（狐耳竖起）」「（尾巴轻摇）」→ 像打卡签到
+
+✅ 每回合随机：「🦊 这回合多观察——多用狐耳的变化来表达微妙的察觉」
+   或「🦊 今天尾巴很活泼，让尾巴多说说话」
+   或（无提示）——让 prefill 的语感自由发挥
+   → 动作出现时机和方式都自然变化
+```
+
+### 5.2 两层随机
+
+| 层 | 控制什么 | 配置项 |
+|:---|:---|:---|
+| **出现概率** | 这个维度这回合要不要用 | `probability` (0.0~1.0) |
+| **表达变化** | 用了的话，从哪个方向切入 | `variants` (字符串数组，随机选一) |
+
+### 5.3 配置结构
+
+```json
+{
+  "variance": {
+    "beast_traits": {
+      "probability": 0.6,
+      "variants": [
+        "🦊 这回合多观察——多用狐耳的变化来表达微妙的察觉",
+        "🦊 今天尾巴很活泼，让尾巴多说说话",
+        "🦊 琥珀眼比嘴巴会说——用眼神传递情绪，少说多看"
+      ]
+    },
+    "maid_gestures": {
+      "probability": 0.4,
+      "variants": [
+        "👘 这回合保持端庄——双手交叠于围裙前，半步之后守候",
+        "👘 动作轻盈利落，像在为主人整理书桌——带点日常感",
+        "👘 端茶的姿势——双手捧杯，身体微倾。可以提一下茶",
+        "👘 衣袖和围裙的轻微摩擦声是唯一的响动——安静地存在"
+      ]
+    },
+    "metaphor_focus": {
+      "probability": 0.5,
+      "variants": [
+        "💬 今天的比喻偏好：打扫（梳理混乱、整理思路）",
+        "💬 今天的比喻偏好：缝补（修复、弥合、细心对待）",
+        "💬 今天的比喻偏好：泡茶（关怀、等待、趁热最好）",
+        "💬 今天的比喻偏好：钥匙与灯（守门、陪伴、方向）"
+      ]
+    },
+    "emotional_shift": {
+      "probability": 0.3,
+      "variants": [
+        "💭 这回合可以比平时更感性一点——偶尔露出柔软的一面没关系",
+        "💭 话语间可以有一点点害羞——但不用刻意，自然流露就好",
+        "💭 比平时更活跃——主人值得一个开心的知惠"
+      ]
+    }
+  }
+}
+```
+
+### 5.4 实现
+
+```python
+import random
+
+def _randomize_variance(variance_cfg):
+    """每回合随机选择人格维度的表达方向。"""
+    hints = []
+
+    for category, cfg in variance_cfg.items():
+        prob = cfg.get("probability", 0.5)
+
+        # ① 出现概率：这回合用不用这个维度
+        if random.random() > prob:
+            continue
+
+        # ② 表达变化：从这个维度的变体中随机选一个方向
+        variants = cfg.get("variants", [])
+        if variants:
+            hints.append(random.choice(variants))
+
+    return hints
+```
+
+### 5.5 与主调度器的集成
+
+```python
+def inject_context(session_id, user_message, conversation_history,
+                   is_first_turn, model, platform, **kwargs):
+    config = _load_config()
+    parts = []
+
+    # ... 时间、静态规则、动态规则（现有逻辑）...
+
+    # 🎲 随机表达变化（新增）
+    variance_cfg = config.get("variance", {})
+    if variance_cfg:
+        variance_hints = _randomize_variance(variance_cfg)
+        parts.extend(variance_hints)
+
+    return {"context": "\n\n".join(parts)} if parts else None
+```
+
+### 5.6 调参建议
+
+| 维度 | 推荐概率 | 理由 |
+|:---|:---:|:---|
+| `beast_traits` | 0.6 | 兽娘特征是知惠的核心识别度，但不能每句都提 |
+| `maid_gestures` | 0.4 | 女仆动作适合点缀，太频繁影响对话流畅度 |
+| `metaphor_focus` | 0.5 | 比喻需要出现但不需要每回合切 |
+| `emotional_shift` | 0.3 | 情绪微调是调味料，偶尔用才有效果 |
+
+**关键原则**：不是所有维度都要每回合用。平均每回合注入 1-2 条随机提示，其余留给 prefill 的语感。**自然感 = 有提示时的精致 + 无提示时的自由**。
+
+---
+
+## 六、性能考量
 
 | 操作 | 复杂度 | 开销 |
 |:---|:---|:---|
@@ -269,7 +393,7 @@ def _match_keyword(keywords, user_message):
 
 ---
 
-## 六、完整示例：知惠的日夜人格 🦊
+## 七、完整示例：知惠的日夜人格 🦊
 
 ```json
 {
@@ -317,6 +441,33 @@ def _match_keyword(keywords, user_message):
           ]
         }
       }
+    },
+    "variance": {
+      "beast_traits": {
+        "probability": 0.6,
+        "variants": [
+          "🦊 这回合多观察——多用狐耳的变化来表达微妙的察觉",
+          "🦊 今天尾巴很活泼，让尾巴多说说话",
+          "🦊 琥珀眼比嘴巴会说——用眼神传递情绪"
+        ]
+      },
+      "maid_gestures": {
+        "probability": 0.4,
+        "variants": [
+          "👘 双手交叠于围裙前，半步之后守候",
+          "👘 动作轻盈利落，像在整理书桌",
+          "👘 端茶的姿势——双手捧杯，微微欠身"
+        ]
+      },
+      "metaphor_focus": {
+        "probability": 0.5,
+        "variants": [
+          "💬 今天的比喻：打扫（梳理混乱）",
+          "💬 今天的比喻：缝补（修复弥合）",
+          "💬 今天的比喻：泡茶（关怀等待）",
+          "💬 今天的比喻：钥匙与灯（守门方向）"
+        ]
+      }
     }
   }
 }
@@ -324,16 +475,17 @@ def _match_keyword(keywords, user_message):
 
 ---
 
-## 七、与现有架构的关系
+## 八、与现有架构的关系
 
 ```
 prefill.json       → 静态人格（few-shot 锚点）
 SOUL.md            → 宪法（不变）
 persona-config.json:
   ├─ context.rules              → 静态人格规则（始终注入）
-  ├─ context.dynamic.time_slots → 时段适配（本文档）
-  ├─ context.dynamic.turn_stage → 深度适配（本文档）
-  ├─ context.dynamic.keyword    → 内容适配（本文档）
+  ├─ context.dynamic.time_slots → 时段适配
+  ├─ context.dynamic.turn_stage → 深度适配
+  ├─ context.dynamic.keyword    → 内容适配
+  ├─ variance.*                 → 随机表达变化（打破机械感）
   ├─ memory.api_url             → 记忆召回（已有设计）
   └─ project.kanban_path        → 看板状态（已有设计）
 SKILL              → 深度档案（按需）
@@ -341,12 +493,12 @@ SKILL              → 深度档案（按需）
 
 ---
 
-## 八、开发计划
+## 九、开发计划
 
 | Phase | 内容 |
 |:---|:---|
 | P1 | 实现 `_match_time_slot` + `_match_turn_stage`（时间/轮数两大维度） |
-| P2 | 实现 `_match_keyword`（关键词动态适配） |
+| P2 | 实现 `_match_keyword` + `variance` 随机表达变化 |
 | P3 | 扩展维度：情绪分析、连续天数、话题切换 |
 | P4 | 优化：规则去重、注入长度限制、热点缓存 |
 
