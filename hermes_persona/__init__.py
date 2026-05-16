@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from . import guard
 from . import injector
 
 
@@ -17,7 +18,7 @@ def register(ctx) -> None:
 
     - Stores the profile directory path (ctx.profile_path) for config loading.
     - Registers the pre_llm_call hook for persona context injection.
-    - P1 does not register pre_tool_call / post_tool_call hooks.
+    - Registers pre_tool_call / post_tool_call hooks for safety guard (P4).
 
     Args:
         ctx: Hermes PluginContext with profile_path, register_hook, etc.
@@ -27,9 +28,9 @@ def register(ctx) -> None:
         injector._CONFIG_ROOT = Path(ctx.profile_path)
     # else: _CONFIG_ROOT stays None → _load_config() uses fallback path
 
-    # P1: only register pre_llm_call
+    # P1: persona context injection
     ctx.register_hook("pre_llm_call", injector.inject_context)
 
-    # P4 will add:
-    # ctx.register_hook("pre_tool_call", guard.check_tool_call)
-    # ctx.register_hook("post_tool_call", guard.audit_tool_call)
+    # P4: safety guard
+    ctx.register_hook("pre_tool_call", guard.check_tool_call)
+    ctx.register_hook("post_tool_call", guard.audit_tool_call)

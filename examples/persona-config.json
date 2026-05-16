@@ -46,6 +46,22 @@
       "enabled": false,
       "kanban_path": "",
       "label": ""
+    },
+    "guard": {
+      "enabled": false,
+      "rules": {
+        "blocked": [
+          {"pattern": "rm\\s", "reason": "文件删除操作已阻止"},
+          {"pattern": "DROP\\s", "reason": "数据库删除操作已阻止"}
+        ],
+        "require_confirmation": [
+          {"pattern": "git\\s+push", "reason": "代码推送需确认"}
+        ]
+      },
+      "audit": {
+        "enabled": false,
+        "log_path": "~/.hermes/logs/persona-audit.log"
+      }
     }
   }
 }
