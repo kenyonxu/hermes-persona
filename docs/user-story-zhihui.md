@@ -168,7 +168,57 @@
 └─────────────────────────────────────────────────────┘
 ```
 
-### 5.4 下一步：应用此方法论审视知惠
+### 5.4 两翼：Prompt Engineering × Harness Engineering
+
+阿格莱雅的 Lore→表达规则 属于 **Prompt Engineering**——「这段提示词怎么写效果好」。但完整的 Agent 人格化还有另一半：**Harness Engineering**——「提示词在什么时机、通过什么机制、以什么形态到达 LLM」。
+
+| | Prompt Engineering | Harness Engineering |
+|:---|:---|:---|
+| **关心什么** | 措辞、比喻体系、语气规则 | 注入时机、承载层级、缓存策略 |
+| **产物** | 一段文本（prefill content） | 一个注入系统（plugin + hooks） |
+| **迭代方式** | 改措辞、加 few-shot 示例 | 改架构、加 hook、调整注入层级 |
+| **典型问题** | 要不要用「金丝」「编织」做比喻？ | 这个信息该放 prefill 还是 pre_llm_call？ |
+
+两者的关系不是「二选一」，而是 **Prompt Engineering 决定内容，Harness Engineering 决定交付**。一条好的 Lore→表达规则，放错了承载层级，要么烧 token，要么到不了 LLM。
+
+Hermes Agent 为 Harness Engineering 提供了完整的工具箱：
+
+```yaml
+# ~/.hermes/plugins/zhihui-persona/plugin.yaml
+name: zhihui-persona
+provides_hooks:
+  - pre_llm_call        # 🔥 每回合自动注入上下文
+```
+
+```python
+# __init__.py
+def inject_context(session_id, user_message, conversation_history,
+                   is_first_turn, model, platform, kwargs):
+    """每回合在 LLM 被调用前，注入 SLM 记忆 + 时间 + 看板状态"""
+    context_parts = []
+    # 语义召回相关记忆 → 不烧 prefill token
+    memories = slm_recall(user_message)
+    if memories:
+        context_parts.append("📝 相关记忆:\n" + memories)
+    # 动态时间上下文
+    context_parts.append(get_time_context())
+    # 返回注入文本 → Hermes 自动 prepend 到用户消息
+    return {"context": "\n".join(context_parts)} if context_parts else None
+
+def register(ctx):
+    ctx.register_hook("pre_llm_call", inject_context)
+```
+
+**这就是知惠人格化的完整架构**：
+
+```
+prefill.json    → 静态人格核心（「我是谁」「我怎么说话」）
+pre_llm_call    → 动态上下文引擎（SLM召回/时间/看板/人格提示）
+SKILL           → 深度档案（按需加载）
+SOUL.md         → 宪法（缓存不变）
+```
+
+### 5.5 下一步：应用此方法论审视知惠
 
 阿格莱雅演示了「资料 → 表达」的完整转换。接下来，我们用同一套方法论来审视知惠——
 
