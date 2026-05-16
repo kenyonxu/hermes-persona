@@ -52,7 +52,7 @@ def _load_guard_config() -> dict:
 # ---------------------------------------------------------------------------
 
 
-def check_tool_call(tool_name: str, tool_args: dict, **kwargs) -> dict | None:
+def check_tool_call(tool_name: str, args: dict, **kwargs) -> dict | None:
     """Check if a tool call should be blocked or requires confirmation.
 
     Called by Hermes runtime as a pre_tool_call hook.
@@ -109,7 +109,7 @@ def check_tool_call(tool_name: str, tool_args: dict, **kwargs) -> dict | None:
 # ---------------------------------------------------------------------------
 
 
-def audit_tool_call(tool_name: str, tool_args: dict, result, **kwargs) -> None:
+def audit_tool_call(tool_name: str, args: dict, result, **kwargs) -> None:
     """Record a tool-call audit entry.
 
     Called by Hermes runtime as a post_tool_call hook.
@@ -144,7 +144,7 @@ def audit_tool_call(tool_name: str, tool_args: dict, result, **kwargs) -> None:
         timestamp = datetime.now().isoformat()
 
         # Arg summary (truncate to 200 chars)
-        args_str = str(tool_args)
+        args_str = str(args)
         args_summary = args_str if len(args_str) <= 200 else args_str[:200]
 
         # Result summary (truncate to 200 chars)
