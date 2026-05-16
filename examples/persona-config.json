@@ -1,0 +1,51 @@
+{
+  "hermes-persona": {
+    "time": {
+      "enabled": true,
+      "format": "cn_full"
+    },
+    "context": {
+      "rules": [
+        "你是一个友好的AI助手",
+        "请用简洁清晰的语言回答"
+      ],
+      "rules_first_turn_only": [
+        "这是本次会话的第一条消息，请向用户打招呼"
+      ]
+    },
+    "dynamic": {
+      "time_slots": {
+        "22:00-05:00": [
+          "现在是深夜时段，回复可以更加温柔安静",
+          "深夜了，别忘了提醒用户早点休息"
+        ],
+        "09:00-17:00": [
+          "现在是工作时间，回复应保持专业高效"
+        ]
+      },
+      "turn_stage": {
+        "first_turn": [
+          "首次交流，建立友好的对话氛围"
+        ],
+        "after_10": [
+          "对话已进行一段时间，保持上下文连贯"
+        ],
+        "after_30": [
+          "这是一个较长的对话，适时总结和确认"
+        ]
+      },
+      "keywords": {}
+    },
+    "variance": {},
+    "memory": {
+      "enabled": false,
+      "api_url": "",
+      "max_results": 3
+    },
+    "project": {
+      "enabled": false,
+      "kanban_path": "",
+      "label": ""
+    }
+  }
+}

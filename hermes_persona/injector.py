@@ -1,0 +1,203 @@
+"""Persona context injector: config loading, time generation, rule assembly.
+
+Core module of hermes-persona. Provides the inject_context() entry point
+called by the Hermes runtime on every pre_llm_call hook.
+"""
+
+from __future__ import annotations
+
+import json
+import traceback
+from datetime import datetime
+from pathlib import Path
+
+from .dynamic_rules import _select_dynamic_rules
+from .variance import _randomize_variance
+
+# ---------------------------------------------------------------------------
+# Module-level variable set by __init__.py:register()
+# ---------------------------------------------------------------------------
+_CONFIG_ROOT: Path | None = None
+
+# ---------------------------------------------------------------------------
+# Config loading
+# ---------------------------------------------------------------------------
+
+
+def _load_config() -> dict:
+    """Load persona-config.json and return the "hermes-persona" sub-tree.
+
+    Returns {} on any failure (degraded minimal-viability mode).
+
+    Lookup order:
+        1. _CONFIG_ROOT / "persona-config.json"  (set by register())
+        2. Path(__file__).resolve().parents[3] / "persona-config.json"  (fallback)
+    """
+    if _CONFIG_ROOT is not None:
+        config_path = _CONFIG_ROOT / "persona-config.json"
+    else:
+        config_path = Path(__file__).resolve().parents[3] / "persona-config.json"
+
+    try:
+        if not config_path.is_file():
+            return {}
+        raw = config_path.read_text(encoding="utf-8")
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            return {}
+        return data.get("hermes-persona", {})
+    except (json.JSONDecodeError, OSError):
+        # Any parse or I/O error → degrade gracefully
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# Time context generation
+# ---------------------------------------------------------------------------
+
+_WEEKDAY_CN = ["一", "二", "三", "四", "五", "六", "日"]
+
+
+def _time_context(fmt: str = "cn_full") -> str:
+    """Generate a time-description string for the current moment.
+
+    Supported formats:
+        "cn_full"  → "🕐 2026年5月16日 周五 14:30"
+        "iso"      → "🕐 2026-05-16T14:30:00"
+        "compact"  → "🕐 05/16 14:30"
+    Unknown format falls back to "cn_full".
+    """
+    now = datetime.now()
+    if fmt == "iso":
+        return f"🕐 {now.isoformat()}"
+    elif fmt == "compact":
+        return f"🕐 {now.strftime('%m/%d %H:%M')}"
+    else:
+        # "cn_full" or unknown → Chinese full format
+        weekday = _WEEKDAY_CN[now.weekday()]
+        return f"🕐 {now.year}年{now.month}月{now.day}日 周{weekday} {now.strftime('%H:%M')}"
+
+
+# ---------------------------------------------------------------------------
+# Static rule injection
+# ---------------------------------------------------------------------------
+
+
+def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
+    """Extract static rules from context configuration.
+
+    - context.rules: injected every turn.
+    - context.rules_first_turn_only: injected only on the first turn.
+
+    Returns list of rule strings.
+    """
+    rules: list[str] = []
+    rules.extend(ctx_cfg.get("rules", []))
+    if is_first_turn:
+        rules.extend(ctx_cfg.get("rules_first_turn_only", []))
+    return rules
+
+
+# ---------------------------------------------------------------------------
+# Stub functions (P2 / P3)
+# ---------------------------------------------------------------------------
+
+
+def _recall_memories(user_message: str, mem_cfg: dict) -> str | None:
+    """P2 stub. Recall relevant memories from an external API.
+
+    Currently returns None. Full implementation deferred to P2-T3.
+    """
+    return None
+
+
+def _read_kanban(kanban_path: str, label: str) -> str | None:
+    """P3 stub. Read project kanban status from the filesystem.
+
+    Currently returns None. Full implementation deferred to P3-T1.
+    """
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Main entry point: inject_context()
+# ---------------------------------------------------------------------------
+
+
+def inject_context(
+    session_id: str,
+    user_message: str,
+    conversation_history: list[dict],
+    is_first_turn: bool,
+    model: str,
+    platform: str,
+    **kwargs,
+) -> dict | None:
+    """Assemble and return the full persona context for this turn.
+
+    Called by the Hermes runtime on every pre_llm_call hook.
+
+    Injection order (immutable, per spec D2):
+        1. Time context
+        2. Static rules (context.rules + rules_first_turn_only)
+        3. Dynamic rules (time slots + turn stages + keyword)
+        4. Random variance       (stub in P1)
+        5. Memory recall         (stub in P1)
+        6. Kanban status         (stub in P1, first-turn only)
+
+    Returns {"context": "<assembled string>"} or None when there is nothing
+    to inject.
+    """
+    try:
+        config = _load_config()
+        parts: list[str] = []
+
+        # 1. Time context
+        time_cfg = config.get("time", {})
+        if time_cfg.get("enabled", True) is not False:
+            fmt = time_cfg.get("format", "cn_full")
+            parts.append(_time_context(fmt))
+
+        # 2. Static rules
+        ctx_cfg = config.get("context", {})
+        parts.extend(_inject_static_rules(ctx_cfg, is_first_turn))
+
+        # 3. Dynamic rules
+        turn_count = len(conversation_history or []) // 2
+        dynamic_cfg = config.get("dynamic", {})
+        parts.extend(
+            _select_dynamic_rules(
+                dynamic_cfg,
+                user_message,
+                is_first_turn,
+                turn_count,
+            )
+        )
+
+        # 4. Random variance (P2 stub)
+        parts.extend(_randomize_variance(config.get("variance", {})))
+
+        # 5. Memory recall (P2 stub)
+        mem_cfg = config.get("memory", {})
+        memories = _recall_memories(user_message, mem_cfg)
+        if memories is not None:
+            parts.append(memories)
+
+        # 6. Kanban status (P3 stub, first-turn only)
+        if is_first_turn:
+            project_cfg = config.get("project", {})
+            if project_cfg.get("enabled"):
+                kanban = _read_kanban(
+                    project_cfg.get("kanban_path", ""),
+                    project_cfg.get("label", ""),
+                )
+                if kanban is not None:
+                    parts.append(kanban)
+
+        if not parts:
+            return None
+        return {"context": "\n\n".join(parts)}
+    except Exception:
+        # Never let persona injection block the agent's normal flow
+        traceback.print_exc()
+        return None

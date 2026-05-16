@@ -1,0 +1,10 @@
+name: hermes-persona
+version: 0.1.0
+description: Dynamic persona context injection engine for Hermes Agent
+author: Kai.Xu & Zhihui
+provides_hooks:
+  - pre_llm_call
+  - pre_tool_call       # P4
+  - post_tool_call      # P4
+provides_skills:
+  - persona-methodology

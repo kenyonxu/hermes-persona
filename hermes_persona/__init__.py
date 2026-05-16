@@ -1,0 +1,35 @@
+"""hermes-persona: Dynamic persona context injection engine for Hermes Agent.
+
+Usage:
+    from hermes_persona import register
+    register(ctx)  # ctx is a Hermes PluginContext
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from . import injector
+
+
+def register(ctx) -> None:
+    """Register the hermes-persona plugin with the Hermes runtime.
+
+    - Stores the profile directory path (ctx.profile_path) for config loading.
+    - Registers the pre_llm_call hook for persona context injection.
+    - P1 does not register pre_tool_call / post_tool_call hooks.
+
+    Args:
+        ctx: Hermes PluginContext with profile_path, register_hook, etc.
+    """
+    # Store profile path for config loading
+    if hasattr(ctx, "profile_path") and ctx.profile_path:
+        injector._CONFIG_ROOT = Path(ctx.profile_path)
+    # else: _CONFIG_ROOT stays None → _load_config() uses fallback path
+
+    # P1: only register pre_llm_call
+    ctx.register_hook("pre_llm_call", injector.inject_context)
+
+    # P4 will add:
+    # ctx.register_hook("pre_tool_call", guard.check_tool_call)
+    # ctx.register_hook("post_tool_call", guard.audit_tool_call)
