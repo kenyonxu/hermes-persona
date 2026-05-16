@@ -11,6 +11,7 @@ import hermes_persona.injector as injector
 from hermes_persona.injector import (
     _inject_static_rules,
     _load_config,
+    _recall_memories,
     _time_context,
     inject_context,
 )
@@ -223,3 +224,164 @@ class TestCodeGeneric:
             assert term not in content, (
                 f"Found role-specific term '{term}' in {py_file}"
             )
+
+
+# ── _recall_memories (P2) ────────────────────────────────────────────────
+
+
+class TestMemoryRecall:
+    def test_memory_disabled(self):
+        """memory.enabled=false → returns None."""
+        result = _recall_memories("hello", {"enabled": False})
+        assert result is None
+
+    def test_memory_no_api_url(self):
+        """enabled=True but no api_url → returns None."""
+        result = _recall_memories("hello", {"enabled": True})
+        assert result is None
+
+    def test_memory_recall_integration(self):
+        """memory.enabled=true + valid api_url → injects memory content."""
+        import httpx
+        from unittest import mock
+
+        mock_response = mock.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"results": ["记忆片段1", "记忆片段2"]}
+
+        with mock.patch.object(httpx, "post", return_value=mock_response):
+            result = _recall_memories("hello", {
+                "enabled": True,
+                "api_url": "http://example.com/memory",
+            })
+        assert result is not None
+        assert "📝 相关记忆:" in result
+        assert "- 记忆片段1" in result
+        assert "- 记忆片段2" in result
+
+    def test_memory_content_truncation(self):
+        """Results longer than 120 chars are truncated."""
+        import httpx
+        from unittest import mock
+
+        long_text = "A" * 200
+        mock_response = mock.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"results": [long_text]}
+
+        with mock.patch.object(httpx, "post", return_value=mock_response):
+            result = _recall_memories("hello", {
+                "enabled": True,
+                "api_url": "http://example.com/memory",
+            })
+        assert result is not None
+        # Verify truncation: "- AAAA...120 chars"
+        truncated = "A" * 120
+        assert f"- {truncated}" in result
+        # The original 200-char string must NOT appear in full
+        assert long_text not in result
+
+    def test_memory_api_error(self):
+        """Non-200 status code → returns None."""
+        import httpx
+        from unittest import mock
+
+        mock_response = mock.Mock()
+        mock_response.status_code = 500
+
+        with mock.patch.object(httpx, "post", return_value=mock_response):
+            result = _recall_memories("hello", {
+                "enabled": True,
+                "api_url": "http://example.com/memory",
+            })
+        assert result is None
+
+    def test_memory_empty_results(self):
+        """Empty results list → returns None."""
+        import httpx
+        from unittest import mock
+
+        mock_response = mock.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"results": []}
+
+        with mock.patch.object(httpx, "post", return_value=mock_response):
+            result = _recall_memories("hello", {
+                "enabled": True,
+                "api_url": "http://example.com/memory",
+            })
+        assert result is None
+
+    def test_memory_no_httpx(self):
+        """httpx not installed → returns None (graceful degradation)."""
+        import builtins
+
+        _original_import = builtins.__import__
+
+        def _mock_import(name, *args, **kwargs):
+            if name == "httpx":
+                raise ImportError(f"No module named '{name}'")
+            return _original_import(name, *args, **kwargs)
+
+        with patch.object(builtins, "__import__", side_effect=_mock_import):
+            result = _recall_memories("hello", {
+                "enabled": True,
+                "api_url": "http://example.com/memory",
+            })
+        assert result is None
+
+    def test_memory_network_timeout(self):
+        """Network timeout exception → returns None."""
+        import httpx
+        from unittest import mock
+
+        import httpx as httpx_mod
+
+        # httpx.TimeoutException may not exist in all versions; use a generic Exception
+        with mock.patch.object(httpx_mod, "post", side_effect=Exception("timeout")):
+            result = _recall_memories("hello", {
+                "enabled": True,
+                "api_url": "http://example.com/memory",
+            })
+        assert result is None
+
+
+# ── inject_context P2 integration ────────────────────────────────────────
+
+
+class TestInjectContextP2:
+    @patch("hermes_persona.injector._load_config")
+    def test_keyword_injection_in_context(self, mock_load, inject_context_defaults):
+        """Keyword matching injects rules into the full context."""
+        mock_load.return_value = {
+            "dynamic": {"keywords": {"bug": ["检测到异常"]}},
+        }
+        inject_context_defaults["user_message"] = "发现了一个bug"
+        result = inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "检测到异常" in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    @patch("hermes_persona.injector._recall_memories")
+    def test_memory_injection_in_context(self, mock_recall, mock_load, inject_context_defaults):
+        """Memory recall result is injected into the full context."""
+        mock_load.return_value = {
+            "memory": {"enabled": True, "api_url": "http://example.com"},
+        }
+        mock_recall.return_value = "📝 相关记忆:\n- 历史片段"
+        result = inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "历史片段" in result["context"]
+
+    @patch("hermes_persona.injector._load_config")
+    @patch("hermes_persona.injector._recall_memories")
+    def test_memory_none_not_injected(self, mock_recall, mock_load, inject_context_defaults):
+        """When memory recall returns None, it is not appended."""
+        mock_load.return_value = {
+            "memory": {"enabled": True, "api_url": "http://example.com"},
+        }
+        mock_recall.return_value = None
+        result = inject_context(**inject_context_defaults)
+        # Result may still have time context
+        if result is not None:
+            assert "📝 相关记忆" not in result["context"]

@@ -104,11 +104,46 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 
 
 def _recall_memories(user_message: str, mem_cfg: dict) -> str | None:
-    """P2 stub. Recall relevant memories from an external API.
+    """Recall relevant memories from an external memory API.
 
-    Currently returns None. Full implementation deferred to P2-T3.
+    Args:
+        user_message: The user's current message (used as query).
+        mem_cfg: Memory configuration dict with keys:
+            - enabled (bool): must be True.
+            - api_url (str): POST endpoint URL.
+            - max_results (int): max memories to fetch (default 3).
+
+    Returns:
+        Formatted memory string or None on any failure (graceful degradation).
     """
-    return None
+    if not mem_cfg.get("enabled") or not mem_cfg.get("api_url"):
+        return None
+
+    try:
+        import httpx
+    except ImportError:
+        return None
+
+    try:
+        api_url = mem_cfg["api_url"]
+        max_results = mem_cfg.get("max_results", 3)
+        resp = httpx.post(
+            api_url,
+            json={"query": user_message, "limit": max_results},
+            timeout=3,
+        )
+        if resp.status_code != 200:
+            return None
+
+        results = resp.json().get("results")
+        if not results:
+            return None
+
+        # Truncate each result to 120 chars and add bullet prefix
+        items = [f"- {str(r)[:120]}" for r in results]
+        return "📝 相关记忆:\n" + "\n".join(items)
+    except Exception:
+        return None
 
 
 def _read_kanban(kanban_path: str, label: str) -> str | None:

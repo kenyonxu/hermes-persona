@@ -7,6 +7,7 @@ import pytest
 
 from hermes_persona.dynamic_rules import (
     _in_time_range,
+    _match_keyword,
     _match_time_slot,
     _match_turn_stage,
     _select_dynamic_rules,
@@ -210,3 +211,87 @@ class TestSelectDynamicRules:
         }
         result = _select_dynamic_rules(dynamic_cfg, "hello", is_first_turn=True, turn_count=0)
         assert any("首次欢迎" in r for r in result)
+
+
+# ── _match_keyword (P2) ─────────────────────────────────────────────────
+
+
+class TestMatchKeyword:
+    def test_keyword_match(self):
+        """Message containing pattern returns matching rules."""
+        keywords = {"bug": ["检测到Bug，请检查"]}
+        result = _match_keyword(keywords, "系统出了个bug炸了")
+        assert result == ["💬 [bug] 检测到Bug，请检查"]
+
+    def test_keyword_first_match_wins(self):
+        """When two patterns both match, only the first is returned."""
+        keywords = {
+            "bug": ["规则A"],
+            "error": ["规则B"],
+        }
+        result = _match_keyword(keywords, "there is a bug and an error")
+        assert result == ["💬 [bug] 规则A"]
+
+    def test_keyword_empty_message(self):
+        """Empty user_message returns []."""
+        keywords = {"bug": ["规则"]}
+        result = _match_keyword(keywords, "")
+        assert result == []
+
+    def test_keyword_no_match(self):
+        """No pattern matches → returns []."""
+        keywords = {"bug": ["规则"]}
+        result = _match_keyword(keywords, "一切正常")
+        assert result == []
+
+    def test_keyword_regex_search(self):
+        """re.search is used, so substring matching works."""
+        keywords = {"坏了": ["故障规则"]}
+        # "坏了" is a substring of "系统坏了" → match
+        result = _match_keyword(keywords, "系统坏了")
+        assert result == ["💬 [坏了] 故障规则"]
+
+    def test_keyword_regex_special_chars(self):
+        """Regex special characters in pattern work correctly."""
+        keywords = {r"\bbug\b": ["单词匹配Bug"]}
+        # "bug" as a whole word
+        result = _match_keyword(keywords, "there is a bug here")
+        assert result == ["💬 [\\bbug\\b] 单词匹配Bug"]
+        # "debug" contains "bug" but not as a whole word
+        result2 = _match_keyword(keywords, "let us debug this")
+        assert result2 == []
+
+    def test_keyword_pattern_order(self):
+        """Config insertion order determines match priority."""
+        keywords = {
+            "first": ["第一规则"],
+            "second": ["第二规则"],
+        }
+        # Both match, but "first" comes first
+        result = _match_keyword(keywords, "first second")
+        assert result == ["💬 [first] 第一规则"]
+
+    def test_keyword_multiple_rules_per_pattern(self):
+        """A single pattern can have multiple rules."""
+        keywords = {"bug": ["规则1", "规则2"]}
+        result = _match_keyword(keywords, "发现一个bug")
+        assert len(result) == 2
+        assert "💬 [bug] 规则1" in result
+        assert "💬 [bug] 规则2" in result
+
+    def test_keyword_in_select_dynamic_rules(self):
+        """Keyword matching is wired into _select_dynamic_rules."""
+        from datetime import datetime
+
+        with patch("hermes_persona.dynamic_rules.datetime") as mock_dt:
+            mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
+            dynamic_cfg = {
+                "keywords": {"bug": ["检测到Bug"]},
+            }
+            result = _select_dynamic_rules(dynamic_cfg, "there is a bug", False, 0)
+            assert any("检测到Bug" in r for r in result)
+
+    def test_keyword_empty_keywords_config(self):
+        """Empty keywords config → no keyword rules."""
+        result = _match_keyword({}, "hello world")
+        assert result == []

@@ -1,8 +1,9 @@
 """Dynamic rule selection: time slots, turn stages, and keyword matching.
 
-P1 implements time_slots + turn_stage. Keyword matching is a stub for P2.
+P1 implements time_slots + turn_stage. P2 adds keyword matching.
 """
 
+import re
 from datetime import datetime
 
 
@@ -14,7 +15,7 @@ def _select_dynamic_rules(
 ) -> list[str]:
     """Select dynamic rules by time / turn-stage / keyword dimensions.
 
-    P1: time_slots + turn_stage. P2 adds keyword.
+    Injection order (per spec D2): time_slots → turn_stage → keyword.
     Returns list of rule strings for inject_context to concatenate.
     """
     rules: list[str] = []
@@ -22,7 +23,7 @@ def _select_dynamic_rules(
     rules.extend(
         _match_turn_stage(dynamic_cfg.get("turn_stage", {}), is_first_turn, turn_count)
     )
-    # rules.extend(_match_keyword(...))  # P2
+    rules.extend(_match_keyword(dynamic_cfg.get("keywords", {}), user_message))
     return rules
 
 
@@ -97,8 +98,22 @@ def _match_turn_stage(
 
 
 def _match_keyword(keywords: dict, user_message: str) -> list[str]:
-    """P2 stub. Match keywords in user message against configured patterns.
+    """Match user message against keyword regex patterns.
 
-    Currently returns [] — full implementation deferred to P2-T1.
+    Args:
+        keywords: {"pattern1": ["rule A", "rule B"], "pattern2": [...]}
+        user_message: The user's current message text.
+
+    Returns:
+        Prefixed rule strings like ["💬 [pattern] rule A", ...].
+        First-match-wins: stops at the first matching pattern.
+        Empty message or no match → [].
     """
+    if not user_message:
+        return []
+
+    for pattern, rules in keywords.items():
+        if re.search(pattern, user_message):
+            return [f"💬 [{pattern}] {r}" for r in rules]
+
     return []
