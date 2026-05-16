@@ -1,6 +1,6 @@
-# hermes-agent-guide — Agent 人格化设计指南
+# hermes-persona — Agent 人格化方法论与插件工程
 
-> 为 AI Agent 赋予灵魂的方法论与素材库。以《崩坏：星穹铁道》翁法罗斯十三黄金裔为例，展示如何将虚构角色的性格、说话风格、价值观转化为机器可读的 persona / prefill 配置。
+> 为 AI Agent 赋予灵魂的方法论、插件设计与实现。以 Hermes Agent 的 Plugin Hooks 为基础，构建通用人格注入引擎。
 
 ---
 
