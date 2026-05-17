@@ -79,11 +79,11 @@ cp hermes-persona/plugin.yaml ~/.hermes/plugins/00-hermes-persona/
 | 文档 | 内容 |
 |:---|:---|
 | [配置参考](docs/CONFIG_REFERENCE.md) | 完整配置项说明——类型、默认值、示例 |
-| [多角色示例](docs/EXAMPLES.md) | 3+ 个完整可用的 persona-config.json 示例 |
+| [多角色示例](docs/EXAMPLES.md) | 3 个完整可用的 persona-config.json 示例——黑猫 Luna / 代码审查员 / 通用助手 |
+| [阿格莱雅实战](docs/CASE_STUDY_AGLAEA.md) | 从星穹铁道 Lore 到五层人格槽位的完整转化教程 |
 | [插件设计](docs/hermes-persona-plugin-design.md) | 架构设计文档 |
+| [架构决策](DESIGN.md) | DESIGN.md：为什么这样设计 |
 | [动态规则注入](docs/dynamic-rules-injection-design.md) | 时间/轮数/关键词三维动态人格适配 |
-| [用户故事：知惠](docs/user-story-zhihui.md) | 方法论 + 知惠人格案例 |
-| [实施规格](specs/hermes-persona-spec.md) | v1.0 完整技术规格 |
 
 ## 常见问题
 
