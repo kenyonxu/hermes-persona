@@ -94,6 +94,12 @@ hermes plugins list | grep persona
 **Q: 配置文件放哪里？**
 A: 放在 Hermes profile 目录下，如 `~/.hermes/profiles/default/persona-config.json`。插件通过 `register(ctx)` 自动获取 `ctx.profile_path`。
 
+**Q: 安装后所有 profile 都生效吗？**
+A: 取决于安装命令执行时的上下文：
+- `hermes plugins install ... --enable`（不带 `-p`）→ 全局生效，所有 profile 共享
+- `hermes -p <name> plugins install ... --enable`（带 `-p`）→ 仅对指定 profile 生效
+查看当前生效范围：`cat ~/.hermes/config.yaml` 或 `cat ~/.hermes/profiles/<name>/config.yaml`，找到 `plugins:` → `enabled:` 列表。
+
 **Q: 最小配置是什么？**
 A: `{"hermes-persona": {}}`——空对象即可启用时间感知，零配置开销。
 
