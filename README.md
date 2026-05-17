@@ -18,9 +18,11 @@
 ### 1. 安装
 
 ```bash
-# 复制插件目录到 Hermes 插件路径
-cp -r hermes-persona/hermes_persona ~/.hermes/plugins/00-hermes-persona/
-cp hermes-persona/plugin.yaml ~/.hermes/plugins/00-hermes-persona/
+# 一行命令，从 GitHub 安装并启用
+hermes plugins install kenyonxu/hermes-persona --enable
+
+# 验证安装
+hermes plugins list | grep persona
 ```
 
 ### 2. 最小配置（5 分钟上手）
@@ -57,7 +59,9 @@ cp hermes-persona/plugin.yaml ~/.hermes/plugins/00-hermes-persona/
 
 ### 4. 验证
 
-重启 Hermes gateway 后，发送一条消息，Agent 的系统提示中将自动包含上述规则。
+安装并重启 Hermes gateway 后（仅首次需要），发送一条消息，Agent 的系统提示中将自动包含上述规则。
+
+> 💡 **热加载**：之后修改 `persona-config.json` 保存即生效，无需再次重启。
 
 ### 5. 进阶功能一览
 
