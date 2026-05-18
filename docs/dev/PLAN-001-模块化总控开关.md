@@ -3,8 +3,9 @@
 **文档编号:** PLAN-001
 **对应 US:** US-001
 **对应 SPEC:** SPEC-001
-**版本:** 1.0
+**版本:** 1.1
 **日期:** 2026-05-18
+**修订:** v1.1 新增 Debug Mode 实施步骤（对应 SPEC-001 v1.1 §2.5）
 **作者:** 知惠（Zhihui）
 **审阅:** Kai.Xu
 **状态:** 📋 待审阅
@@ -26,6 +27,7 @@
     - [Step 8: 更新 examples/persona-config.json](#step-8-更新-examplespersona-configjson)
     - [Step 9: 全量回归测试](#step-9-全量回归测试)
     - [Step 10: 更新 dynamic_rules.py 测试（可选补充）](#step-10-更新-dynamic_rulespy-测试可选补充)
+    - [Step 11: 实现 Debug Mode（v1.1 新增）](#step-11-实现-debug-modev11-新增)
 3. [风险点与回滚方案](#3-风险点与回滚方案)
 4. [验证检查清单](#4-验证检查清单)
 
@@ -46,7 +48,8 @@
 | Step 8 | 更新 examples/persona-config.json | 5 min |
 | Step 9 | 全量回归测试 | 10 min |
 | Step 10 | 补充测试 + 收尾 | 10 min |
-| **合计** | | **~2 小时** |
+| Step 11 | 实现 Debug Mode（_debug_summary + 辅助函数 + 测试） | 20 min |
+| **合计** | | **~2 小时 15 分钟** |
 
 ---
 
@@ -101,15 +104,16 @@ import hermes_persona.injector as injector
 
 | 测试类 | 对应 SPEC 测试组 | 用例数 | 说明 |
 |:---|:---|:---|:---|
-| `TestModuleRegistry` | — | 2 | 验证注册表结构和完整性 |
+| `TestModuleRegistry` | — | 2 | 验证注册表结构和完整性（含 debug 模块） |
 | `TestResolveModules` | §6.1.1 (RES-01~07) | 7 | `_resolve_modules()` 单元测试 |
 | `TestIsEnabled` | §6.1.2 (IS-01~06) | 6 | `_is_enabled()` 单元测试 |
 | `TestHasAnyDynamic` | §6.1.3 (DYN-01~05) | 5 | `_has_any_dynamic()` 单元测试 |
 | `TestModuleSwitchIntegration` | §6.1.4 (INT-01~15) | 15 | 每个模块 on/off 集成测试 |
+| `TestDebugMode` | §6.1.4 (INT-16~19) | 4 | Debug Mode 开关与摘要验证 |
 | `TestBackwardCompatibility` | §6.1.5 (BC-01~05) | 5 | 向后兼容集成测试 |
 | `TestEdgeCases` | §6.1.6 (EDGE-01~04) | 4 | 边界测试 |
 
-**共 ~44 个测试用例。**
+**共 ~48 个测试用例。**
 
 #### 1.3 关键测试实现要点
 
@@ -117,9 +121,9 @@ import hermes_persona.injector as injector
 ```python
 class TestModuleRegistry:
     def test_all_expected_modules_registered(self):
-        """_MODULE_REGISTRY 必须包含 6 个模块键。"""
+        """_MODULE_REGISTRY 必须包含 7 个模块键（含 debug）。"""
         registry = injector._MODULE_REGISTRY
-        expected_keys = {"time", "static_rules", "dynamic", "variance", "memory", "kanban"}
+        expected_keys = {"time", "static_rules", "dynamic", "variance", "memory", "kanban", "debug"}
         assert set(registry.keys()) == expected_keys
 
     def test_each_module_has_required_fields(self):
@@ -189,6 +193,26 @@ class TestModuleSwitchIntegration:
         ...
 ```
 
+**`TestDebugMode` — 关键用例（v1.1 新增）：**
+```python
+class TestDebugMode:
+    def test_debug_disabled_no_summary(self):
+        """modules.debug=false（默认）→ context 中不含 🔧 [Debug]。"""
+        ...
+
+    def test_debug_enabled_appends_summary(self):
+        """modules.debug=true → context 末尾含 🔧 [Debug] 本轮注入:，且包含①~⑥行。"""
+        ...
+
+    def test_debug_only_all_modules_off_returns_none(self):
+        """全部模块关闭，仅 debug 开启 → 返回 None（debug 摘要不参与空判断）。"""
+        ...
+
+    def test_debug_memory_disabled_shows_stopped(self):
+        """debug=true, memory=false → 摘要中 memory 行显示 🧠 已停用。"""
+        ...
+```
+
 **`TestBackwardCompatibility` — 关键用例：**
 ```python
 class TestBackwardCompatibility:
@@ -215,7 +239,7 @@ class TestBackwardCompatibility:
 ```bash
 # 创建测试文件
 touch tests/test_modules_switch.py
-# 写入所有 44 个测试用例
+# 写入所有 48 个测试用例
 
 # 验证测试文件可以被 pytest 发现（预期全部 FAIL）
 python -m pytest tests/test_modules_switch.py -v
@@ -286,6 +310,13 @@ _MODULE_REGISTRY: dict[str, dict] = {
         "phase": 6,
         "legacy_key": "project",
         "legacy_path": ("project", "enabled"),
+    },
+    "debug": {
+        "description": "Debug Mode — 在注入上下文末尾追加人类可读的注入摘要",
+        "default": False,
+        "phase": 7,
+        "legacy_key": None,
+        "legacy_path": None,
     },
 }
 ```
@@ -555,12 +586,35 @@ if is_first_turn and _is_enabled(modules, "kanban"):
         parts.append(kanban)
 ```
 
+#### 6.8 Step ⑦ Debug — 末尾追加摘要 + 空判断修正（v1.1 新增）
+
+```python
+# 在步骤⑥ kanban 之后、return 之前插入:
+
+# 记录非 debug 内容的数量（用于空判断）
+non_debug_count = len(parts)
+
+# ⑦ Debug summary（不参与空判断，默认关闭）
+if _is_enabled(modules, "debug"):
+    parts.append(_debug_summary(modules, parts))
+
+# 空判断基于非 debug 内容（debug 摘要不参与）
+if non_debug_count == 0:
+    return None
+return {"context": "\n\n".join(parts)}
+```
+
+**关键设计点：**
+- `non_debug_count = len(parts)` 在 debug 注入前记录，确保 debug 摘要不参与空判断。
+- 若所有模块关闭仅 debug 开启 → `non_debug_count == 0` → 返回 `None`（符合 SPEC §2.5.4）。
+- 若正常模块有注入 + debug 开启 → context 末尾追加摘要。
+
 **验证标准：**
 ```bash
 python -m pytest tests/test_modules_switch.py::TestModuleSwitchIntegration -v
+python -m pytest tests/test_modules_switch.py::TestDebugMode -v
 python -m pytest tests/test_modules_switch.py::TestBackwardCompatibility -v
-# 期望: 15 + 5 = 20 passed
-```
+# 期望: 15 + 4 + 5 = 24 passed
 
 ---
 
@@ -658,7 +712,8 @@ python -m pytest tests/test_modules_switch.py -v -k "dynamic"
   },
   "variance": true,
   "memory": false,
-  "kanban": true
+  "kanban": true,
+  "debug": false
 },
 ```
 
@@ -686,7 +741,7 @@ python -m pytest tests/ -v
 # - tests/test_dynamic_rules.py 全部 PASSED
 # - tests/test_variance.py     全部 PASSED（如存在）
 # - tests/test_guard.py        全部 PASSED（如存在）
-# - tests/test_modules_switch.py 全部 ~44 PASSED
+# - tests/test_modules_switch.py 全部 ~48 PASSED
 ```
 
 **验证标准：**
@@ -724,6 +779,165 @@ def test_dynamic_with_modules_none_backward_compat(self):
 
 ---
 
+### Step 11: 实现 Debug Mode（v1.1 新增）
+
+**目标：** 实现 Debug Mode 的 `_debug_summary()` 函数 + 四个辅助函数，修改 `inject_context()` 末尾追加 debug 摘要，补充 INT-16~19 测试用例。
+
+**预计时间：** ~20 min
+
+---
+
+#### 11a: 实现 `_debug_summary()` + 四个辅助函数
+
+**文件：** `hermes_persona/injector.py`
+
+**位置：** 在 `_has_any_dynamic()` 之后（Step 5 之后）、`inject_context()` 之前
+
+**改动内容：** 新增 5 个私有函数（~70 行）
+
+**1) `_debug_summary(modules: dict, parts: list[str]) -> str`** — 主函数
+
+```python
+def _debug_summary(modules: dict, parts: list[str]) -> str:
+    """基于 modules 状态和 parts 内容，生成人类可读的注入摘要。
+
+    输出格式（每行一个模块的状态）：
+        🔧 [Debug] 本轮注入:
+          ① 🕐 时间已注入 / 已停用
+          ② 📜 N条静态规则 / 已停用
+          ③ ⚡ time_slots: on / turn_stage: on → after_30 / keyword: off
+          ④ 🎲 fox_ears: on / fox_tail: off / metaphor: off
+          ⑤ 🧠 已注入 / 已停用
+          ⑥ 📋 Ace Music: P0 / Clef: P0 / ...（前2条摘要）
+    """
+    lines = ["🔧 [Debug] 本轮注入:"]
+
+    # ① Time
+    if _is_enabled(modules, "time"):
+        lines.append("  ① 🕐 时间已注入")
+    else:
+        lines.append("  ① 🕐 已停用")
+
+    # ② Static rules — 统计 parts 中规则行数
+    if _is_enabled(modules, "static_rules"):
+        rule_count = _count_static_rules_in_parts(parts)
+        lines.append(f"  ② 📜 {rule_count}条静态规则")
+    else:
+        lines.append("  ② 📜 已停用")
+
+    # ③ Dynamic — 子通道状态
+    if _is_enabled(modules, "dynamic"):
+        dyn = modules.get("dynamic", {})
+        sub_status = _fmt_dynamic_sub_status(dyn)
+        lines.append(f"  ③ ⚡ {sub_status}")
+    else:
+        lines.append("  ③ ⚡ 已停用")
+
+    # ④ Variance — 逐分类状态
+    if _is_enabled(modules, "variance"):
+        var_status = _fmt_variance_status(parts)
+        lines.append(f"  ④ 🎲 {var_status}")
+    else:
+        lines.append("  ④ 🎲 已停用")
+
+    # ⑤ Memory
+    if _is_enabled(modules, "memory"):
+        lines.append("  ⑤ 🧠 已注入")
+    else:
+        lines.append("  ⑤ 🧠 已停用")
+
+    # ⑥ Kanban
+    if _is_enabled(modules, "kanban"):
+        kanban_status = _fmt_kanban_debug(parts)
+        lines.append(f"  ⑥ 📋 {kanban_status}")
+    else:
+        lines.append("  ⑥ 📋 已停用")
+
+    return "\n".join(lines)
+```
+
+**2) 四个辅助函数：**
+
+| 函数 | 职责 | 实现要点 |
+|:---|:---|:---|
+| `_count_static_rules_in_parts(parts)` | 统计 parts 中由 `_inject_static_rules()` 产生的条目数 | 遍历 parts，计数非空且非 emoji 标记的行（规则行不含 emoji 前缀） |
+| `_fmt_dynamic_sub_status(dyn_dict)` | 格式化子通道状态字符串 | 输出如 `"time_slots: on / turn_stage: on → after_30 / keyword: off"`；若 dyn 为 bool 则直接显示 on/off |
+| `_fmt_variance_status(parts)` | 从 parts 中提取实际注入的 variance 分类 | 解析 variance 输出行（如 `🦊 狐狸耳朵微微动了动`），提取分类名并格式化开关状态 |
+| `_fmt_kanban_debug(parts)` | 从 parts 中提取看板条目并截取前 2 条显示摘要 | 找到 kanban 输出块（以 `📋` 开头的行），提取项目名和状态，截取前 2 条 |
+
+**关键设计约束：**
+- 所有辅助函数是纯函数，不访问文件系统或网络。
+- 辅助函数不抛异常——任何解析失败返回降级字符串（如 `"on"` / `"off"` / `"无数据"`）。
+- `_debug_summary()` 本身不修改 `parts`——只读取。
+
+**验证标准：**
+```bash
+# 此时 _debug_summary 尚未被 inject_context 调用，需通过单独导入验证函数存在
+python -c "from hermes_persona.injector import _debug_summary, _count_static_rules_in_parts, _fmt_dynamic_sub_status, _fmt_variance_status, _fmt_kanban_debug; print('OK')"
+# 期望: OK（无 ImportError）
+```
+
+---
+
+#### 11b: 修改 `inject_context()` 末尾追加 debug 摘要 + 空判断修正
+
+**目标：** 在 `inject_context()` 中所有注入步骤完成后，根据 `modules.debug` 决定是否追加 debug 摘要。同时修正空判断逻辑——debug 摘要不参与 parts 是否为空的判断。
+
+**文件：** `hermes_persona/injector.py`
+
+**改动内容：** 修改 `inject_context()` 末尾（已在 Step 6.8 中预埋了伪代码，此步骤实现之）
+
+```python
+# 在步骤⑥ kanban 之后、现有 return 之前：
+
+# 记录非 debug 内容的数量（用于空判断）
+non_debug_count = len(parts)
+
+# ⑦ Debug summary（不参与空判断，默认关闭）
+if _is_enabled(modules, "debug"):
+    parts.append(_debug_summary(modules, parts))
+
+# 空判断基于非 debug 内容
+if non_debug_count == 0:
+    return None
+return {"context": "\n\n".join(parts)}
+```
+
+**注意：** Step 6.8 已规划了此处的伪代码结构，本步骤实现确切逻辑。原有 `if not parts: return None` 已被替换为 `if non_debug_count == 0: return None`。
+
+**验证标准：**
+```bash
+python -m pytest tests/test_modules_switch.py::TestDebugMode -v
+# 期望: 4 passed（INT-16~19）
+```
+
+---
+
+#### 11c: 补充 debug 测试用例（INT-16 ~ INT-19）
+
+**目标：** 确认 Step 1 中预写的 4 个 `TestDebugMode` 测试用例全部通过。
+
+**操作：**
+```bash
+# 运行 debug 专项测试
+python -m pytest tests/test_modules_switch.py::TestDebugMode -v
+```
+
+**4 个用例清单：**
+
+| TC-ID | 用例 | 验证 |
+|:---|:---|:---|
+| INT-16 | debug 关闭无摘要（默认） | `"debug": False` → context 不含 `"🔧 [Debug]"` |
+| INT-17 | debug 开启追加摘要 | `"debug": True`，部分模块开启 → context 末尾含 `"🔧 [Debug] 本轮注入:"`，且包含各模块状态行（①~⑥） |
+| INT-18 | 全部模块关闭，仅 debug 开启 | 所有模块 off，`"debug": True` → 返回 `None`（debug 摘要不参与空判断） |
+| INT-19 | debug 开启且记忆关闭 | `"debug": True`, `"memory": False` → 摘要中 memory 行显示 `"🧠 已停用"` |
+
+**验证标准：**
+- INT-16~19 全部 PASSED
+- 全量回归无影响（运行 `python -m pytest tests/ -v` 确认）
+
+---
+
 ## 3. 风险点与回滚方案
 
 ### 3.1 风险矩阵
@@ -735,6 +949,8 @@ def test_dynamic_with_modules_none_backward_compat(self):
 | `_is_enabled` 对 dict 类型的处理不当 | 低 | 低 | `isinstance(val, dict)` 提前拦截，视为 True |
 | memory 两层防护导致行为不一致 | 低 | 低 | `modules.memory=false` 跳过整块，`modules.memory=true` 时内部 `_recall_memories` 仍检查 `enabled` |
 | 全部模块关闭后 `inject_context` 返回 None 的影响 | 低 | 低 | Hook 框架已处理 `None` 返回值；EDGE-04 测试覆盖 |
+| Debug 摘要参与空判断 → 仅 debug 开启时错误返回有效 context | 中 | 中 | `non_debug_count` 在 debug 注入前记录；INT-18 专门测试此边界 |
+| Debug 辅助函数解析 parts 失败抛异常 | 低 | 低 | 所有辅助函数内部 try/except，降级返回字符串；不影响正常注入 |
 
 ### 3.2 回滚方案
 
@@ -749,8 +965,9 @@ def test_dynamic_with_modules_none_backward_compat(self):
 **关键安全边界：**
 - `guard.py` 完全未触碰
 - `__init__.py` 中的 Hook 注册逻辑不变
-- 注入顺序（Step ①~⑥）不变
+- 注入顺序（Step ①~⑥）不变，Step ⑦ debug 追加只读不修改已有 parts
 - `inject_context()` 外层 `try/except` 不变
+- Debug 辅助函数均为纯函数，fail-open，解析失败降级返回字符串
 
 ---
 
@@ -761,7 +978,8 @@ def test_dynamic_with_modules_none_backward_compat(self):
 ### 4.1 自动化测试
 
 - [ ] `python -m pytest tests/ -v` — 全部 PASSED，0 failure
-- [ ] 新测试 `test_modules_switch.py` — ~44 个用例全部 PASSED
+- [ ] 新测试 `test_modules_switch.py` — ~48 个用例全部 PASSED
+- [ ] Debug 测试 `TestDebugMode` — INT-16~19 全部 PASSED
 - [ ] 现有测试 `test_injector.py` — 全部 PASSED（无回归）
 - [ ] 现有测试 `test_dynamic_rules.py` — 全部 PASSED（无回归）
 
@@ -777,15 +995,22 @@ def test_dynamic_with_modules_none_backward_compat(self):
 - [ ] 关闭 memory → `_recall_memories` 不被调用
 - [ ] 关闭 kanban → 首轮也不注入看板
 - [ ] 全部关闭 → `inject_context` 返回 None（不崩溃）
+- [ ] **Debug 关闭（默认）→ context 中无 `🔧 [Debug]` 字样**
+- [ ] **Debug 开启 → context 末尾含 `🔧 [Debug] 本轮注入:` + ①~⑥ 行**
+- [ ] **全部模块关闭 + debug 开启 → 返回 None（debug 摘要不参与空判断）**
+- [ ] **Debug 摘要中各模块状态与实际 modules 开关一致**
 
 ### 4.3 代码审查
 
-- [ ] `_MODULE_REGISTRY` 的 `default` 值符合 SPEC §2.1 设计决策
+- [ ] `_MODULE_REGISTRY` 的 `default` 值符合 SPEC §2.1 设计决策（含 `debug.default = False`）
 - [ ] `_resolve_modules()` 异常时返回 `{}`（fail-open）
 - [ ] `_is_enabled()` 未知 key 返回 True（fail-open）
 - [ ] `_select_dynamic_rules()` 的 `modules=None` 条件确保向后兼容
-- [ ] `inject_context()` 注入顺序不变（①→⑥）
+- [ ] `inject_context()` 注入顺序不变（①→⑥），debug 在最后追加（⑦）
+- [ ] `_debug_summary()` 为纯函数，不修改 `parts`，不访问 I/O
+- [ ] `non_debug_count` 在 debug 注入前记录，空判断基于此值（非 `len(parts)`）
+- [ ] 四个 debug 辅助函数均有 try/except 降级保护，解析失败不抛异常
 
 ---
 
-*🦊 知惠 · 2026-05-18 · PLAN-001 初稿 · 等待主人审阅*
+*🦊 知惠 · 2026-05-18 · PLAN-001 v1.1（新增 Debug Mode 实施步骤）· 等待主人审阅*
