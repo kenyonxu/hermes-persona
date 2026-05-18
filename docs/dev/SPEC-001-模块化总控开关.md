@@ -2,11 +2,12 @@
 
 **文档编号:** SPEC-001
 **对应 US:** US-001
-**版本:** 1.0
+**版本:** 1.1
 **日期:** 2026-05-18
+**修订:** v1.1 新增 Debug Mode（AC-6）
 **作者:** 知惠（Zhihui）
 **审阅:** Kai.Xu
-**状态:** 📋 待审批
+**状态:** 📋 待审阅
 
 ---
 
@@ -50,6 +51,7 @@
 | `variance` | `_randomize_variance()` | ❌ 无 | ④ Variance |
 | `memory` | `_recall_memories()` | `memory.enabled` ✅ | ⑤ Memory |
 | `kanban` | `_read_kanban()` | `project.enabled` ✅ | ⑥ Kanban |
+| `debug` | `_debug_summary()` | ❌ 无 | ⑦ Debug |
 
 ---
 
@@ -104,6 +106,13 @@ _MODULE_REGISTRY: dict[str, dict] = {
         "legacy_key": "project",
         "legacy_path": ("project", "enabled"),
     },
+    "debug": {
+        "description": "Debug Mode — 在注入上下文末尾追加人类可读的注入摘要，帮助运维者快速定位问题",
+        "default": False,
+        "phase": 7,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
 }
 ```
 
@@ -113,6 +122,7 @@ _MODULE_REGISTRY: dict[str, dict] = {
   - `time`、`static_rules`、`dynamic`、`variance` 当前总是运行 → default `True`
   - `memory` 当前 `enabled: false` → default `False`
   - `kanban` 当前 `enabled: false` → default `False`
+  - `debug` 默认关闭，对用户透明 → default `False`
 - `legacy_key` 指向旧格式中对应章节点（`config["time"]`、`config["memory"]`、`config["project"]`）的键名。
 - `static_rules`、`dynamic`、`variance` 在旧格式中无开关，`legacy_key` 为 `None`，此时 `_is_enabled()` 返回其 `default` 值。
 
@@ -138,7 +148,10 @@ inject_context() 被调用
         │     └─ 若 dynamic.keyword 为 False → _match_keyword() 不调用
         ├─ 步骤 ④ _is_enabled(modules, "variance") → False → 跳过
         ├─ 步骤 ⑤ _is_enabled(modules, "memory") → False → 跳过
-        └─ 步骤 ⑥ _is_enabled(modules, "kanban") → False → 跳过
+        ├─ 步骤 ⑥ _is_enabled(modules, "kanban") → False → 跳过
+        └─ 步骤 ⑦ _is_enabled(modules, "debug") → True → 调用 _debug_summary()
+               │                                   将摘要追加到 parts 末尾
+               └─ → False → 跳过（默认行为）
 ```
 
 ### 2.3 动态规则子通道控制
@@ -182,6 +195,151 @@ def _select_dynamic_rules(
 - 子通道键名：继承父模块的 `snake_case`（如 `dynamic.time_slots`）
 - 与注入函数名保持语义对应，但不要求完全相同
 
+### 2.5 Debug Mode（v1.1 新增）
+
+Debug Mode 是一个特殊的「只读观察」模块——它不产生注入内容，而是在所有正常注入步骤完成后，将本轮注入情况以人类可读的摘要形式追加到 `parts` 末尾。
+
+#### 2.5.1 设计原则
+
+- **只读观察**：debug 不改变任何注入步骤的行为，仅报告「发生了什么」。
+- **默认关闭**：`modules.debug` 默认为 `false`，对终端用户完全透明。
+- **追加而非替代**：debug 摘要是 `parts.append()`，不是替换 `parts`。
+- **零额外 I/O**：`_debug_summary()` 是纯函数，不访问文件系统或网络。
+
+#### 2.5.2 `_debug_summary()` 函数规格
+
+```python
+def _debug_summary(modules: dict, parts: list[str]) -> str:
+    """基于 modules 状态和 parts 内容，生成人类可读的注入摘要。
+
+    Args:
+        modules: _resolve_modules() 返回的开关字典。
+        parts:   inject_context() 中已收集的注入片段列表。
+
+    Returns:
+        str: 格式化的 debug 摘要字符串，追加到 context 末尾。
+
+    输出格式示例：
+        🔧 [Debug] 本轮注入:
+          ① 🕐 时间已注入
+          ② 📜 7条静态规则
+          ③ ⚡ time_slots: on / turn_stage: on → after_30 / keyword: off
+          ④ 🎲 fox_ears: off / fox_tail: on / metaphor: off
+          ⑤ 🧠 已停用
+          ⑥ 📋 Ace Music: P0 / Clef: P0 / ...
+    """
+```
+
+**输出格式规范：**
+
+| 行 | 模块 | 内容来源 | 逻辑 |
+|:---|:---|:---|:---|
+| ① | time | `modules["time"]` | `True` → `"🕐 时间已注入"` / `False` → `"🕐 已停用"` |
+| ② | static_rules | `len(parts)` 中 static_rules 贡献的行数 | `True` → `"📜 N条静态规则"` / `False` → `"📜 已停用"` |
+| ③ | dynamic | `modules["dynamic"]` 子通道 | 逐子通道显示 on/off；若 `turn_stage` 为 on 且匹配到阶段名，追加 `→ after_30` |
+| ④ | variance | `modules["variance"]` + parts 中 variance 内容 | 逐分类显示 on/off（如 `fox_ears: on` / `fox_tail: off`） |
+| ⑤ | memory | `modules["memory"]` | `True` → `"🧠 已注入"` / `False` → `"🧠 已停用"` |
+| ⑥ | kanban | `modules["kanban"]` + parts 中 kanban 内容 | `True` → 显示前 2 个看板条目摘要 / `False` → `"📋 已停用"` |
+
+**实现伪代码：**
+
+```python
+def _debug_summary(modules: dict, parts: list[str]) -> str:
+    lines = ["🔧 [Debug] 本轮注入:"]
+
+    # ① Time
+    if _is_enabled(modules, "time"):
+        lines.append("  ① 🕐 时间已注入")
+    else:
+        lines.append("  ① 🕐 已停用")
+
+    # ② Static rules — 统计 parts 中规则行数
+    if _is_enabled(modules, "static_rules"):
+        rule_count = _count_static_rules_in_parts(parts)
+        lines.append(f"  ② 📜 {rule_count}条静态规则")
+    else:
+        lines.append("  ② 📜 已停用")
+
+    # ③ Dynamic — 子通道状态
+    if _is_enabled(modules, "dynamic"):
+        dyn = modules.get("dynamic", {})
+        sub_status = _fmt_dynamic_sub_status(dyn)
+        lines.append(f"  ③ ⚡ {sub_status}")
+    else:
+        lines.append("  ③ ⚡ 已停用")
+
+    # ④ Variance — 逐分类状态
+    if _is_enabled(modules, "variance"):
+        var_status = _fmt_variance_status(parts)
+        lines.append(f"  ④ 🎲 {var_status}")
+    else:
+        lines.append("  ④ 🎲 已停用")
+
+    # ⑤ Memory
+    if _is_enabled(modules, "memory"):
+        lines.append("  ⑤ 🧠 已注入")
+    else:
+        lines.append("  ⑤ 🧠 已停用")
+
+    # ⑥ Kanban
+    if _is_enabled(modules, "kanban"):
+        kanban_status = _fmt_kanban_debug(parts)
+        lines.append(f"  ⑥ 📋 {kanban_status}")
+    else:
+        lines.append("  ⑥ 📋 已停用")
+
+    return "\n".join(lines)
+```
+
+**辅助函数：**
+
+| 函数 | 职责 |
+|:---|:---|
+| `_count_static_rules_in_parts(parts)` | 统计 parts 中由 `_inject_static_rules()` 产生的行数 |
+| `_fmt_dynamic_sub_status(dyn_dict)` | 格式化子通道状态字符串，如 `"time_slots: on / turn_stage: on → after_30 / keyword: off"` |
+| `_fmt_variance_status(parts)` | 从 parts 中提取实际注入的 variance 分类，格式化开关状态 |
+| `_fmt_kanban_debug(parts)` | 从 parts 中提取看板条目并截取前 2 条显示摘要 |
+
+#### 2.5.3 Debug 注入位置
+
+Debug 摘要是 `inject_context()` 的**最后一步**，在所有注入模块完成之后、`parts` 拼接之前执行：
+
+```
+inject_context() 流程:
+  ① _time_context()          → parts.append(...)
+  ② _inject_static_rules()   → parts.extend(...)
+  ③ _select_dynamic_rules()  → parts.extend(...)
+  ④ _randomize_variance()    → parts.extend(...)
+  ⑤ _recall_memories()       → parts.append(...)
+  ⑥ _read_kanban()           → parts.append(...)
+  ⑦ if debug:                → parts.append(_debug_summary(modules, parts))
+  
+  return {"context": "\n\n".join(parts)}
+```
+
+**重要约束：**
+- Debug 摘要的生成不修改 `parts` 中已有内容——它只追加新元素。
+- Debug 摘要的格式不受正常注入内容的影响——即使 parts 为空，debug 摘要仍按 modules 状态生成。
+- Debug 摘要本身不计入正常注入内容——后续逻辑（如 `if not parts: return None`）需调整：debug 摘要不参与 `parts` 是否为空的判断。
+
+#### 2.5.4 Debug 不参与空判断的修正
+
+原有逻辑 `if not parts: return None` 需改为仅基于非 debug 内容判断：
+
+```python
+# 注入步骤 ①~⑥...
+non_debug_count = len(parts)
+
+# ⑦ Debug（不参与空判断）
+if _is_enabled(modules, "debug"):
+    parts.append(_debug_summary(modules, parts))
+
+# 空判断基于非 debug 内容
+if non_debug_count == 0:
+    return None
+return {"context": "\n\n".join(parts)}
+```
+
 ---
 
 ## 3. 数据结构设计
@@ -201,7 +359,8 @@ def _select_dynamic_rules(
       },
       "variance": true,
       "memory": false,
-      "kanban": true
+      "kanban": true,
+      "debug": false
     },
 
     "time": { "enabled": true, "format": "cn_full" },
@@ -327,6 +486,10 @@ def _has_any_dynamic(modules: dict) -> bool:
 | 4.1.10 | 步骤⑤ Memory — 包裹 `_is_enabled()` | 修改 | `if _is_enabled(modules, "memory"):` 替换现有的内联 `mem_cfg.get("enabled")` 检查 |
 | 4.1.11 | 步骤⑥ Kanban — 包裹 `_is_enabled()` | 修改 | `if is_first_turn and _is_enabled(modules, "kanban"):` 替换现有的 `if is_first_turn:` + `project_cfg.get("enabled")` |
 | 4.1.12 | 公开 API 导出（可选） | 修改 | `__init__.py` 已通过 `from . import injector` 导出 |
+| 4.1.13 | 新增 `_debug_summary()` 函数 | 新增 | 见 §2.5.2 伪代码。纯函数，输入 modules + parts，输出格式化摘要字符串 |
+| 4.1.14 | 新增 Debug 辅助函数 | 新增 | `_count_static_rules_in_parts()`、`_fmt_dynamic_sub_status()`、`_fmt_variance_status()`、`_fmt_kanban_debug()` 四个私有函数，见 §2.5.2 |
+| 4.1.15 | `inject_context()` — 末尾追加 Debug 摘要 | 修改 | 在 return 之前，若 `_is_enabled(modules, "debug")` 则 `parts.append(_debug_summary(modules, parts))`；空判断基于非 debug 内容计数 |
+| 4.1.16 | `inject_context()` — 空判断逻辑修正 | 修改 | 在步骤①之前记录 `non_debug_count`；最终 `if non_debug_count == 0: return None`，防止仅含 debug 摘要时返回有效值 |
 
 **`inject_context()` 改动后的核心结构（伪代码）：**
 
@@ -381,7 +544,14 @@ def inject_context(session_id, user_message, conversation_history,
             if kanban is not None:
                 parts.append(kanban)
 
-        if not parts:
+        # 记录非 debug 内容的数量（用于空判断）
+        non_debug_count = len(parts)
+
+        # ⑦ Debug summary（不参与空判断，默认关闭）
+        if _is_enabled(modules, "debug"):                     # ← 新增守卫
+            parts.append(_debug_summary(modules, parts))
+
+        if non_debug_count == 0:                              # ← 改为基于非 debug 内容
             return None
         return {"context": "\n\n".join(parts)}
     except Exception:
@@ -575,6 +745,10 @@ return synthesized
 | INT-13 | `kanban` | 关闭后不注入 | `is_first_turn=True`, `"kanban": False` → 断言不含看板内容 |
 | INT-14 | `kanban` | 开启后正常注入 | `is_first_turn=True`, `"kanban": True` → 含看板内容 |
 | INT-15 | `kanban` | 非首轮，开启也不注入 | `is_first_turn=False`, `"kanban": True` → 断言不含看板内容 |
+| INT-16 | `debug` | 关闭后无摘要（默认） | `"debug": False` → 断言 context 中不含 `"🔧 [Debug]"` |
+| INT-17 | `debug` | 开启后追加摘要 | `"debug": True`，部分模块开启 → 断言 context 末尾含 `"🔧 [Debug] 本轮注入:"`，且包含各模块状态行（①~⑥） |
+| INT-18 | `debug` | 全部模块关闭，仅 debug 开启 | 所有模块 off，`"debug": True` → 断言返回 `None`（debug 摘要不参与空判断） |
+| INT-19 | `debug` | 开启且记忆关闭 | `"debug": True`, `"memory": False` → 断言摘要中 memory 行显示 `"🧠 已停用"` |
 
 #### 6.1.5 向后兼容集成测试
 
@@ -741,4 +915,4 @@ def _resolve_modules(config: dict) -> dict:
 
 ---
 
-*🦊 知惠 · 2026-05-18 · SPEC-001 初稿 · 等待主人审阅*
+*🦊 知惠 · 2026-05-18 · SPEC-001 v1.1（新增 Debug Mode）· 等待主人审阅*
