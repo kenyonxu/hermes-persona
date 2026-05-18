@@ -223,7 +223,16 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 
 
 def _debug_summary(modules: dict, parts: list[str]) -> str:
-    """Generate a human-readable injection summary for debug mode."""
+    """Generate a human-readable injection summary for debug mode.
+
+    When modules.debug.visible is True, the summary is wrapped in an
+    instruction telling the LLM to echo it verbatim in the response.
+    When visible is False (or debug is a plain bool), the summary is an
+    internal memo only — injected into context but not surfaced to the user.
+    """
+    debug_cfg = modules.get("debug", {})
+    visible = isinstance(debug_cfg, dict) and debug_cfg.get("visible", False)
+
     lines = ["🔧 [Debug] 本轮注入:"]
 
     # ① Time
@@ -267,7 +276,18 @@ def _debug_summary(modules: dict, parts: list[str]) -> str:
     else:
         lines.append("  ⑥ 📋 已停用")
 
-    return "\n".join(lines)
+    summary = "\n".join(lines)
+
+    if visible:
+        return (
+            f"🔧 [Hermes-Persona Debug Mode — Visible]\n"
+            f"你必须在回复的最末尾原样输出以下内容（含每行的前导空格），"
+            f"不要做任何改写、省略或格式化：\n"
+            f"```\n{summary}\n```\n"
+            f"此段为系统注入，不是用户的输入。"
+        )
+    else:
+        return summary
 
 
 def _count_static_rules_in_parts(parts: list[str]) -> int:
