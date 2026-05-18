@@ -14,6 +14,7 @@ hermes-persona 是 Hermes Agent 的人格注入插件。通过 `pre_llm_call` ho
 | `hermes_persona/` | 插件源码 |
 | `tests/` | 131 个测试用例 |
 | `docs/` | 配置参考 + 角色示例 + 阿格莱雅实战 |
+| `docs/dev/` | 工程文档（User Story → SPEC → PLAN） |
 
 ## 开发流程
 
@@ -28,8 +29,30 @@ python -m pytest tests/ -v
 
 ### 分支与 PR
 
+**内部团队分支规约：**
+
+| 分支类型 | 命名 | 从哪出 | 合回哪 | 例子 |
+|---------|------|--------|--------|------|
+| **feature** | `feature/{US号}-{关键词}` | `master` | `master` (via PR) | `feature/001-module-switch` |
+| **fix** | `fix/{简短描述}` | `master` | `master` (via PR) | `fix/turn-count-overflow` |
+| **docs** | 直接在 `master` 上改 | — | — | `docs/dev/US-001.md` |
+
+**工作流：**
+
+```
+US 审批 → 切 feature 分支 → SPEC → PLAN → CODE → 测试通过
+                                                    │
+                                          master ← PR 合并
+```
+
+- `master` 分支保持稳定，对用户可运行。
+- 代码改动永远在 feature/fix 分支上进行，合并走 PR。
+- `docs/dev/` 下的纯文档（US/SPEC）可在 master 上直接提交。
+
+**外部贡献者：**
+
 1. Fork 仓库
-2. 从 `main` 创建 feature 分支：`feat/your-feature-name`
+2. 从 `master` 创建 feature 分支：`feature/your-feature-name`
 3. 修改代码
 4. 确保测试通过：`python -m pytest tests/ -v`
 5. 提交 PR
@@ -46,17 +69,17 @@ python -m pytest tests/ -v
 pre_llm_call hook
   ↓
 inject_context()
-  ├── get_time()          → 时间感知
-  ├── get_static_rules()  → 静态规则（每轮注入）
-  ├── get_dynamic_rules() → 动态规则（时段/轮数/关键词）
-  ├── get_variance()      → 随机变化
-  ├── recall_memories()   → 记忆召回
-  └── get_project_state() → 看板注入
+  ├── _time_context()          → ① 时间感知
+  ├── _inject_static_rules()   → ② 静态规则（每轮注入）
+  ├── _select_dynamic_rules()  → ③ 动态规则（时段/轮数/关键词）
+  ├── _randomize_variance()    → ④ 随机变化
+  ├── _recall_memories()       → ⑤ 记忆召回
+  └── _read_kanban()           → ⑥ 看板注入（仅首轮）
   ↓
 系统提示上下文
 ```
 
-所有模块独立开关，异常静默降级——一个模块失败不影响其他模块和 Agent 正常运行。
+所有模块独立开关（通过 `modules` 配置），异常静默降级——一个模块失败不影响其他模块和 Agent 正常运行。
 
 ## 常见贡献
 
