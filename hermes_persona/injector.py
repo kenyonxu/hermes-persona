@@ -143,11 +143,14 @@ def _is_enabled(modules: dict, key: str) -> bool:
 
     key 不在 modules 中时回退注册表 default。
     key 不在注册表中时返回 True（fail-open）。
+
+    当值为 dict 时，检查其中的 ``enabled`` 子键；
+    若无 ``enabled`` 子键则默认启用（向后兼容 dynamic 等纯子通道配置）。
     """
     if key in modules:
         val = modules[key]
         if isinstance(val, dict):
-            return True
+            return val.get("enabled", True)
         return bool(val)
     return _MODULE_REGISTRY.get(key, {}).get("default", True)
 
