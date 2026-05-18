@@ -1,5 +1,18 @@
 {
   "hermes-persona": {
+    "modules": {
+      "time": true,
+      "static_rules": true,
+      "dynamic": {
+        "time_slots": true,
+        "turn_stage": true,
+        "keyword": true
+      },
+      "variance": true,
+      "memory": false,
+      "kanban": true,
+      "debug": false
+    },
     "time": {
       "enabled": true,
       "format": "cn_full"
