@@ -218,6 +218,131 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Debug mode helpers
+# ---------------------------------------------------------------------------
+
+
+def _debug_summary(modules: dict, parts: list[str]) -> str:
+    """Generate a human-readable injection summary for debug mode."""
+    lines = ["🔧 [Debug] 本轮注入:"]
+
+    # ① Time
+    if _is_enabled(modules, "time"):
+        lines.append("  ① 🕐 时间已注入")
+    else:
+        lines.append("  ① 🕐 已停用")
+
+    # ② Static rules
+    if _is_enabled(modules, "static_rules"):
+        rule_count = _count_static_rules_in_parts(parts)
+        lines.append(f"  ② 📜 {rule_count}条静态规则")
+    else:
+        lines.append("  ② 📜 已停用")
+
+    # ③ Dynamic
+    if _is_enabled(modules, "dynamic"):
+        dyn = modules.get("dynamic", {})
+        sub_status = _fmt_dynamic_sub_status(dyn)
+        lines.append(f"  ③ ⚡ {sub_status}")
+    else:
+        lines.append("  ③ ⚡ 已停用")
+
+    # ④ Variance
+    if _is_enabled(modules, "variance"):
+        var_status = _fmt_variance_status(parts)
+        lines.append(f"  ④ 🎲 {var_status}")
+    else:
+        lines.append("  ④ 🎲 已停用")
+
+    # ⑤ Memory
+    if _is_enabled(modules, "memory"):
+        lines.append("  ⑤ 🧠 已注入")
+    else:
+        lines.append("  ⑤ 🧠 已停用")
+
+    # ⑥ Kanban
+    if _is_enabled(modules, "kanban"):
+        kanban_status = _fmt_kanban_debug(parts)
+        lines.append(f"  ⑥ 📋 {kanban_status}")
+    else:
+        lines.append("  ⑥ 📋 已停用")
+
+    return "\n".join(lines)
+
+
+def _count_static_rules_in_parts(parts: list[str]) -> int:
+    """Count items in parts produced by _inject_static_rules."""
+    try:
+        # Static rules are plain strings (no emoji prefix from time/variance/etc.)
+        count = 0
+        for part in parts:
+            if not isinstance(part, str):
+                continue
+            # Skip parts that are clearly from other modules
+            if part.startswith("🕐") or part.startswith("📝") or part.startswith("📋"):
+                continue
+            if part.startswith("🕐 [") or part.startswith("💬 ["):
+                continue
+            # Each static rule is a separate element in parts
+            count += 1
+        return count
+    except Exception:
+        return 0
+
+
+def _fmt_dynamic_sub_status(dyn_dict) -> str:
+    """Format dynamic subchannel status string."""
+    try:
+        if not isinstance(dyn_dict, dict):
+            return "on" if dyn_dict else "off"
+        parts = []
+        for key in ("time_slots", "turn_stage", "keyword"):
+            status = "on" if dyn_dict.get(key, True) else "off"
+            parts.append(f"{key}: {status}")
+        return " / ".join(parts)
+    except Exception:
+        return "on"
+
+
+def _fmt_variance_status(parts: list[str]) -> str:
+    """Extract variance status from parts content."""
+    try:
+        # Variance items are the plain strings added by _randomize_variance
+        # that are not from time, static rules, dynamic, memory, or kanban
+        variance_items = []
+        for part in parts:
+            if not isinstance(part, str):
+                continue
+            if part.startswith("🕐") or part.startswith("📝") or part.startswith("📋"):
+                continue
+            if part.startswith("🕐 [") or part.startswith("💬 ["):
+                continue
+            # This is a static rule or variance — we can't easily distinguish
+            # So we report based on whether parts exist beyond known prefixes
+        if variance_items:
+            return " / ".join(variance_items)
+        return "无注入"
+    except Exception:
+        return "无数据"
+
+
+def _fmt_kanban_debug(parts: list[str]) -> str:
+    """Extract kanban items from parts and show summary."""
+    try:
+        for part in parts:
+            if isinstance(part, str) and part.startswith("📋"):
+                # Extract the first 2 lines after header
+                lines = part.split("\n")
+                items = [l.lstrip("- ").strip() for l in lines[1:] if l.startswith("- ")]
+                if items:
+                    return " / ".join(items[:2])
+                return "无条目"
+        return "无数据"
+    except Exception:
+        return "无数据"
+
+
+# ---------------------------------------------------------------------------
 # Stub functions (P2 / P3)
 # ---------------------------------------------------------------------------
 
@@ -347,51 +472,63 @@ def inject_context(
     """
     try:
         config = _load_config()
+        modules = _resolve_modules(config)
         parts: list[str] = []
 
         # 1. Time context
-        time_cfg = config.get("time", {})
-        if time_cfg.get("enabled", True) is not False:
+        if _is_enabled(modules, "time"):
+            time_cfg = config.get("time", {})
             fmt = time_cfg.get("format", "cn_full")
             parts.append(_time_context(fmt))
 
         # 2. Static rules
-        ctx_cfg = config.get("context", {})
-        parts.extend(_inject_static_rules(ctx_cfg, is_first_turn))
+        if _is_enabled(modules, "static_rules"):
+            ctx_cfg = config.get("context", {})
+            parts.extend(_inject_static_rules(ctx_cfg, is_first_turn))
 
-        # 3. Dynamic rules
-        turn_count = len(conversation_history or []) // 2
-        dynamic_cfg = config.get("dynamic", {})
-        parts.extend(
-            _select_dynamic_rules(
-                dynamic_cfg,
-                user_message,
-                is_first_turn,
-                turn_count,
-            )
-        )
-
-        # 4. Random variance (P2 stub)
-        parts.extend(_randomize_variance(config.get("variance", {})))
-
-        # 5. Memory recall (P2 stub)
-        mem_cfg = config.get("memory", {})
-        memories = _recall_memories(user_message, mem_cfg)
-        if memories is not None:
-            parts.append(memories)
-
-        # 6. Kanban status (P3 stub, first-turn only)
-        if is_first_turn:
-            project_cfg = config.get("project", {})
-            if project_cfg.get("enabled"):
-                kanban = _read_kanban(
-                    project_cfg.get("kanban_path", ""),
-                    project_cfg.get("label", ""),
+        # 3. Dynamic rules (subchannel-controllable)
+        if _has_any_dynamic(modules):
+            turn_count = len(conversation_history or []) // 2
+            dynamic_cfg = config.get("dynamic", {})
+            parts.extend(
+                _select_dynamic_rules(
+                    dynamic_cfg,
+                    user_message,
+                    is_first_turn,
+                    turn_count,
+                    modules=modules.get("dynamic", {}),
                 )
-                if kanban is not None:
-                    parts.append(kanban)
+            )
 
-        if not parts:
+        # 4. Random variance
+        if _is_enabled(modules, "variance"):
+            parts.extend(_randomize_variance(config.get("variance", {})))
+
+        # 5. Memory recall
+        if _is_enabled(modules, "memory"):
+            mem_cfg = config.get("memory", {})
+            memories = _recall_memories(user_message, mem_cfg)
+            if memories is not None:
+                parts.append(memories)
+
+        # 6. Kanban status (first-turn only)
+        if is_first_turn and _is_enabled(modules, "kanban"):
+            project_cfg = config.get("project", {})
+            kanban = _read_kanban(
+                project_cfg.get("kanban_path", ""),
+                project_cfg.get("label", ""),
+            )
+            if kanban is not None:
+                parts.append(kanban)
+
+        # Record non-debug content count before debug injection
+        non_debug_count = len(parts)
+
+        # 7. Debug summary (does not participate in empty check)
+        if _is_enabled(modules, "debug"):
+            parts.append(_debug_summary(modules, parts))
+
+        if non_debug_count == 0:
             return None
         return {"context": "\n\n".join(parts)}
     except Exception:

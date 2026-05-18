@@ -12,18 +12,33 @@ def _select_dynamic_rules(
     user_message: str,
     is_first_turn: bool,
     turn_count: int,
+    modules: dict | None = None,
 ) -> list[str]:
     """Select dynamic rules by time / turn-stage / keyword dimensions.
 
     Injection order (per spec D2): time_slots → turn_stage → keyword.
     Returns list of rule strings for inject_context to concatenate.
     """
+    # Normalize modules: if not a dict (e.g. True), treat as all-enabled
+    if not isinstance(modules, dict):
+        modules = None
+
     rules: list[str] = []
-    rules.extend(_match_time_slot(dynamic_cfg.get("time_slots", {})))
-    rules.extend(
-        _match_turn_stage(dynamic_cfg.get("turn_stage", {}), is_first_turn, turn_count)
-    )
-    rules.extend(_match_keyword(dynamic_cfg.get("keywords", {}), user_message))
+
+    # time_slots — modules not passed defaults to enabled
+    if modules is None or modules.get("time_slots", True):
+        rules.extend(_match_time_slot(dynamic_cfg.get("time_slots", {})))
+
+    # turn_stage — modules not passed defaults to enabled
+    if modules is None or modules.get("turn_stage", True):
+        rules.extend(
+            _match_turn_stage(dynamic_cfg.get("turn_stage", {}), is_first_turn, turn_count)
+        )
+
+    # keyword — modules not passed defaults to enabled
+    if modules is None or modules.get("keyword", True):
+        rules.extend(_match_keyword(dynamic_cfg.get("keywords", {}), user_message))
+
     return rules
 
 
