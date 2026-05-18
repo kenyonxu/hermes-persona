@@ -108,6 +108,69 @@ def _load_config() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Module switch helpers
+# ---------------------------------------------------------------------------
+
+
+def _resolve_modules(config: dict) -> dict:
+    """解析 modules 配置，优先新格式，回退旧格式合成。
+
+    返回值始终为 dict（保证调用方无需判空）。
+    """
+    try:
+        modules = config.get("modules")
+        if isinstance(modules, dict):
+            return modules
+
+        synthesized: dict[str, bool] = {}
+        for key, meta in _MODULE_REGISTRY.items():
+            lp = meta.get("legacy_path")
+            if lp:
+                section = config.get(lp[0])
+                if isinstance(section, dict):
+                    synthesized[key] = section.get(lp[1], meta["default"])
+                else:
+                    synthesized[key] = meta["default"]
+            else:
+                synthesized[key] = meta["default"]
+        return synthesized
+    except Exception:
+        return {}
+
+
+def _is_enabled(modules: dict, key: str) -> bool:
+    """判断指定模块是否启用。
+
+    key 不在 modules 中时回退注册表 default。
+    key 不在注册表中时返回 True（fail-open）。
+    """
+    if key in modules:
+        val = modules[key]
+        if isinstance(val, dict):
+            return True
+        return bool(val)
+    return _MODULE_REGISTRY.get(key, {}).get("default", True)
+
+
+def _has_any_dynamic(modules: dict) -> bool:
+    """判断 dynamic 模块的子通道中是否至少有一个开启。
+
+    仅当父开关和至少一个子通道同时开启时返回 True。
+    """
+    if not _is_enabled(modules, "dynamic"):
+        return False
+
+    dyn = modules.get("dynamic", {})
+    if isinstance(dyn, dict):
+        return (
+            dyn.get("time_slots", True)
+            or dyn.get("turn_stage", True)
+            or dyn.get("keyword", True)
+        )
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Time context generation
 # ---------------------------------------------------------------------------
 
