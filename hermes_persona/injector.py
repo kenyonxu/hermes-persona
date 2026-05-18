@@ -20,6 +20,62 @@ from .variance import _randomize_variance
 _CONFIG_ROOT: Path | None = None
 
 # ---------------------------------------------------------------------------
+# Module registry
+# ---------------------------------------------------------------------------
+
+_MODULE_REGISTRY: dict[str, dict] = {
+    "time": {
+        "description": "时间上下文注入",
+        "default": True,
+        "phase": 1,
+        "legacy_key": "time",
+        "legacy_path": ("time", "enabled"),
+    },
+    "static_rules": {
+        "description": "静态规则注入（context.rules + rules_first_turn_only）",
+        "default": True,
+        "phase": 2,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
+    "dynamic": {
+        "description": "动态规则总开关（任一子通道开启时才进入）",
+        "default": True,
+        "phase": 3,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
+    "variance": {
+        "description": "随机表达变化注入",
+        "default": True,
+        "phase": 4,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
+    "memory": {
+        "description": "记忆召回注入",
+        "default": False,
+        "phase": 5,
+        "legacy_key": "memory",
+        "legacy_path": ("memory", "enabled"),
+    },
+    "kanban": {
+        "description": "看板状态注入（仅首轮）",
+        "default": False,
+        "phase": 6,
+        "legacy_key": "project",
+        "legacy_path": ("project", "enabled"),
+    },
+    "debug": {
+        "description": "Debug Mode — 在注入上下文末尾追加人类可读的注入摘要",
+        "default": False,
+        "phase": 7,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
+}
+
+# ---------------------------------------------------------------------------
 # Config loading
 # ---------------------------------------------------------------------------
 
