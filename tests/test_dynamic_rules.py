@@ -212,6 +212,48 @@ class TestSelectDynamicRules:
         result = _select_dynamic_rules(dynamic_cfg, "hello", is_first_turn=True, turn_count=0)
         assert any("首次欢迎" in r for r in result)
 
+    def test_dynamic_with_subchannel_modules_disabled(self):
+        """modules passed in: disabling time_slots skips _match_time_slot."""
+        dynamic_cfg = {
+            "time_slots": {"09:00-17:00": ["工作规则"]},
+            "turn_stage": {"after_10": ["中期规则"]},
+            "keywords": {"bug": ["Bug规则"]},
+        }
+        modules = {"time_slots": False, "turn_stage": True, "keyword": True}
+        result = _select_dynamic_rules(
+            dynamic_cfg, "there is a bug", False, 15, modules=modules,
+        )
+        assert not any("工作规则" in r for r in result)
+        assert any("中期规则" in r for r in result)
+        assert any("Bug规则" in r for r in result)
+
+    def test_dynamic_with_all_subchannels_disabled(self):
+        """modules passed in: all subchannels off → returns []."""
+        dynamic_cfg = {
+            "time_slots": {"09:00-17:00": ["工作规则"]},
+            "turn_stage": {"after_10": ["中期规则"]},
+            "keywords": {"bug": ["Bug规则"]},
+        }
+        modules = {"time_slots": False, "turn_stage": False, "keyword": False}
+        result = _select_dynamic_rules(
+            dynamic_cfg, "hello", False, 15, modules=modules,
+        )
+        assert result == []
+
+    def test_dynamic_with_modules_none_backward_compat(self):
+        """modules=None behaves identically to not passing modules at all."""
+        dynamic_cfg = {
+            "time_slots": {"09:00-17:00": ["工作规则"]},
+            "turn_stage": {"after_10": ["中期规则"]},
+        }
+        result_none = _select_dynamic_rules(
+            dynamic_cfg, "hello", False, 15, modules=None,
+        )
+        result_no_arg = _select_dynamic_rules(
+            dynamic_cfg, "hello", False, 15,
+        )
+        assert result_none == result_no_arg
+
 
 # ── _match_keyword (P2) ─────────────────────────────────────────────────
 
