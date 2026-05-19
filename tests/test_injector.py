@@ -586,3 +586,239 @@ class TestInjectContextP3:
         result = inject_context(**inject_context_defaults)
         if result is not None:
             assert "📋 项目状态:" not in result["context"]
+
+
+# ── INT-EV: Expression vector integration (US-002) ──────────────────────
+
+
+class TestExpressionVectorIntegration:
+    """INT-EV-01 ~ INT-EV-04: 表达向量端到端集成测试。"""
+
+    def test_INT_EV01_enabled_injects_vector(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-EV-01: expression_vector.enabled=true → 注入含 📊 [表达向量]。"""
+        ev_path = str(temp_config_root / "ev.json")
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": False, "static_rules": False, "dynamic": False,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "expression_vector": {
+                    "enabled": True,
+                    "dimensions": {"work": ["代码"]},
+                    "score_rules": {"work": [1, -0.5, 1]},
+                    "reset": "session",
+                    "storage_path": ev_path,
+                },
+            }
+        })
+        defaults = {**inject_context_defaults, "user_message": "写代码"}
+        result = injector.inject_context(**defaults)
+        assert result is not None
+        assert "📊 [表达向量]" in result["context"]
+        assert "work:1" in result["context"]
+
+    def test_INT_EV02_disabled_no_injection(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-EV-02: expression_vector.enabled=false → 不含表达向量。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {"time": True},
+                "expression_vector": {"enabled": False},
+            }
+        })
+        result = injector.inject_context(**inject_context_defaults)
+        if result is not None:
+            assert "📊 [表达向量]" not in result["context"]
+
+    def test_INT_EV03_not_configured(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-EV-03: 不配置 expression_vector → 插件正常运行。"""
+        write_config({"hermes-persona": {"modules": {"time": True}}})
+        result = injector.inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "📊 [表达向量]" not in result["context"]
+
+    def test_INT_EV04_keyword_hit_accumulates(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-EV-04: 连续调用 2 次，第二次 work 值 > 第一次。"""
+        ev_path = str(temp_config_root / "ev.json")
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": False, "static_rules": False, "dynamic": False,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "expression_vector": {
+                    "enabled": True,
+                    "dimensions": {"work": ["代码"]},
+                    "score_rules": {"work": [1, -0.5, 1]},
+                    "reset": "session",
+                    "storage_path": ev_path,
+                },
+            }
+        })
+        defaults = {**inject_context_defaults, "user_message": "写代码"}
+
+        r1 = injector.inject_context(**defaults)
+        assert "work:1" in r1["context"]
+
+        r2 = injector.inject_context(**defaults)
+        assert "work:2" in r2["context"]
+
+
+# ── INT-FS: Fixed signals integration (US-002) ──────────────────────────
+
+
+class TestFixedSignalsIntegration:
+    """INT-FS-01 ~ INT-FS-03: 固定信号端到端集成测试。"""
+
+    def test_INT_FS01_short_message_hint(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-FS-01: 短消息 → 注入含 '📏 消息较短'。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": False, "static_rules": False, "dynamic": False,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "fixed_signals": {
+                    "message_length": {"enabled": True, "threshold": 50},
+                },
+            }
+        })
+        defaults = {**inject_context_defaults, "user_message": "好"}
+        result = injector.inject_context(**defaults)
+        assert result is not None
+        assert "📏 消息较短" in result["context"]
+
+    def test_INT_FS02_long_gap_welcome_back(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-FS-02: 长间隔 → 注入含 '🎵 欢迎回来'。"""
+        import time as _time
+
+        timing_path = str(temp_config_root / "reply_timing.json")
+        with open(timing_path, "w") as f:
+            json.dump({"last_reply_at": _time.time() - 3600}, f)
+
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": False, "static_rules": False, "dynamic": False,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "fixed_signals": {
+                    "reply_gap": {
+                        "enabled": True,
+                        "threshold_minutes": 30,
+                        "storage_path": timing_path,
+                    },
+                },
+            }
+        })
+        result = injector.inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "🎵 欢迎回来" in result["context"]
+
+    def test_INT_FS03_not_configured(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-FS-03: 不配置 fixed_signals → 插件正常运行。"""
+        write_config({"hermes-persona": {"modules": {"time": True}}})
+        result = injector.inject_context(**inject_context_defaults)
+        assert result is not None
+        assert "📏" not in result["context"]
+        assert "🎵" not in result["context"]
+
+
+# ── INT-ALL: Full integration (US-002) ──────────────────────────────────
+
+
+class TestFullIntegration:
+    """INT-ALL-01 ~ INT-ALL-02: 全链路集成测试。"""
+
+    def test_INT_ALL01_all_features_enabled(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-ALL-01: 全部新功能 + 现有模块同时开启，无异常。"""
+        ev_path = str(temp_config_root / "ev.json")
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": True, "static_rules": True, "dynamic": True,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "context": {"rules": ["测试规则"]},
+                "dynamic": {"time_slots": {}, "turn_stage": {}, "keywords": {}},
+                "expression_vector": {
+                    "enabled": True,
+                    "dimensions": {"work": ["代码"]},
+                    "score_rules": {"work": [1, -0.5, 1]},
+                    "reset": "session",
+                    "storage_path": ev_path,
+                },
+                "fixed_signals": {
+                    "message_length": {"enabled": True, "threshold": 50},
+                    "reply_gap": {"enabled": False},
+                },
+            }
+        })
+        defaults = {**inject_context_defaults, "user_message": "写代码"}
+        result = injector.inject_context(**defaults)
+        assert result is not None
+        ctx = result["context"]
+        assert "🕐" in ctx               # time
+        assert "测试规则" in ctx           # static rules
+        assert "📊 [表达向量]" in ctx      # expression vector
+        assert "📏 消息较短" in ctx        # fixed signal
+
+    def test_INT_ALL02_injection_order(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-ALL-02: 注入顺序验证——表达向量在 dynamic 之后、variance 之前。"""
+        ev_path = str(temp_config_root / "ev.json")
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": True, "static_rules": True, "dynamic": True,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "context": {"rules": []},
+                "dynamic": {
+                    "time_slots": {},
+                    "turn_stage": {"first_turn": ["首次交流"]},
+                    "keywords": {},
+                },
+                "expression_vector": {
+                    "enabled": True,
+                    "dimensions": {"work": ["代码"]},
+                    "score_rules": {"work": [1, -0.5, 1]},
+                    "reset": "session",
+                    "storage_path": ev_path,
+                },
+            }
+        })
+        defaults = {**inject_context_defaults, "user_message": "写代码"}
+        result = injector.inject_context(**defaults)
+        assert result is not None
+        ctx = result["context"]
+
+        # dynamic (含 "首次交流") 在 expression_vector 之前
+        pos_dynamic = ctx.find("首次交流")
+        pos_ev = ctx.find("📊 [表达向量]")
+        assert pos_dynamic < pos_ev, (
+            f"dynamic ({pos_dynamic}) 应在 expression_vector ({pos_ev}) 之前"
+        )
