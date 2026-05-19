@@ -7,11 +7,13 @@ called by the Hermes runtime on every pre_llm_call hook.
 from __future__ import annotations
 
 import json
+import time
 import traceback
 from datetime import datetime
 from pathlib import Path
 
 from .dynamic_rules import _select_dynamic_rules
+from .expression_vector import _ExpressionVector
 from .variance import _randomize_variance
 
 # ---------------------------------------------------------------------------
@@ -259,6 +261,28 @@ def _debug_summary(modules: dict, parts: list[str]) -> str:
     else:
         lines.append("  ③ ⚡ 已停用")
 
+    # ④a Fixed signals
+    fixed_hit = any(
+        p.startswith("📏") or p.startswith("🎵")
+        for p in parts
+    )
+    lines.append(
+        f"  ④a 📏⏱️ 固定信号{'已注入' if fixed_hit else '无触发'}"
+    )
+
+    # ④b Expression vector
+    ev_hit = any("📊 [表达向量]" in p for p in parts)
+    if ev_hit:
+        import re
+        ev_part = next(p for p in parts if "📊 [表达向量]" in p)
+        match = re.search(r"\[表达向量\] (.+?) \|", ev_part)
+        if match:
+            lines.append(f"  ④b 📊 {match.group(1)}")
+        else:
+            lines.append("  ④b 📊 已注入")
+    else:
+        lines.append("  ④b 📊 未启用")
+
     # ④ Variance
     if _is_enabled(modules, "variance"):
         var_status = _fmt_variance_status(parts)
@@ -363,6 +387,92 @@ def _fmt_kanban_debug(parts: list[str]) -> str:
         return "无数据"
     except Exception:
         return "无数据"
+
+
+# ---------------------------------------------------------------------------
+# Fixed signal helpers
+# ---------------------------------------------------------------------------
+
+
+def _message_length_hint(user_message: str, fixed_cfg: dict) -> str | None:
+    """检查消息长度，短消息注入提示。
+
+    Args:
+        user_message: 用户当前消息文本。
+        fixed_cfg: fixed_signals 配置节。
+
+    Returns:
+        "📏 消息较短" 或 None。
+    """
+    ml_cfg = fixed_cfg.get("message_length", {})
+    if not ml_cfg.get("enabled", False):
+        return None
+
+    threshold = ml_cfg.get("threshold", 50)
+    if not isinstance(threshold, (int, float)):
+        threshold = 50
+
+    if len(user_message) < threshold:
+        return "📏 消息较短"
+    return None
+
+
+def _reply_gap_hint(fixed_cfg: dict) -> tuple[str | None, float]:
+    """检查回复间隔，长时间未回复注入欢迎回来提示。
+
+    Args:
+        fixed_cfg: fixed_signals 配置节。
+
+    Returns:
+        (hint_text_or_None, now_timestamp)
+    """
+    rg_cfg = fixed_cfg.get("reply_gap", {})
+    if not rg_cfg.get("enabled", False):
+        return None, time.time()
+
+    threshold_minutes = rg_cfg.get("threshold_minutes", 30)
+    if not isinstance(threshold_minutes, (int, float)):
+        threshold_minutes = 30
+
+    now = time.time()
+    raw_path = rg_cfg.get("storage_path", "~/.hermes/reply_timing.json")
+    storage_path = Path(raw_path).expanduser()
+
+    hint = None
+    try:
+        if storage_path.is_file():
+            data = json.loads(storage_path.read_text(encoding="utf-8"))
+            last_reply_at = data.get("last_reply_at")
+            if last_reply_at:
+                gap_minutes = (now - float(last_reply_at)) / 60.0
+                if gap_minutes > threshold_minutes:
+                    hint = "🎵 欢迎回来"
+    except (json.JSONDecodeError, OSError, ValueError, TypeError):
+        pass
+
+    return hint, now
+
+
+def _save_reply_timing(fixed_cfg: dict, now_ts: float) -> None:
+    """将 last_reply_at 写回磁盘。
+
+    Args:
+        fixed_cfg: fixed_signals 配置节。
+        now_ts: 当前时间戳（由 _reply_gap_hint 返回）。
+    """
+    rg_cfg = fixed_cfg.get("reply_gap", {})
+    if not rg_cfg.get("enabled", False):
+        return
+
+    raw_path = rg_cfg.get("storage_path", "~/.hermes/reply_timing.json")
+    storage_path = Path(raw_path).expanduser()
+
+    try:
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        data = {"last_reply_at": now_ts}
+        storage_path.write_text(json.dumps(data), encoding="utf-8")
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -510,8 +620,8 @@ def inject_context(
             parts.extend(_inject_static_rules(ctx_cfg, is_first_turn))
 
         # 3. Dynamic rules (subchannel-controllable)
+        turn_count = len(conversation_history or []) // 2  # ← 提前，④b 复用
         if _has_any_dynamic(modules):
-            turn_count = len(conversation_history or []) // 2
             dynamic_cfg = config.get("dynamic", {})
             parts.extend(
                 _select_dynamic_rules(
@@ -523,7 +633,33 @@ def inject_context(
                 )
             )
 
-        # 4. Random variance
+        # ─── ④a Fixed signals ────────────────────────────
+        fixed_cfg = config.get("fixed_signals", {})
+        hint = _message_length_hint(user_message or "", fixed_cfg)
+        if hint:
+            parts.append(hint)
+
+        gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
+        if gap_hint:
+            parts.append(gap_hint)
+        _save_reply_timing(fixed_cfg, now_ts)
+        # ──────────────────────────────────────────────────
+
+        # ─── ④b Expression vector (FuzzyUtility) ─────────
+        ev_cfg = config.get("expression_vector", {})
+        if ev_cfg.get("enabled", False):
+            try:
+                profile = kwargs.get("profile_path", "")
+                ev = _ExpressionVector(ev_cfg, profile_path=profile)
+                ev.load()
+                ev.update(user_message or "", session_id)
+                ev.save()
+                parts.append(ev.format_inject(turn_count))
+            except Exception:
+                pass  # fail-open：表达向量失败不阻断后续注入
+        # ──────────────────────────────────────────────────
+
+        # 5. Random variance
         if _is_enabled(modules, "variance"):
             parts.extend(_randomize_variance(config.get("variance", {})))
 
