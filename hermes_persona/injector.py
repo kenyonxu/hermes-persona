@@ -770,6 +770,7 @@ def transform_llm_output(
         追加后的完整文本，或 None（无 debug 块时不修改）。
     """
     # ── DIAGNOSTIC PROBE ── remove after hook confirmed working
+    global _PENDING_DEBUG_BLOCK
     try:
         with open("/tmp/transform_llm_trace.txt", "a") as f:
             f.write(f"CALLED|session={session_id}|pending={'YES' if _PENDING_DEBUG_BLOCK else 'NO'}\n")
@@ -777,7 +778,6 @@ def transform_llm_output(
         pass
     # ── END PROBE ──
     try:
-        global _PENDING_DEBUG_BLOCK
         if _PENDING_DEBUG_BLOCK:
             result = response_text + _PENDING_DEBUG_BLOCK
             _PENDING_DEBUG_BLOCK = None
