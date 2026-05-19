@@ -235,9 +235,10 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
     """Generate a human-readable injection summary for debug mode.
 
-    The summary is formatted for direct display. When debug.visible is true,
-    it is appended to the LLM output by transform_llm_output; otherwise it
-    is injected into the system prompt as an internal memo.
+    Returns a plain-text summary listing which modules were injected and
+    their status (enabled / disabled / triggered). The caller stores the
+    result in _PENDING_DEBUG_BLOCK for the transform_llm_output hook to
+    append to the LLM response. No system-prompt involvement.
     """
     lines = ["🔧 [Debug] 本轮注入:"]
 
@@ -762,13 +763,19 @@ def transform_llm_output(
 ) -> str | None:
     """transform_llm_output hook：将 debug 块拼接到 LLM 回复末尾。
 
-    仅在 pre_llm_call 阶段 debug.visible=true 时生效。
-    不修改 response_text 本身，只在末尾追加等待中的 debug 摘要块。
-    追加完成后清空 _PENDING_DEBUG_BLOCK。
+    当 pre_llm_call 阶段 debug 启用时，_PENDING_DEBUG_BLOCK 被设置，
+    此 hook 将其追加到 LLM 回复末尾后清空。
 
     Returns:
         追加后的完整文本，或 None（无 debug 块时不修改）。
     """
+    # ── DIAGNOSTIC PROBE ── remove after hook confirmed working
+    try:
+        with open("/tmp/transform_llm_trace.txt", "a") as f:
+            f.write(f"CALLED|session={session_id}|pending={'YES' if _PENDING_DEBUG_BLOCK else 'NO'}\n")
+    except Exception:
+        pass
+    # ── END PROBE ──
     try:
         global _PENDING_DEBUG_BLOCK
         if _PENDING_DEBUG_BLOCK:

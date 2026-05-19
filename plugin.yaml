@@ -4,6 +4,7 @@ description: Dynamic persona context injection engine for Hermes Agent
 author: Kai.Xu & Zhihui
 provides_hooks:
   - pre_llm_call
+  - transform_llm_output  # US-002: debug block injection
   - pre_tool_call       # P4
   - post_tool_call      # P4
 provides_skills:
