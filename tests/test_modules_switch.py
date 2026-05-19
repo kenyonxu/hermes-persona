@@ -382,21 +382,23 @@ class TestDebugMode:
         assert "🔧 [Debug]" not in result["context"]
 
     def test_debug_enabled_appends_summary(self, inject_context_defaults):
-        """modules.debug=true → context ends with debug summary containing ①~⑥ lines."""
+        """modules.debug=true → _PENDING_DEBUG_BLOCK is set with debug summary."""
         with patch("hermes_persona.injector._load_config", return_value={
             "modules": {"time": True, "debug": True},
             "time": {"format": "cn_full"},
         }):
             result = injector.inject_context(**inject_context_defaults)
         assert result is not None
-        assert "🔧 [Debug] 本轮注入:" in result["context"]
-        # Check for module status lines
-        assert "① 🕐" in result["context"]
-        assert "② 📜" in result["context"]
-        assert "③ ⚡" in result["context"]
-        assert "④ 🎲" in result["context"]
-        assert "⑤ 🧠" in result["context"]
-        assert "⑥ 📋" in result["context"]
+        # Debug goes to _PENDING_DEBUG_BLOCK, not context
+        assert "🔧 [Debug]" not in result["context"]
+        assert injector._PENDING_DEBUG_BLOCK is not None
+        assert "🔧 [Debug] 本轮注入:" in injector._PENDING_DEBUG_BLOCK
+        assert "① 🕐" in injector._PENDING_DEBUG_BLOCK
+        assert "② 📜" in injector._PENDING_DEBUG_BLOCK
+        assert "③ ⚡" in injector._PENDING_DEBUG_BLOCK
+        assert "④ 🎲" in injector._PENDING_DEBUG_BLOCK
+        assert "⑤ 🧠" in injector._PENDING_DEBUG_BLOCK
+        assert "⑥ 📋" in injector._PENDING_DEBUG_BLOCK
 
     def test_debug_only_all_modules_off_returns_none(self, inject_context_defaults):
         """All modules off + debug on → returns None (debug doesn't count for empty check)."""
@@ -415,14 +417,16 @@ class TestDebugMode:
         assert result is None
 
     def test_debug_memory_disabled_shows_stopped(self, inject_context_defaults):
-        """debug=true, memory=false → summary shows 🧠 已停用."""
+        """debug=true, memory=false → _PENDING_DEBUG_BLOCK shows 🧠 已停用."""
         with patch("hermes_persona.injector._load_config", return_value={
             "modules": {"time": True, "memory": False, "debug": True},
             "time": {"format": "cn_full"},
         }):
             result = injector.inject_context(**inject_context_defaults)
         assert result is not None
-        assert "🧠 已停用" in result["context"]
+        assert "🧠 已停用" not in result["context"]
+        assert injector._PENDING_DEBUG_BLOCK is not None
+        assert "🧠 已停用" in injector._PENDING_DEBUG_BLOCK
 
 
 # ── TestBackwardCompatibility ────────────────────────────────────────────

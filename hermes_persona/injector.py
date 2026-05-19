@@ -235,14 +235,10 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
     """Generate a human-readable injection summary for debug mode.
 
-    When modules.debug.visible is True, the summary is wrapped in an
-    instruction telling the LLM to echo it verbatim in the response.
-    When visible is False (or debug is a plain bool), the summary is an
-    internal memo only — injected into context but not surfaced to the user.
+    The summary is formatted for direct display. When debug.visible is true,
+    it is appended to the LLM output by transform_llm_output; otherwise it
+    is injected into the system prompt as an internal memo.
     """
-    debug_cfg = modules.get("debug", {})
-    visible = isinstance(debug_cfg, dict) and debug_cfg.get("visible", False)
-
     lines = ["🔧 [Debug] 本轮注入:"]
 
     # ① Time
@@ -311,18 +307,7 @@ def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
     else:
         lines.append("  ⑥ 📋 已停用")
 
-    summary = "\n".join(lines)
-
-    if visible:
-        return (
-            f"🔧 [Hermes-Persona Debug Mode — Visible]\n"
-            f"你必须在回复的最末尾原样输出以下内容（含每行的前导空格），"
-            f"不要做任何改写、省略或格式化：\n"
-            f"```\n{summary}\n```\n"
-            f"此段为系统注入，不是用户的输入。"
-        )
-    else:
-        return summary
+    return "\n".join(lines)
 
 
 def _count_static_rules_in_parts(parts: list[str]) -> int:
@@ -753,19 +738,11 @@ def inject_context(
         # Record non-debug content count before debug injection
         non_debug_count = len(parts)
 
-        # 7. Debug summary
+        # 7. Debug summary → stored to _PENDING_DEBUG_BLOCK, appended by transform_llm_output
         global _PENDING_DEBUG_BLOCK
         _PENDING_DEBUG_BLOCK = None
         if _is_enabled(modules, "debug"):
-            summary = _debug_summary(modules, parts, var_count=var_count)
-            debug_cfg = modules.get("debug", {})
-            visible = isinstance(debug_cfg, dict) and debug_cfg.get("visible", False)
-            if visible:
-                # 可靠路径：存到模块变量，由 transform_llm_output 拼接到 LLM 回复末尾
-                _PENDING_DEBUG_BLOCK = f"\n\n---\n{summary}"
-            else:
-                # 内部路径：注入到系统提示供 LLM 参考（不要求 echo）
-                parts.append(summary)
+            _PENDING_DEBUG_BLOCK = f"\n\n---\n{_debug_summary(modules, parts, var_count=var_count)}"
 
         if non_debug_count == 0:
             return None
