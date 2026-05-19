@@ -22,6 +22,11 @@ from .variance import _randomize_variance
 _CONFIG_ROOT: Path | None = None
 
 # ---------------------------------------------------------------------------
+# Pending debug block for transform_llm_output hook
+# ---------------------------------------------------------------------------
+_PENDING_DEBUG_BLOCK: str | None = None
+
+# ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
 
@@ -227,7 +232,7 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def _debug_summary(modules: dict, parts: list[str]) -> str:
+def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
     """Generate a human-readable injection summary for debug mode.
 
     When modules.debug.visible is True, the summary is wrapped in an
@@ -264,6 +269,7 @@ def _debug_summary(modules: dict, parts: list[str]) -> str:
     # ④a Fixed signals
     fixed_hit = any(
         p.startswith("📏") or p.startswith("🎵")
+        or (p.startswith("📊") and not p.startswith("📊 ["))
         for p in parts
     )
     lines.append(
@@ -285,8 +291,10 @@ def _debug_summary(modules: dict, parts: list[str]) -> str:
 
     # ④ Variance
     if _is_enabled(modules, "variance"):
-        var_status = _fmt_variance_status(parts)
-        lines.append(f"  ④ 🎲 {var_status}")
+        if var_count > 0:
+            lines.append(f"  ④ 🎲 {var_count}条变化")
+        else:
+            lines.append("  ④ 🎲 0条变化")
     else:
         lines.append("  ④ 🎲 已停用")
 
@@ -475,6 +483,61 @@ def _save_reply_timing(fixed_cfg: dict, now_ts: float) -> None:
         pass
 
 
+def _daily_turn_count_hint(fixed_cfg: dict) -> str | None:
+    """检查当日累计轮数，注入轮数感知信号。
+
+    每日轮数在跨会话间累积（同一自然日内的所有消息）。
+    日期跨越时自动归零。信号用于告知角色当日互动深度。
+
+    Args:
+        fixed_cfg: fixed_signals 配置节。
+
+    Returns:
+        \"📊 今日第N轮 — …\" 或 None。
+    """
+    dc_cfg = fixed_cfg.get("daily_turn_count", {})
+    if not dc_cfg.get("enabled", False):
+        return None
+
+    today_key = datetime.now().strftime("%Y-%m-%d")
+    raw_path = dc_cfg.get(
+        "storage_path",
+        "~/.hermes/profiles/{profile}/state/daily_turn_count.json",
+    )
+    storage_path = Path(raw_path).expanduser()
+
+    # 读取或初始化
+    data: dict = {"date": today_key, "count": 0}
+    try:
+        if storage_path.is_file():
+            saved = json.loads(storage_path.read_text(encoding="utf-8"))
+            if isinstance(saved, dict) and saved.get("date") == today_key:
+                data = saved
+            # 日期变化 → 自动归零
+    except (json.JSONDecodeError, OSError):
+        pass
+
+    # 递增
+    data["count"] = data.get("count", 0) + 1
+
+    # 持久化
+    try:
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        storage_path.write_text(json.dumps(data), encoding="utf-8")
+    except OSError:
+        pass
+
+    count = data["count"]
+    thresholds = dc_cfg.get("thresholds", {"morning": 10, "familiar": 50})
+
+    if count <= thresholds.get("morning", 10):
+        return f"📊 今日第{count}轮"
+    elif count <= thresholds.get("familiar", 50):
+        return f"📊 今日第{count}轮"
+    else:
+        return f"📊 今日第{count}轮 — 深度陪伴日"
+
+
 # ---------------------------------------------------------------------------
 # Stub functions (P2 / P3)
 # ---------------------------------------------------------------------------
@@ -643,6 +706,10 @@ def inject_context(
         if gap_hint:
             parts.append(gap_hint)
         _save_reply_timing(fixed_cfg, now_ts)
+
+        turn_hint = _daily_turn_count_hint(fixed_cfg)
+        if turn_hint:
+            parts.append(turn_hint)
         # ──────────────────────────────────────────────────
 
         # ─── ④b Expression vector (FuzzyUtility) ─────────
@@ -660,8 +727,11 @@ def inject_context(
         # ──────────────────────────────────────────────────
 
         # 5. Random variance
+        var_count = 0
         if _is_enabled(modules, "variance"):
-            parts.extend(_randomize_variance(config.get("variance", {})))
+            var_results = _randomize_variance(config.get("variance", {}))
+            parts.extend(var_results)
+            var_count = len(var_results)
 
         # 5. Memory recall
         if _is_enabled(modules, "memory"):
@@ -683,9 +753,19 @@ def inject_context(
         # Record non-debug content count before debug injection
         non_debug_count = len(parts)
 
-        # 7. Debug summary (does not participate in empty check)
+        # 7. Debug summary
+        global _PENDING_DEBUG_BLOCK
+        _PENDING_DEBUG_BLOCK = None
         if _is_enabled(modules, "debug"):
-            parts.append(_debug_summary(modules, parts))
+            summary = _debug_summary(modules, parts, var_count=var_count)
+            debug_cfg = modules.get("debug", {})
+            visible = isinstance(debug_cfg, dict) and debug_cfg.get("visible", False)
+            if visible:
+                # 可靠路径：存到模块变量，由 transform_llm_output 拼接到 LLM 回复末尾
+                _PENDING_DEBUG_BLOCK = f"\n\n---\n{summary}"
+            else:
+                # 内部路径：注入到系统提示供 LLM 参考（不要求 echo）
+                parts.append(summary)
 
         if non_debug_count == 0:
             return None
@@ -693,4 +773,31 @@ def inject_context(
     except Exception:
         # Never let persona injection block the agent's normal flow
         traceback.print_exc()
+        return None
+
+
+def transform_llm_output(
+    response_text: str,
+    session_id: str = "",
+    model: str = "",
+    platform: str = "",
+    **kwargs,
+) -> str | None:
+    """transform_llm_output hook：将 debug 块拼接到 LLM 回复末尾。
+
+    仅在 pre_llm_call 阶段 debug.visible=true 时生效。
+    不修改 response_text 本身，只在末尾追加等待中的 debug 摘要块。
+    追加完成后清空 _PENDING_DEBUG_BLOCK。
+
+    Returns:
+        追加后的完整文本，或 None（无 debug 块时不修改）。
+    """
+    try:
+        global _PENDING_DEBUG_BLOCK
+        if _PENDING_DEBUG_BLOCK:
+            result = response_text + _PENDING_DEBUG_BLOCK
+            _PENDING_DEBUG_BLOCK = None
+            return result
+        return None  # 不修改
+    except Exception:
         return None

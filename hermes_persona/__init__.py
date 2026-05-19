@@ -18,6 +18,7 @@ def register(ctx) -> None:
 
     - Stores the profile directory path (ctx.profile_path) for config loading.
     - Registers the pre_llm_call hook for persona context injection.
+    - Registers transform_llm_output hook for reliable debug injection.
     - Registers pre_tool_call / post_tool_call hooks for safety guard (P4).
 
     Args:
@@ -30,6 +31,9 @@ def register(ctx) -> None:
 
     # P1: persona context injection
     ctx.register_hook("pre_llm_call", injector.inject_context)
+
+    # Debug: reliable post-injection via transform_llm_output
+    ctx.register_hook("transform_llm_output", injector.transform_llm_output)
 
     # P4: safety guard
     ctx.register_hook("pre_tool_call", guard.check_tool_call)
