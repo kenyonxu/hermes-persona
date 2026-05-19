@@ -109,7 +109,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_persona.expression_vector import _ExpressionVector
+from expression_vector import _ExpressionVector
 ```
 
 #### 1.2 Fixture
@@ -733,7 +733,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_persona.injector as injector
+import injector as injector
 ```
 
 #### 3.2 测试类清单

@@ -161,24 +161,24 @@ CC 调研结果：测试文件中约 **86处** `hermes_persona.xxx` 引用，分
 
 | 当前引用模式 | 扁平化后 | 示例 |
 |-------------|----------|------|
-| `import hermes_persona.injector as injector` | `import injector` | conftest.py L9 |
-| `import hermes_persona.injector as mod` | `import injector as mod` | conftest.py L37 |
-| `import hermes_persona.guard as guard` | `import guard` | test_guard.py |
-| `from hermes_persona.injector import inject_context` | `from injector import inject_context` | test_injector.py |
-| `from hermes_persona.dynamic_rules import ...` | `from dynamic_rules import ...` | test_dynamic_rules.py |
-| `from hermes_persona.variance import ...` | `from variance import ...` | test_variance.py |
-| `from hermes_persona.expression_vector import ...` | `from expression_vector import ...` | test_expression_vector.py |
+| `import injector as injector` | `import injector` | conftest.py L9 |
+| `import injector as mod` | `import injector as mod` | conftest.py L37 |
+| `import guard as guard` | `import guard` | test_guard.py |
+| `from injector import inject_context` | `from injector import inject_context` | test_injector.py |
+| `from dynamic_rules import ...` | `from dynamic_rules import ...` | test_dynamic_rules.py |
+| `from variance import ...` | `from variance import ...` | test_variance.py |
+| `from expression_vector import ...` | `from expression_vector import ...` | test_expression_vector.py |
 
 ### 4.3 逐文件迁移清单
 
 | 测试文件 | 预估引用数 | 主要变更 |
 |---------|:---------:|---------|
-| `tests/conftest.py` | 2 | `import hermes_persona.injector` → `import injector` |
-| `tests/test_injector.py` | ~30 | 所有 `hermes_persona.injector` → `injector` |
-| `tests/test_guard.py` | ~10 | `hermes_persona.guard` → `guard` |
-| `tests/test_dynamic_rules.py` | ~15 | `hermes_persona.dynamic_rules` → `dynamic_rules` |
-| `tests/test_variance.py` | ~10 | `hermes_persona.variance` → `variance` |
-| `tests/test_expression_vector.py` | ~10 | `hermes_persona.expression_vector` → `expression_vector` |
+| `tests/conftest.py` | 2 | `import injector` → `import injector` |
+| `tests/test_injector.py` | ~30 | 所有 `injector` → `injector` |
+| `tests/test_guard.py` | ~10 | `guard` → `guard` |
+| `tests/test_dynamic_rules.py` | ~15 | `dynamic_rules` → `dynamic_rules` |
+| `tests/test_variance.py` | ~10 | `variance` → `variance` |
+| `tests/test_expression_vector.py` | ~10 | `expression_vector` → `expression_vector` |
 | `tests/test_modules_switch.py` | ~5 | `hermes_persona.*` → `*` |
 | `tests/test_fixed_signals.py` | ~4 | `hermes_persona.*` → `*` |
 

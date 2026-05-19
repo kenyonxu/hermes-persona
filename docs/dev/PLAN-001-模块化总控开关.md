@@ -95,7 +95,7 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_persona.injector as injector
+import injector as injector
 ```
 
 无需额外 fixture，复用 `conftest.py` 中的 `temp_config_root`、`write_config`、`inject_context_defaults`。
@@ -159,7 +159,7 @@ class TestResolveModules:
 class TestModuleSwitchIntegration:
     def test_time_disabled_no_time_context(self):
         """modules.time=false → 结果不含 🕐。"""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False},
             "time": {"format": "cn_full"},
         }):
@@ -181,7 +181,7 @@ class TestModuleSwitchIntegration:
 
     def test_memory_disabled_not_called(self):
         """modules.memory=false → _recall_memories 不被调用。"""
-        with patch("hermes_persona.injector._recall_memories") as mock_recall:
+        with patch("injector._recall_memories") as mock_recall:
             ...
 
     def test_kanban_disabled_not_injected(self):
@@ -873,7 +873,7 @@ def _debug_summary(modules: dict, parts: list[str]) -> str:
 **验证标准：**
 ```bash
 # 此时 _debug_summary 尚未被 inject_context 调用，需通过单独导入验证函数存在
-python -c "from hermes_persona.injector import _debug_summary, _count_static_rules_in_parts, _fmt_dynamic_sub_status, _fmt_variance_status, _fmt_kanban_debug; print('OK')"
+python -c "from injector import _debug_summary, _count_static_rules_in_parts, _fmt_dynamic_sub_status, _fmt_variance_status, _fmt_kanban_debug; print('OK')"
 # 期望: OK（无 ImportError）
 ```
 

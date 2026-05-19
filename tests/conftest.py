@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_persona.injector as injector
+import injector
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def write_config(temp_config_root):
 @pytest.fixture
 def mock_load_config_empty():
     """Patch _load_config to always return {}."""
-    import hermes_persona.injector as mod
+    import injector as mod
 
     old_load = mod._load_config
     mod._load_config = lambda: {}

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_persona.injector as injector
+import injector
 
 
 # ── TestModuleRegistry ────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ class TestHasAnyDynamic:
 class TestModuleSwitchIntegration:
     def test_time_disabled_no_time_context(self, inject_context_defaults):
         """modules.time=false → result does not contain time string."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False},
             "time": {"format": "cn_full"},
         }):
@@ -158,7 +158,7 @@ class TestModuleSwitchIntegration:
 
     def test_time_enabled_normal_injection(self, inject_context_defaults):
         """modules.time=true → result contains time string."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": True},
             "time": {"format": "cn_full"},
         }):
@@ -168,7 +168,7 @@ class TestModuleSwitchIntegration:
 
     def test_static_rules_disabled_no_rules(self, inject_context_defaults):
         """modules.static_rules=false → no rules injected."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "static_rules": False},
             "context": {"rules": ["规则1", "规则2"]},
         }):
@@ -179,7 +179,7 @@ class TestModuleSwitchIntegration:
 
     def test_static_rules_enabled_normal_injection(self, inject_context_defaults):
         """modules.static_rules=true → rules injected."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "static_rules": True},
             "context": {"rules": ["测试规则"]},
         }):
@@ -189,10 +189,10 @@ class TestModuleSwitchIntegration:
 
     def test_dynamic_parent_disabled(self, inject_context_defaults):
         """modules.dynamic=false → no dynamic rules."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "dynamic": False},
             "dynamic": {"keywords": {"bug": ["规则"]}},
-        }), patch("hermes_persona.injector._recall_memories", return_value=None):
+        }), patch("injector._recall_memories", return_value=None):
             result = injector.inject_context(**inject_context_defaults)
         if result is not None:
             assert "bug" not in result["context"]
@@ -200,7 +200,7 @@ class TestModuleSwitchIntegration:
 
     def test_dynamic_only_time_slots_disabled(self, inject_context_defaults):
         """Only time_slots off → turn_stage and keyword still work."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "dynamic": {"time_slots": False, "turn_stage": True, "keyword": True},
@@ -210,7 +210,7 @@ class TestModuleSwitchIntegration:
                 "turn_stage": {"after_10": ["中期规则"]},
                 "keywords": {"bug": ["Bug规则"]},
             },
-        }), patch("hermes_persona.injector._recall_memories", return_value=None):
+        }), patch("injector._recall_memories", return_value=None):
             inject_context_defaults["conversation_history"] = [{"role": "user"}] * 30
             inject_context_defaults["is_first_turn"] = False
             inject_context_defaults["user_message"] = "there is a bug"
@@ -222,7 +222,7 @@ class TestModuleSwitchIntegration:
 
     def test_dynamic_only_turn_stage_disabled(self, inject_context_defaults):
         """Only turn_stage off → time_slots and keyword still work."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "dynamic": {"time_slots": True, "turn_stage": False, "keyword": True},
@@ -232,7 +232,7 @@ class TestModuleSwitchIntegration:
                 "turn_stage": {"after_10": ["中期规则"]},
                 "keywords": {"bug": ["Bug规则"]},
             },
-        }), patch("hermes_persona.dynamic_rules.datetime") as mock_dt:
+        }), patch("dynamic_rules.datetime") as mock_dt:
             from datetime import datetime
             mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
             inject_context_defaults["conversation_history"] = [{"role": "user"}] * 30
@@ -246,7 +246,7 @@ class TestModuleSwitchIntegration:
 
     def test_dynamic_only_keyword_disabled(self, inject_context_defaults):
         """Only keyword off → time_slots and turn_stage still work."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "dynamic": {"time_slots": True, "turn_stage": True, "keyword": False},
@@ -256,7 +256,7 @@ class TestModuleSwitchIntegration:
                 "turn_stage": {"after_10": ["中期规则"]},
                 "keywords": {"bug": ["Bug规则"]},
             },
-        }), patch("hermes_persona.dynamic_rules.datetime") as mock_dt:
+        }), patch("dynamic_rules.datetime") as mock_dt:
             from datetime import datetime
             mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
             inject_context_defaults["conversation_history"] = [{"role": "user"}] * 30
@@ -270,7 +270,7 @@ class TestModuleSwitchIntegration:
 
     def test_variance_disabled(self, inject_context_defaults):
         """modules.variance=false → no variance injected."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "variance": False},
             "variance": {"fox_ears": {"probability": 1.0, "variants": ["耳朵动了"]}},
         }):
@@ -280,7 +280,7 @@ class TestModuleSwitchIntegration:
 
     def test_variance_enabled(self, inject_context_defaults):
         """modules.variance=true, probability=1.0 → variance injected."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "variance": True},
             "variance": {"fox_ears": {"probability": 1.0, "variants": ["耳朵动了"]}},
         }), patch("random.random", return_value=0.0):
@@ -290,19 +290,19 @@ class TestModuleSwitchIntegration:
 
     def test_memory_disabled_not_called(self, inject_context_defaults):
         """modules.memory=false → _recall_memories is not called."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"memory": False},
             "memory": {"enabled": True, "api_url": "http://example.com"},
-        }), patch("hermes_persona.injector._recall_memories") as mock_recall:
+        }), patch("injector._recall_memories") as mock_recall:
             injector.inject_context(**inject_context_defaults)
         mock_recall.assert_not_called()
 
     def test_memory_enabled_called(self, inject_context_defaults):
         """modules.memory=true → _recall_memories is called."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"memory": True},
             "memory": {"enabled": True, "api_url": "http://example.com"},
-        }), patch("hermes_persona.injector._recall_memories", return_value=None) as mock_recall:
+        }), patch("injector._recall_memories", return_value=None) as mock_recall:
             injector.inject_context(**inject_context_defaults)
         mock_recall.assert_called_once()
 
@@ -312,7 +312,7 @@ class TestModuleSwitchIntegration:
         kanban_dir.mkdir()
         (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
 
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "kanban": False},
             "project": {"enabled": True, "kanban_path": str(kanban_dir)},
         }):
@@ -326,7 +326,7 @@ class TestModuleSwitchIntegration:
         kanban_dir.mkdir()
         (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
 
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "kanban": True},
             "project": {"enabled": True, "kanban_path": str(kanban_dir)},
         }):
@@ -341,7 +341,7 @@ class TestModuleSwitchIntegration:
         (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
 
         inject_context_defaults["is_first_turn"] = False
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": False, "kanban": True},
             "project": {"enabled": True, "kanban_path": str(kanban_dir)},
         }):
@@ -351,7 +351,7 @@ class TestModuleSwitchIntegration:
 
     def test_all_modules_disabled_returns_none(self, inject_context_defaults):
         """All modules off → inject_context returns None."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "static_rules": False,
@@ -373,7 +373,7 @@ class TestModuleSwitchIntegration:
 class TestDebugMode:
     def test_debug_disabled_no_summary(self, inject_context_defaults):
         """modules.debug=false (default) → context does not contain debug summary."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": True, "debug": False},
             "time": {"format": "cn_full"},
         }):
@@ -383,7 +383,7 @@ class TestDebugMode:
 
     def test_debug_enabled_appends_summary(self, inject_context_defaults):
         """modules.debug=true → _PENDING_DEBUG_BLOCK is set with debug summary."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": True, "debug": True},
             "time": {"format": "cn_full"},
         }):
@@ -402,7 +402,7 @@ class TestDebugMode:
 
     def test_debug_only_all_modules_off_returns_none(self, inject_context_defaults):
         """All modules off + debug on → returns None (debug doesn't count for empty check)."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "static_rules": False,
@@ -418,7 +418,7 @@ class TestDebugMode:
 
     def test_debug_memory_disabled_shows_stopped(self, inject_context_defaults):
         """debug=true, memory=false → _PENDING_DEBUG_BLOCK shows 🧠 已停用."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": True, "memory": False, "debug": True},
             "time": {"format": "cn_full"},
         }):
@@ -435,7 +435,7 @@ class TestDebugMode:
 class TestBackwardCompatibility:
     def test_legacy_time_enabled_false(self, inject_context_defaults):
         """No modules key, time.enabled=false → time not injected."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "time": {"enabled": False},
         }):
             result = injector.inject_context(**inject_context_defaults)
@@ -444,9 +444,9 @@ class TestBackwardCompatibility:
 
     def test_legacy_memory_enabled_true(self, inject_context_defaults):
         """No modules key, memory.enabled=true → memory recall is called."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "memory": {"enabled": True, "api_url": "http://example.com"},
-        }), patch("hermes_persona.injector._recall_memories", return_value=None) as mock_recall:
+        }), patch("injector._recall_memories", return_value=None) as mock_recall:
             injector.inject_context(**inject_context_defaults)
         mock_recall.assert_called_once()
 
@@ -456,7 +456,7 @@ class TestBackwardCompatibility:
         kanban_dir.mkdir()
         (kanban_dir / "task.md").write_text("优先级: P0\n", encoding="utf-8")
 
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "project": {"enabled": True, "kanban_path": str(kanban_dir)},
         }):
             result = injector.inject_context(**inject_context_defaults)
@@ -465,7 +465,7 @@ class TestBackwardCompatibility:
 
     def test_modules_wins_over_legacy(self, inject_context_defaults):
         """Both modules.time=true and time.enabled=false → modules wins."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": True},
             "time": {"enabled": False},
         }):
@@ -475,7 +475,7 @@ class TestBackwardCompatibility:
 
     def test_no_modules_no_legacy_default_behavior(self, inject_context_defaults):
         """No modules, no legacy switches → default behavior (time enabled)."""
-        with patch("hermes_persona.injector._load_config", return_value={}):
+        with patch("injector._load_config", return_value={}):
             result = injector.inject_context(**inject_context_defaults)
         assert result is not None
         assert "🕐" in result["context"]
@@ -487,7 +487,7 @@ class TestBackwardCompatibility:
 class TestEdgeCases:
     def test_modules_none_no_crash(self, inject_context_defaults):
         """modules=None in config → no TypeError, defaults to default behavior."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": None,
         }):
             result = injector.inject_context(**inject_context_defaults)
@@ -497,7 +497,7 @@ class TestEdgeCases:
 
     def test_modules_non_bool_value_truthy(self, inject_context_defaults):
         """modules.time=1 → truthy, treated as True."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {"time": 1},
             "time": {"format": "cn_full"},
         }):
@@ -507,7 +507,7 @@ class TestEdgeCases:
 
     def test_dynamic_subchannel_missing_keys_default_true(self, inject_context_defaults):
         """dynamic dict missing some subchannel keys → defaults to True."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "dynamic": {"time_slots": False},  # turn_stage & keyword missing
@@ -517,7 +517,7 @@ class TestEdgeCases:
                 "turn_stage": {"after_10": ["中期规则"]},
                 "keywords": {"bug": ["Bug规则"]},
             },
-        }), patch("hermes_persona.dynamic_rules.datetime") as mock_dt:
+        }), patch("dynamic_rules.datetime") as mock_dt:
             from datetime import datetime
             mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
             inject_context_defaults["conversation_history"] = [{"role": "user"}] * 30
@@ -533,7 +533,7 @@ class TestEdgeCases:
 
     def test_all_modules_off_no_exception(self, inject_context_defaults):
         """All modules off → returns None, no exception."""
-        with patch("hermes_persona.injector._load_config", return_value={
+        with patch("injector._load_config", return_value={
             "modules": {
                 "time": False,
                 "static_rules": False,

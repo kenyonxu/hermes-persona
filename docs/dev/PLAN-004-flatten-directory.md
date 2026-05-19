@@ -206,7 +206,7 @@ def register(ctx) -> None:
 - 删除 `from . import guard` / `from . import injector` → 改为 `import guard` / `import injector`（同级导入）
 - 删除 `# ── DIAGNOSTIC PROBE ──` 两段（共 ~14 行）
 - 删除 `# ── END PROBE ──` 标记行
-- docstring 中 `from hermes_persona import register` → `from . import register`
+- docstring 中 `import register` → `from . import register`
 - 保留完整 docstring 和 `transform_llm_output` 注册
 - 删除 `__all__` 声明（内层新版无此字段）
 
@@ -308,30 +308,30 @@ git checkout HEAD -- injector.py guard.py
 
 | 文件 | 引用数 | 主要模式 |
 |------|:---:|---------|
-| `tests/test_injector.py` | 26 | `import hermes_persona.injector` / `from hermes_persona.injector import` / `patch("hermes_persona.injector.xxx")` |
-| `tests/test_modules_switch.py` | 38 | 同上 + `patch("hermes_persona.dynamic_rules.datetime")` |
-| `tests/test_dynamic_rules.py` | 10 | `from hermes_persona.dynamic_rules import` / `patch("hermes_persona.dynamic_rules.xxx")` |
-| `tests/test_guard.py` | 4 | `from hermes_persona.guard import` / `patch("hermes_persona.guard.xxx")` |
-| `tests/conftest.py` | 2 | `import hermes_persona.injector as injector` |
-| `tests/test_variance.py` | 2 | `from hermes_persona.variance import` |
-| `tests/test_expression_vector.py` | 1 | `from hermes_persona.expression_vector import` |
-| `tests/test_fixed_signals.py` | 1 | `import hermes_persona.injector as injector` |
+| `tests/test_injector.py` | 26 | `import injector` / `from injector import` / `patch("injector.xxx")` |
+| `tests/test_modules_switch.py` | 38 | 同上 + `patch("dynamic_rules.datetime")` |
+| `tests/test_dynamic_rules.py` | 10 | `from dynamic_rules import` / `patch("dynamic_rules.xxx")` |
+| `tests/test_guard.py` | 4 | `from guard import` / `patch("guard.xxx")` |
+| `tests/conftest.py` | 2 | `import injector as injector` |
+| `tests/test_variance.py` | 2 | `from variance import` |
+| `tests/test_expression_vector.py` | 1 | `from expression_vector import` |
+| `tests/test_fixed_signals.py` | 1 | `import injector as injector` |
 | **合计** | **84** | |
 
 #### 4.1 精确 sed 替换脚本
 
-**重要：** 必须按以下顺序执行，确保 `import hermes_persona.injector as injector` 在 `patch("hermes_persona.injector.xxx")` 之前被替换。但由于 sed 是行匹配，两种模式互不冲突，可安全并行执行。
+**重要：** 必须按以下顺序执行，确保 `import injector as injector` 在 `patch("injector.xxx")` 之前被替换。但由于 sed 是行匹配，两种模式互不冲突，可安全并行执行。
 
 ```bash
 # ============================================================
-# 批量替换模式 1: import hermes_persona.xxx as xxx
-#   import hermes_persona.injector as injector  →  import injector
+# 批量替换模式 1: import.xxx as xxx
+#   import injector as injector  →  import injector
 # ============================================================
-sed -i 's/import hermes_persona\.injector as injector/import injector/g' tests/*.py
+sed -i 's/import\.injector as injector/import injector/g' tests/*.py
 
 # ============================================================
 # 批量替换模式 2: from hermes_persona.xxx import ...
-#   from hermes_persona.injector import inject_context  →  from injector import inject_context
+#   from injector import inject_context  →  from injector import inject_context
 # ============================================================
 sed -i 's/from hermes_persona\.injector import/from injector import/g' tests/*.py
 sed -i 's/from hermes_persona\.guard import/from guard import/g' tests/*.py
@@ -341,7 +341,7 @@ sed -i 's/from hermes_persona\.variance import/from variance import/g' tests/*.p
 
 # ============================================================
 # 批量替换模式 3: patch("hermes_persona.xxx.yyy")
-#   patch("hermes_persona.injector.datetime")  →  patch("injector.datetime")
+#   patch("injector.datetime")  →  patch("injector.datetime")
 # ============================================================
 sed -i 's/patch("hermes_persona\.injector\./patch("injector./g' tests/*.py
 sed -i 's/patch("hermes_persona\.guard\./patch("guard./g' tests/*.py
@@ -351,7 +351,7 @@ sed -i 's/patch("hermes_persona\.variance\./patch("variance./g' tests/*.py
 
 # ============================================================
 # 批量替换模式 4: 残留的 hermes_persona.xxx（泛化兜底）
-#   hermes_persona.injector.load_config  →  injector.load_config
+#   injector.load_config  →  injector.load_config
 # ============================================================
 sed -i 's/hermes_persona\.injector/injector/g' tests/*.py
 sed -i 's/hermes_persona\.guard/guard/g' tests/*.py
@@ -476,8 +476,8 @@ find docs/ -name "*.md" -exec sed -i \
     -e 's/hermes_persona\.dynamic_rules/dynamic_rules/g' \
     -e 's/hermes_persona\.expression_vector/expression_vector/g' \
     -e 's/hermes_persona\.variance/variance/g' \
-    -e 's/from hermes_persona import/import/g' \
-    -e 's/import hermes_persona/import/g' \
+    -e 's/import/import/g' \
+    -e 's/import/import/g' \
     {} +
 ```
 

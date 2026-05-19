@@ -1,86 +1,297 @@
 {
+  "/home/kai-remote/github/hermes-persona/expression_vector.py": {
+    "mtime": 1779149116.9858932,
+    "ast_hash": "5b7bbd7aabed1af160fe7fd72f6bcbfa",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/variance.py": {
+    "mtime": 1778935717.370223,
+    "ast_hash": "50f67bebfe67cc67b109f121692a984f",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/injector.py": {
+    "mtime": 1779233901.3584867,
+    "ast_hash": "ef9efbc922f96d1b71a3571e82f055cf",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/__init__.py": {
+    "mtime": 1779233873.7114458,
+    "ast_hash": "9b84c02d65a8e08ca1850a585bb71ab1",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/dynamic_rules.py": {
+    "mtime": 1779077196.142608,
+    "ast_hash": "d8b6ae80950c3fe2f856a0d8a98d9f4f",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/guard.py": {
+    "mtime": 1779233901.369579,
+    "ast_hash": "375ec0a3e7aabc6b91cbe6e21729e87d",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/coverage_html_cb_dd2e7eb5.js": {
+    "mtime": 1778937828.2702222,
+    "ast_hash": "47d6ea8f87058d0cea6b52102adf1b13",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/status.json": {
+    "mtime": 1778937828.291569,
+    "ast_hash": "7cc74cae3460f357c43bfdf225a5e51e",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/.claude/settings.json": {
+    "mtime": 1779199145.6518588,
+    "ast_hash": "1bb3c8885d2dc9ba84b9db49370f3730",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/scripts/benchmark.py": {
+    "mtime": 1778938479.2245173,
+    "ast_hash": "4886e8f597f502e885b7f4cb5671ef71",
+    "semantic_hash": ""
+  },
   "/home/kai-remote/github/hermes-persona/tests/test_dynamic_rules.py": {
-    "mtime": 1778936043.8754315,
-    "hash": "824d8f32ac1baa67373a73178cc0a382"
+    "mtime": 1779233938.7430978,
+    "ast_hash": "b3d7079a788e86d14ecc1f8dab8b4567",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/tests/test_expression_vector.py": {
+    "mtime": 1779233938.7433326,
+    "ast_hash": "edfa4f280751ea8cc6e2a772aea8318b",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/tests/conftest.py": {
-    "mtime": 1778934800.8442857,
-    "hash": "3029fd70ab68e0dc57dab2da3eb7311b"
+    "mtime": 1779233938.742575,
+    "ast_hash": "0c4c01dbf187475285da5c2542347a13",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/tests/test_injector.py": {
-    "mtime": 1778936223.897578,
-    "hash": "00a09455dfc113abc33ec084b76e31ef"
+    "mtime": 1779233938.743729,
+    "ast_hash": "949bbd39cc2fa75452cf957faa86f62e",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/tests/__init__.py": {
-    "mtime": 1778934800.8062854,
-    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    "mtime": 1779233938.7426634,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/tests/test_modules_switch.py": {
+    "mtime": 1779233938.7438803,
+    "ast_hash": "aa02ce37b118d716abdddfb2b4a3a2a5",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/tests/test_fixed_signals.py": {
+    "mtime": 1779233938.7434266,
+    "ast_hash": "2f55f29a6f9222502245b62350e9c3b1",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/tests/test_variance.py": {
-    "mtime": 1778936002.8111644,
-    "hash": "a57161ab290495346dd784068cf5be7d"
+    "mtime": 1779233938.7440097,
+    "ast_hash": "5131159f8103daf04ea106e4d0e46391",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/hermes_persona/variance.py": {
-    "mtime": 1778935717.370223,
-    "hash": "50f67bebfe67cc67b109f121692a984f"
+  "/home/kai-remote/github/hermes-persona/tests/test_guard.py": {
+    "mtime": 1779233938.7435477,
+    "ast_hash": "575bc75873b052ee883088cce4572553",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/hermes_persona/injector.py": {
-    "mtime": 1778935717.4082232,
-    "hash": "6cb9eb464053ac7ff2321183d6d44b93"
+  "/home/kai-remote/github/hermes-persona/examples/persona-config.json": {
+    "mtime": 1779149523.7216945,
+    "ast_hash": "0a4c73dc420d0064406ce7f8458c3421",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/hermes_persona/__init__.py": {
-    "mtime": 1778934584.0842314,
-    "hash": "111d03be60cf302e7c91be6727c950a5"
+  "/home/kai-remote/github/hermes-persona/AGENTS_EN.md": {
+    "mtime": 1779072515.9123883,
+    "ast_hash": "3b86186add50ce160e102418b6afaa57",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/hermes_persona/dynamic_rules.py": {
-    "mtime": 1778935749.5104504,
-    "hash": "09b8e0d0b5b99e7e38005cd34eb34c22"
+  "/home/kai-remote/github/hermes-persona/DESIGN_EN.md": {
+    "mtime": 1779072515.9123883,
+    "ast_hash": "feaaf19df7ae54ba855056bfe57ce014",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/hermes_persona/guard.py": {
-    "mtime": 1778934498.1848032,
-    "hash": "9289590236a03866b626d238ad99100b"
+  "/home/kai-remote/github/hermes-persona/CHANGELOG.md": {
+    "mtime": 1779187078.8529198,
+    "ast_hash": "e86b720cdfda2b9d5b74cb6c721fbf90",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/CLAUDE.md": {
+    "mtime": 1779073432.7689874,
+    "ast_hash": "15d6c9b0127e4621d0caca71b3341d7c",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/plugin.yaml": {
-    "mtime": 1778934893.7899191,
-    "hash": "9a0b87ec63168bf8468e5b80dcc20931"
+    "mtime": 1779192170.8501117,
+    "ast_hash": "439292861f6e8ad51e5848eb3d5c4902",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/README.md": {
-    "mtime": 1778930413.457631,
-    "hash": "28d09e823fcbd53a7d19f3ed9782404b"
+    "mtime": 1779072515.9123883,
+    "ast_hash": "c76305acfc235769062e8fb94ed87186",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/DESIGN.md": {
+    "mtime": 1779072515.9123883,
+    "ast_hash": "52035a473d7a44b4cb37ba70ad830714",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/README_EN.md": {
+    "mtime": 1779072515.9129498,
+    "ast_hash": "3a2b5932b159823354d56ceba4468c05",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/AGENTS.md": {
-    "mtime": 1778930364.1096015,
-    "hash": "d3c42ea4f4ab048bdde5a038394780b8"
+    "mtime": 1779073406.1616843,
+    "ast_hash": "d67dc79eb2adf1e01e01b0791375f340",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/EXAMPLES.md": {
+    "mtime": 1779233994.4531593,
+    "ast_hash": "3b77d4262c31067797c9ae6121390568",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/docs/hermes-persona-plugin-design.md": {
-    "mtime": 1778928962.5368645,
-    "hash": "b0b5d1ea9c357fe3caa5d0387723a78f"
+    "mtime": 1779233994.4566035,
+    "ast_hash": "b0b5d1ea9c357fe3caa5d0387723a78f",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/docs/user-story-zhihui.md": {
-    "mtime": 1778928501.7156208,
-    "hash": "39c8272a40150f1d110a4d697b9a2852"
+  "/home/kai-remote/github/hermes-persona/docs/CONFIG_REFERENCE.md": {
+    "mtime": 1779233994.4616356,
+    "ast_hash": "0cbef9727a33e6291d8964a1132c4228",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/CASE_STUDY_AGLAEA.md": {
+    "mtime": 1779233994.4619539,
+    "ast_hash": "690c74ebb248dc6be1a51dccf683f1fa",
+    "semantic_hash": ""
   },
   "/home/kai-remote/github/hermes-persona/docs/dynamic-rules-injection-design.md": {
-    "mtime": 1778931688.5322478,
-    "hash": "11dc05297046ab3bbf074350562c39a5"
+    "mtime": 1779233994.4735491,
+    "ast_hash": "11dc05297046ab3bbf074350562c39a5",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/specs/hermes-persona-plan.md": {
-    "mtime": 1778933987.3990517,
-    "hash": "8dd7c3b77f4ea3074677051862ee2f50"
+  "/home/kai-remote/github/hermes-persona/docs/en/EXAMPLES.md": {
+    "mtime": 1779233994.4579356,
+    "ast_hash": "f593a9083615f25ef67d912cc63fd612",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/specs/hermes-persona-spec.md": {
-    "mtime": 1778932405.8063655,
-    "hash": "cf4ef065d5659eb1354399c7250dcc28"
+  "/home/kai-remote/github/hermes-persona/docs/en/hermes-persona-plugin-design.md": {
+    "mtime": 1779233994.4588902,
+    "ast_hash": "58372a2b0e9793dab45d12fd86bd8232",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/amphoreus-personas/00-overview.md": {
-    "mtime": 1778574521.700421,
-    "hash": "062a28b3caba5f8b8966aa0d129596d9"
+  "/home/kai-remote/github/hermes-persona/docs/en/CONFIG_REFERENCE.md": {
+    "mtime": 1779233994.4598367,
+    "ast_hash": "2af2b2aa93e3728158aa17a17fd5eae9",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/amphoreus-personas/raw-materials/aglaea-raw.md": {
-    "mtime": 1778574521.702176,
-    "hash": "b058e6f5c7d3f49a760d495be1f7303d"
+  "/home/kai-remote/github/hermes-persona/docs/en/CASE_STUDY_AGLAEA.md": {
+    "mtime": 1779233994.4603705,
+    "ast_hash": "01bfce494213305c26e30c6020ee42b6",
+    "semantic_hash": ""
   },
-  "/home/kai-remote/github/hermes-persona/amphoreus-personas/raw-materials/aglaea-hoyolab-wiki.md": {
-    "mtime": 1778574521.7017386,
-    "hash": "9a1af63c713aa33284791d99bd3ff7b2"
+  "/home/kai-remote/github/hermes-persona/docs/en/dynamic-rules-injection-design.md": {
+    "mtime": 1779233994.461089,
+    "ast_hash": "eb1b35d6d240c1fa7da9c7dbc3a693af",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/PLAN-001-\u6a21\u5757\u5316\u603b\u63a7\u5f00\u5173.md": {
+    "mtime": 1779233994.4639902,
+    "ast_hash": "730d9a18631e7ba66794e9a01063c459",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/SPEC-004-flatten-directory.md": {
+    "mtime": 1779233994.4652874,
+    "ast_hash": "e38e35ef92a102f8e27183377a2d1dee",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/US-001-\u6a21\u5757\u5316\u603b\u63a7\u5f00\u5173.md": {
+    "mtime": 1779233994.465878,
+    "ast_hash": "86d35c1ea698b1b2f268515931f14bf8",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/FIX-001-transform-llm-output-debug.md": {
+    "mtime": 1779233994.4662056,
+    "ast_hash": "35ae1adeb29d98dd0df97044964193c4",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/SPEC-003-debug-rich-i18n.md": {
+    "mtime": 1779233994.4666448,
+    "ast_hash": "7c621d33f24ceee2e004881bb52c4ed1",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/SPEC-002-\u8868\u8fbe\u5411\u91cf\u4e0eFuzzyUtility.md": {
+    "mtime": 1779233994.4678981,
+    "ast_hash": "03889c16535317dae5c97851fda0c31f",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/SPEC-001-\u6a21\u5757\u5316\u603b\u63a7\u5f00\u5173.md": {
+    "mtime": 1779233994.4691896,
+    "ast_hash": "bda1cf2df43ab0a1116bc067b2d11c33",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/PLAN-004-flatten-directory.md": {
+    "mtime": 1779233994.470463,
+    "ast_hash": "56fdeeea4b527bd881ced63f9f896251",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/PLAN-002-\u8868\u8fbe\u5411\u91cf\u4e0eFuzzyUtility.md": {
+    "mtime": 1779233994.472281,
+    "ast_hash": "670368c931c649150fb6983a49e3c0b6",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/docs/dev/US-002-\u8868\u8fbe\u5411\u91cf\u4e0eFuzzyUtility.md": {
+    "mtime": 1779233994.4729557,
+    "ast_hash": "e693236e94fb58682e0dfdfeab14fe44",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/z_ab6c43272fee47af___init___py.html": {
+    "mtime": 1778937828.272167,
+    "ast_hash": "95da486cebadf56df061d515cc04fdcc",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/class_index.html": {
+    "mtime": 1778937828.2942946,
+    "ast_hash": "fa129d158c23725a99d0aace2707c536",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/z_ab6c43272fee47af_dynamic_rules_py.html": {
+    "mtime": 1778937828.2764306,
+    "ast_hash": "7785e8d9b1ce710724d0f6fd84c41aa2",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/function_index.html": {
+    "mtime": 1778937828.2939293,
+    "ast_hash": "a37d7ec8379a218ea889b5571e1ba491",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/z_ab6c43272fee47af_variance_py.html": {
+    "mtime": 1778937828.291085,
+    "ast_hash": "3c8e2c65f4b9f56cffe25dbb1f0afa54",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/index.html": {
+    "mtime": 1778937828.2914422,
+    "ast_hash": "0acd68b1ce05c72cadb5a50ac4607c7f",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/z_ab6c43272fee47af_injector_py.html": {
+    "mtime": 1778937828.2892277,
+    "ast_hash": "0eb60b3947fdabbd66981daeb6bd1f0e",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/z_ab6c43272fee47af_guard_py.html": {
+    "mtime": 1778937828.281291,
+    "ast_hash": "58e72c01e73f3ae197160156e9ce25d1",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/keybd_closed_cb_900cfef5.png": {
+    "mtime": 1778937828.2704217,
+    "ast_hash": "8285ae9f3a2652fbb7ffb8575590d91f",
+    "semantic_hash": ""
+  },
+  "/home/kai-remote/github/hermes-persona/htmlcov/favicon_32_cb_c827f16f.png": {
+    "mtime": 1778937828.2706087,
+    "ast_hash": "fe1c45ede5eaa2eaa3aff71f210afb26",
+    "semantic_hash": ""
   }
 }

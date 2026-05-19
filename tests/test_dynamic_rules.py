@@ -1,11 +1,11 @@
-"""P1 tests for hermes_persona.dynamic_rules — time slots, turn stages,
+"""P1 tests for dynamic_rules — time slots, turn stages,
 in-time-range logic, and dynamic rule selection."""
 
 from unittest.mock import patch
 
 import pytest
 
-from hermes_persona.dynamic_rules import (
+from dynamic_rules import (
     _in_time_range,
     _match_keyword,
     _match_time_slot,
@@ -55,7 +55,7 @@ class TestInTimeRange:
 
 
 class TestMatchTimeSlot:
-    @patch("hermes_persona.dynamic_rules.datetime")
+    @patch("dynamic_rules.datetime")
     def test_normal_slot_match(self, mock_dt):
         """09:00-17:00 slot matches at 14:30."""
         from datetime import datetime
@@ -67,7 +67,7 @@ class TestMatchTimeSlot:
         assert "[09:00-17:00]" in result[0]
         assert "工作时间规则" in result[0]
 
-    @patch("hermes_persona.dynamic_rules.datetime")
+    @patch("dynamic_rules.datetime")
     def test_cross_midnight_match_at_night(self, mock_dt):
         """22:00-05:00 slot matches at 02:30 (cross-midnight)."""
         from datetime import datetime
@@ -79,7 +79,7 @@ class TestMatchTimeSlot:
         assert "[22:00-05:00]" in result[0]
         assert "深夜模式" in result[0]
 
-    @patch("hermes_persona.dynamic_rules.datetime")
+    @patch("dynamic_rules.datetime")
     def test_cross_midnight_match_at_edge(self, mock_dt):
         """22:00-05:00 slot matches at 22:00 (edge)."""
         from datetime import datetime
@@ -89,7 +89,7 @@ class TestMatchTimeSlot:
         result = _match_time_slot(slots)
         assert len(result) == 1
 
-    @patch("hermes_persona.dynamic_rules.datetime")
+    @patch("dynamic_rules.datetime")
     def test_no_match(self, mock_dt):
         """Returns [] when current time is not in any slot."""
         from datetime import datetime
@@ -101,7 +101,7 @@ class TestMatchTimeSlot:
 
     def test_invalid_slot_key_skipped(self):
         """A malformed slot key is skipped silently."""
-        with patch("hermes_persona.dynamic_rules.datetime") as mock_dt:
+        with patch("dynamic_rules.datetime") as mock_dt:
             from datetime import datetime
 
             mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
@@ -185,7 +185,7 @@ class TestSelectDynamicRules:
         result = _select_dynamic_rules({}, "hello", False, 0)
         assert result == []
 
-    @patch("hermes_persona.dynamic_rules.datetime")
+    @patch("dynamic_rules.datetime")
     def test_selects_time_slot_and_turn_stage(self, mock_dt):
         """Combines time slot and turn stage rules."""
         from datetime import datetime
@@ -200,7 +200,7 @@ class TestSelectDynamicRules:
         assert any("工作时间" in r for r in result)
         assert any("后期对话" in r for r in result)
 
-    @patch("hermes_persona.dynamic_rules.datetime")
+    @patch("dynamic_rules.datetime")
     def test_first_turn_in_select(self, mock_dt):
         """First turn rules are injected via _select_dynamic_rules."""
         from datetime import datetime
@@ -325,7 +325,7 @@ class TestMatchKeyword:
         """Keyword matching is wired into _select_dynamic_rules."""
         from datetime import datetime
 
-        with patch("hermes_persona.dynamic_rules.datetime") as mock_dt:
+        with patch("dynamic_rules.datetime") as mock_dt:
             mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
             dynamic_cfg = {
                 "keywords": {"bug": ["检测到Bug"]},

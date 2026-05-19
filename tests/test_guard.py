@@ -1,4 +1,4 @@
-"""Tests for hermes_persona.guard — P4 safety guard and audit."""
+"""Tests for guard — P4 safety guard and audit."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_persona.guard import check_tool_call, audit_tool_call, _load_guard_config
+from guard import check_tool_call, audit_tool_call, _load_guard_config
 
 
 # ---------------------------------------------------------------------------
@@ -18,7 +18,7 @@ from hermes_persona.guard import check_tool_call, audit_tool_call, _load_guard_c
 def _mock_guard_config(monkeypatch, config: dict):
     """Patch _load_guard_config to return a specific config."""
     monkeypatch.setattr(
-        "hermes_persona.guard._load_guard_config",
+        "guard._load_guard_config",
         lambda: config,
     )
 
@@ -400,7 +400,7 @@ def test_audit_missing_enabled_defaults_false(monkeypatch):
 def test_load_guard_config_empty_when_disabled(monkeypatch):
     """When guard node doesn't exist, return {}."""
     monkeypatch.setattr(
-        "hermes_persona.guard._load_guard_config",
+        "guard._load_guard_config",
         lambda: {},
     )
     assert _load_guard_config() == {}

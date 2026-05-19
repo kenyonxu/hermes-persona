@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_persona.expression_vector import _ExpressionVector
+from expression_vector import _ExpressionVector
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────

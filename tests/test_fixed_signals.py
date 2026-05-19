@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_persona.injector as injector
+import injector
 
 
 # ── TestMessageLengthHint: FS-01 ~ FS-03 ──────────────────────────────────

@@ -1,10 +1,10 @@
-"""P2 tests for hermes_persona.variance — two-layer randomization."""
+"""P2 tests for variance — two-layer randomization."""
 
 import random
 
 import pytest
 
-from hermes_persona.variance import _randomize_variance
+from variance import _randomize_variance
 
 
 class TestRandomizeVariance:

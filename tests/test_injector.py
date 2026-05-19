@@ -1,4 +1,4 @@
-"""P1 tests for hermes_persona.injector — config loading, time context,
+"""P1 tests for injector — config loading, time context,
 static rules, and inject_context assembly."""
 
 import json
@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_persona.injector as injector
-from hermes_persona.injector import (
+import injector
+from injector import (
     _inject_static_rules,
     _load_config,
     _recall_memories,
@@ -59,21 +59,21 @@ class TestTimeContext:
         assert "周" in result
         assert ":" in result
 
-    @patch("hermes_persona.injector.datetime")
+    @patch("injector.datetime")
     def test_iso_format(self, mock_dt):
         """iso format produces ISO8601 string."""
         mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
         result = _time_context("iso")
         assert result == "🕐 2026-05-16T14:30:00"
 
-    @patch("hermes_persona.injector.datetime")
+    @patch("injector.datetime")
     def test_compact_format(self, mock_dt):
         """compact format produces MM/DD HH:MM string."""
         mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
         result = _time_context("compact")
         assert result == "🕐 05/16 14:30"
 
-    @patch("hermes_persona.injector.datetime")
+    @patch("injector.datetime")
     def test_unknown_format_falls_back(self, mock_dt):
         """Unknown format falls back to cn_full."""
         mock_dt.now.return_value = datetime(2026, 5, 16, 14, 30, 0)
@@ -114,7 +114,7 @@ class TestStaticRules:
 
 
 class TestInjectContext:
-    @patch("hermes_persona.injector._load_config", return_value={})
+    @patch("injector._load_config", return_value={})
     def test_empty_config_returns_time_context(self, _mock_load, inject_context_defaults):
         """With empty config {}, inject_context returns at least time context."""
         result = inject_context(**inject_context_defaults)
@@ -122,7 +122,7 @@ class TestInjectContext:
         assert "context" in result
         assert "🕐" in result["context"]
 
-    @patch("hermes_persona.injector._load_config", return_value={})
+    @patch("injector._load_config", return_value={})
     def test_time_disabled(self, _mock_load, inject_context_defaults):
         """When time.enabled is False, no time line in output."""
         _mock_load.return_value = {"time": {"enabled": False}}
@@ -131,7 +131,7 @@ class TestInjectContext:
         if result is not None:
             assert "🕐" not in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_static_rules_appear_every_turn(self, mock_load, inject_context_defaults):
         """Static rules from context.rules appear in every turn."""
         mock_load.return_value = {
@@ -142,7 +142,7 @@ class TestInjectContext:
         assert result is not None
         assert "你是助手" in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_rules_first_turn_only_first_turn(self, mock_load, inject_context_defaults):
         """First-turn-only rules appear on the first turn."""
         mock_load.return_value = {
@@ -153,7 +153,7 @@ class TestInjectContext:
         assert result is not None
         assert "欢迎新用户" in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_rules_first_turn_only_not_second_turn(self, mock_load, inject_context_defaults):
         """First-turn-only rules do NOT appear on later turns."""
         mock_load.return_value = {
@@ -169,18 +169,18 @@ class TestInjectContext:
         """conversation_history=None should not crash."""
         inject_context_defaults["conversation_history"] = None
         inject_context_defaults["is_first_turn"] = True
-        with patch("hermes_persona.injector._load_config", return_value={}):
+        with patch("injector._load_config", return_value={}):
             result = inject_context(**inject_context_defaults)
         assert result is not None  # at least time context
 
     def test_history_empty_no_crash(self, inject_context_defaults):
         """conversation_history=[] should not crash."""
         inject_context_defaults["conversation_history"] = []
-        with patch("hermes_persona.injector._load_config", return_value={}):
+        with patch("injector._load_config", return_value={}):
             result = inject_context(**inject_context_defaults)
         assert result is not None
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_no_parts_returns_none(self, mock_load, inject_context_defaults):
         """When all config is disabled, inject_context returns None."""
         mock_load.return_value = {
@@ -190,7 +190,7 @@ class TestInjectContext:
         result = inject_context(**inject_context_defaults)
         assert result is None
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_exception_does_not_propagate(self, mock_load, inject_context_defaults):
         """Any exception inside inject_context returns None, not an unhandled error."""
         mock_load.side_effect = RuntimeError("simulated failure")
@@ -350,7 +350,7 @@ class TestMemoryRecall:
 
 
 class TestInjectContextP2:
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_keyword_injection_in_context(self, mock_load, inject_context_defaults):
         """Keyword matching injects rules into the full context."""
         mock_load.return_value = {
@@ -361,8 +361,8 @@ class TestInjectContextP2:
         assert result is not None
         assert "检测到异常" in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
-    @patch("hermes_persona.injector._recall_memories")
+    @patch("injector._load_config")
+    @patch("injector._recall_memories")
     def test_memory_injection_in_context(self, mock_recall, mock_load, inject_context_defaults):
         """Memory recall result is injected into the full context."""
         mock_load.return_value = {
@@ -373,8 +373,8 @@ class TestInjectContextP2:
         assert result is not None
         assert "历史片段" in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
-    @patch("hermes_persona.injector._recall_memories")
+    @patch("injector._load_config")
+    @patch("injector._recall_memories")
     def test_memory_none_not_injected(self, mock_recall, mock_load, inject_context_defaults):
         """When memory recall returns None, it is not appended."""
         mock_load.return_value = {
@@ -480,7 +480,7 @@ class TestKanbanDirect:
 
 
 class TestInjectContextP3:
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_kanban_first_turn_injects(self, mock_load, inject_context_defaults, tmp_path):
         """Kanban is injected when is_first_turn=True and project.enabled=True."""
         kanban_dir = tmp_path / "kanban"
@@ -499,7 +499,7 @@ class TestInjectContextP3:
         assert "📋 项目状态:" in result["context"]
         assert "task" in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_kanban_not_first_turn(self, mock_load, inject_context_defaults, tmp_path):
         """Kanban is NOT injected when is_first_turn=False."""
         kanban_dir = tmp_path / "kanban"
@@ -517,7 +517,7 @@ class TestInjectContextP3:
         if result is not None:
             assert "📋 项目状态:" not in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_kanban_path_not_found_degradation(self, mock_load, inject_context_defaults, tmp_path):
         """Non-existent kanban directory → graceful degradation, no exception."""
         bad_path = str(tmp_path / "does_not_exist")
@@ -533,7 +533,7 @@ class TestInjectContextP3:
         if result is not None:
             assert "📋 项目状态:" not in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_kanban_empty_dir_no_injection(self, mock_load, inject_context_defaults, tmp_path):
         """Empty kanban directory → no kanban content injected."""
         kanban_dir = tmp_path / "kanban"
@@ -550,7 +550,7 @@ class TestInjectContextP3:
         if result is not None:
             assert "📋 项目状态:" not in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_kanban_custom_label_active(self, mock_load, inject_context_defaults, tmp_path):
         """Custom label from config is used in the injected context."""
         kanban_dir = tmp_path / "kanban"
@@ -569,7 +569,7 @@ class TestInjectContextP3:
         assert result is not None
         assert "🗂️ 团队看板:" in result["context"]
 
-    @patch("hermes_persona.injector._load_config")
+    @patch("injector._load_config")
     def test_kanban_disabled_no_injection(self, mock_load, inject_context_defaults, tmp_path):
         """When project.enabled=False, kanban is never injected even on first turn."""
         kanban_dir = tmp_path / "kanban"

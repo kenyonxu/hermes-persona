@@ -12,9 +12,9 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from .dynamic_rules import _select_dynamic_rules
-from .expression_vector import _ExpressionVector
-from .variance import _randomize_variance
+from dynamic_rules import _select_dynamic_rules
+from expression_vector import _ExpressionVector
+from variance import _randomize_variance
 
 # ---------------------------------------------------------------------------
 # Module-level variable set by __init__.py:register()
