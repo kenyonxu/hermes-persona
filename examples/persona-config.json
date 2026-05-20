@@ -52,14 +52,50 @@
     "expression_vector": {
       "enabled": true,
       "dimensions": {
-        "work": ["代码", "架构", "Bug", "PR", "测试", "重构", "commit", "push", "部署"],
-        "future": ["愿景", "十年后", "梦想", "未来", "规划"],
-        "intimacy": ["陪伴", "累了", "一起", "温暖"]
+        "work": [
+          "代码",
+          "架构",
+          "Bug",
+          "PR",
+          "测试",
+          "重构",
+          "commit",
+          "push",
+          "部署"
+        ],
+        "future": [
+          "愿景",
+          "十年后",
+          "梦想",
+          "未来",
+          "规划"
+        ],
+        "intimacy": [
+          "陪伴",
+          "累了",
+          "一起",
+          "温暖"
+        ]
       },
       "score_rules": {
-        "work": [1, -0.5, 1],
-        "future": [1, -1, 1],
-        "intimacy": [1, -0.5, 3]
+        "work": [
+          1,
+          -0.5,
+          1,
+          0.95
+        ],
+        "future": [
+          1,
+          -1,
+          1,
+          0.95
+        ],
+        "intimacy": [
+          1,
+          -0.5,
+          3,
+          0.95
+        ]
       },
       "reset": "session",
       "storage_path": "~/.hermes/profiles/{profile}/state/expression_vector.json"
@@ -94,11 +130,20 @@
       "enabled": false,
       "rules": {
         "blocked": [
-          {"pattern": "rm\\s", "reason": "文件删除操作已阻止"},
-          {"pattern": "DROP\\s", "reason": "数据库删除操作已阻止"}
+          {
+            "pattern": "rm\\s",
+            "reason": "文件删除操作已阻止"
+          },
+          {
+            "pattern": "DROP\\s",
+            "reason": "数据库删除操作已阻止"
+          }
         ],
         "require_confirmation": [
-          {"pattern": "git\\s+push", "reason": "代码推送需确认"}
+          {
+            "pattern": "git\\s+push",
+            "reason": "代码推送需确认"
+          }
         ]
       },
       "audit": {
