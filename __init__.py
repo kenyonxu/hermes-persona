@@ -15,17 +15,23 @@ from pathlib import Path
 # Additionally, register short aliases in sys.modules so that
 # sub-modules (injector.py, guard.py) can use bare ``import config``
 # regardless of which code path loaded them.
+_plugin_dir = str(Path(__file__).resolve().parent)
+
 try:
     from . import config
+    # Register config alias immediately — injector.py/guard.py use bare
+    # ``import config`` at module level, which resolves via sys.modules
+    # (not __path__), so the alias must exist before those modules load.
+    sys.modules.setdefault("config", config)
     from . import guard
     from . import injector
-    # Register short aliases — Hermes puts modules under
-    # hermes_plugins.hermes_persona.<name>, so bare ``import config``
-    # in sub-modules would fail without these aliases.
-    sys.modules.setdefault("config", config)
     sys.modules.setdefault("guard", guard)
     sys.modules.setdefault("injector", injector)
 except ImportError:
+    # Flat layout fallback: ensure plugin dir is on sys.path so bare
+    # ``import config`` resolves.
+    if _plugin_dir not in sys.path:
+        sys.path.insert(0, _plugin_dir)
     import config
     import guard
     import injector
