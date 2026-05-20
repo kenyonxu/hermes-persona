@@ -59,6 +59,15 @@ def register(ctx) -> None:
     # Debug: reliable post-injection via transform_llm_output
     ctx.register_hook("transform_llm_output", injector.transform_llm_output)
 
+    # Load config and initialize locale system (after _CONFIG_ROOT is set)
+    try:
+        config_data = injector._load_config()
+        from locales import _init_locales as _init_l10n
+
+        _init_l10n(_plugin_dir, config_data)
+    except Exception:
+        pass  # locale failure is non-fatal; plugin still works
+
     # P4: safety guard
     ctx.register_hook("pre_tool_call", guard.check_tool_call)
     ctx.register_hook("post_tool_call", guard.audit_tool_call)

@@ -16,8 +16,9 @@ from pathlib import Path
 import config as _config
 
 from dynamic_rules import _select_dynamic_rules
-from expression_vector import _ExpressionVector
+from expression_vector import _ExpressionVector, _is_background_message
 from variance import _randomize_variance
+from locales import _t as _translate
 
 # ---------------------------------------------------------------------------
 # Pending debug block for transform_llm_output hook
@@ -245,14 +246,41 @@ def _inject_static_rules(ctx_cfg: dict, is_first_turn: bool) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
+def _debug_summary(
+    modules: dict,
+    parts: list[str],
+    var_count: int = 0,
+    config: dict | None = None,
+    debug_context: dict | None = None,
+) -> str:
     """Generate a human-readable injection summary for debug mode.
 
-    Returns a plain-text summary listing which modules were injected and
-    their status (enabled / disabled / triggered). The caller stores the
-    result in _PENDING_DEBUG_BLOCK for the transform_llm_output hook to
-    append to the LLM response. No system-prompt involvement.
+    Supports two modes based on config["debug"]["detail"]:
+    - "compact" (default): Current concise format, backward compatible.
+    - "detailed": Per-module expanded sub-lines with trigger details.
+
+    Args:
+        modules: Module enable/disable dict.
+        parts: Injected parts list (for counting & analysis).
+        var_count: Number of variance items selected.
+        config: Full hermes-persona config (for detail mode resolution).
+        debug_context: Dict with detailed context assembled by inject_context()
+            for detailed mode. Contains fixed_signal_state, expression_vector_delta, etc.
+
+    Returns:
+        Formatted debug summary string.
     """
+    # Determine detail mode from config
+    detail = "compact"
+    if config:
+        detail = config.get("debug", {}).get("detail", "compact")
+        if detail not in ("compact", "detailed"):
+            detail = "compact"
+
+    if detail == "detailed":
+        return _detailed_summary(modules, parts, var_count, debug_context or {})
+
+    # === Compact mode (current behavior, unchanged) ===
     lines = ["🔧 [Debug] 本轮注入:"]
 
     # ① Time
@@ -321,6 +349,250 @@ def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
         lines.append("  ⑥ 📋 已停用")
 
     return "\n".join(lines)
+
+
+def _detailed_summary(
+    modules: dict,
+    parts: list[str],
+    var_count: int,
+    debug_context: dict,
+) -> str:
+    """Generate a detailed-format debug summary.
+
+    Expected debug_context keys (assembled by inject_context):
+        fixed_signals: {
+            "message_length": {"triggered": bool, "length": int, "threshold": int},
+            "reply_gap": {"enabled": bool, "triggered": bool, "last_reply": str|None,
+                           "gap_minutes": float|None, "threshold_minutes": int},
+            "daily_turn_count": {"triggered": bool, "count": int, "date": str},
+        }
+        expression_vector: {
+            "dimensions": {
+                name: {"old": float, "new": float, "delta": float,
+                       "hit_keywords": list[str], "hit_count": int}
+            },
+            "turn_count": int,
+            "enabled": bool,
+        }
+        variance: {
+            "items": [
+                {"name": str, "probability": float, "rolled": bool, "chosen": str|None}
+            ],
+            "total": int,
+            "hits": int,
+        }
+
+    Args:
+        modules: Module enable/disable dict.
+        parts: Injected parts list (for counting & fallback display).
+        var_count: Number of variance items selected (from _randomize_variance return).
+        debug_context: Detailed state dict assembled by inject_context().
+
+    Returns:
+        Multi-line detailed debug summary string.
+    """
+    from locales import _t
+
+    lines = [_t("debug.header")]
+
+    # ① Time
+    if _is_enabled(modules, "time"):
+        lines.append(f"  ① 🕐 {_t('modules.time.injected')}")
+    else:
+        lines.append(f"  ① 🕐 {_t('modules.time.stopped')}")
+
+    # ② Static rules
+    if _is_enabled(modules, "static_rules"):
+        rule_count = _count_static_rules_in_parts(parts)
+        lines.append(f"  ② 📜 {_t('modules.static_rules', count=rule_count)}")
+    else:
+        lines.append(f"  ② 📜 {_t('modules.static_rules.stopped')}")
+
+    # ③ Dynamic
+    if _is_enabled(modules, "dynamic"):
+        dyn = modules.get("dynamic", {})
+        sub_status = _fmt_dynamic_sub_status(dyn)
+        lines.append(f"  ③ ⚡ {_t('modules.dynamic.status', status=sub_status)}")
+    else:
+        lines.append(f"  ③ ⚡ {_t('modules.dynamic.stopped')}")
+
+    # ④a Fixed signals - detailed
+    fs_context = debug_context.get("fixed_signals", {})
+    _fmt_detailed_fixed_signals(lines, fs_context)
+
+    # ④b Expression vector - detailed
+    ev_context = debug_context.get("expression_vector", {})
+    _fmt_detailed_expression_vector(lines, ev_context)
+
+    # ④ Variance - detailed
+    var_context = debug_context.get("variance", {})
+    _fmt_detailed_variance(lines, var_context, modules)
+
+    # ⑤ Memory
+    if _is_enabled(modules, "memory"):
+        lines.append(f"  ⑤ 🧠 {_t('modules.memory.injected')}")
+    else:
+        lines.append(f"  ⑤ 🧠 {_t('modules.memory.stopped')}")
+
+    # ⑥ Kanban
+    if _is_enabled(modules, "kanban"):
+        kanban_status = _fmt_kanban_debug(parts)
+        lines.append(f"  ⑥ 📋 {kanban_status}")
+    else:
+        lines.append(f"  ⑥ 📋 {_t('modules.kanban.stopped')}")
+
+    return "\n".join(lines)
+
+
+def _fmt_detailed_fixed_signals(lines: list[str], fs: dict) -> None:
+    """Format fixed signals section for detailed debug output."""
+    from locales import _t as _tl
+
+    fs_enabled = bool(fs)  # non-empty means at least one signal configured
+    if not fs_enabled:
+        lines.append(f"  ④a 📏⏱️ {_tl('modules.fixed_signals.none')}")
+        return
+
+    total = 0
+    triggered = 0
+
+    # message_length
+    ml = fs.get("message_length", {})
+    if ml.get("visible", True):
+        total += 1
+        length = ml.get("length", 0)
+        threshold = ml.get("threshold", 50)
+        if ml.get("triggered", False):
+            triggered += 1
+            detail = _tl("signal.message_length.triggered", length=length, threshold=threshold)
+        else:
+            detail = _tl("signal.message_length.idle", length=length, threshold=threshold)
+        lines.append(f"    📏 {detail}")
+
+    # reply_gap
+    rg = fs.get("reply_gap", {})
+    if rg.get("enabled", False):
+        total += 1
+        if rg.get("triggered", False):
+            triggered += 1
+            gap = rg.get("gap_minutes", 0)
+            threshold = rg.get("threshold_minutes", 30)
+            detail = _tl("signal.reply_gap.triggered", gap=round(gap, 1), threshold=threshold)
+        else:
+            detail = _tl("signal.reply_gap.idle")
+        lines.append(f"    🎵 {detail}")
+        # Always show last_reply detail for reply_gap if available
+        last_reply = rg.get("last_reply")
+        if last_reply:
+            gap_minutes = rg.get("gap_minutes", 0)
+            threshold = rg.get("threshold_minutes", 30)
+            detail_line = _tl(
+                "signal.reply_gap.detail",
+                last_reply=last_reply,
+                gap=round(gap_minutes, 1),
+                threshold=threshold,
+            )
+            lines.append(f"       {detail_line}")
+
+    # daily_turn_count
+    dc = fs.get("daily_turn_count", {})
+    if dc.get("visible", True):
+        total += 1
+        count = dc.get("count", 0)
+        if dc.get("triggered", False):
+            triggered += 1
+            detail = _tl("signal.daily_turn.triggered", count=count)
+        else:
+            detail = _tl("signal.daily_turn.idle", count=count)
+        lines.append(f"    📊 {detail}")
+        date = dc.get("date", "")
+        if date:
+            detail_line = _tl("signal.daily_turn.detail", date=date, count=count)
+            lines.append(f"       {detail_line}")
+
+    # Header line
+    if total > 0:
+        header = _tl("modules.fixed_signals.triggered", triggered=triggered, total=total)
+        # Insert header line before the indented sub-lines
+        insert_pos = len(lines)
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].startswith("    ④a") or lines[i].startswith("  ④a"):
+                insert_pos = i
+                break
+        # If we didn't find an existing ④a line, prepend
+        if insert_pos == len(lines):
+            lines.insert(0, f"  ④a 📏⏱️ {header}")
+        else:
+            lines[insert_pos] = f"  ④a 📏⏱️ {header}"
+
+
+def _fmt_detailed_expression_vector(lines: list[str], ev: dict) -> None:
+    """Format expression vector section for detailed debug output."""
+    from locales import _t as _tl
+
+    if not ev.get("enabled", False):
+        lines.append(f"  ④b 📊 {_tl('modules.expression_vector.disabled')}")
+        return
+
+    turn_count = ev.get("turn_count", 0)
+    header = _tl("modules.expression_vector", turn_count=turn_count)
+    lines.append(f"  ④b 📊 {header}")
+
+    dimensions = ev.get("dimensions", {})
+    for dim_name in sorted(dimensions.keys()):
+        dim = dimensions[dim_name]
+        old_val = round(dim.get("old", 0))
+        new_val = round(dim.get("new", 0))
+        delta_val = dim.get("delta", new_val - old_val)
+        sign = "+" if delta_val >= 0 else ""
+        hit_keywords = dim.get("hit_keywords", [])
+        hit_count = dim.get("hit_count", 0)
+        decay_dims = dim.get("decay_dims", [])
+
+        if old_val != new_val:
+            base = f"  {dim_name}: {old_val}→{new_val} ({sign}{int(delta_val)})"
+        else:
+            base = f"  {dim_name}: {new_val}"
+
+        if hit_keywords and hit_count > 0:
+            kw_str = ", ".join(hit_keywords)
+            base += f"  ← {_tl('modules.expression_vector.hit', keywords=kw_str, count=hit_count)}"
+        elif decay_dims:
+            base += f"  ← {_tl('modules.expression_vector.decay', dims=', '.join(decay_dims), count=hit_count)}"
+        else:
+            base += f"  ← {_tl('modules.expression_vector.no_hit')}"
+
+        lines.append(base)
+
+
+def _fmt_detailed_variance(lines: list[str], var_context: dict, modules: dict) -> None:
+    """Format variance section for detailed debug output."""
+    from locales import _t as _tl
+
+    if not _is_enabled(modules, "variance"):
+        lines.append(f"  ④ 🎲 {_tl('modules.variance.stopped')}")
+        return
+
+    items = var_context.get("items", [])
+    if not items:
+        lines.append(f"  ④ 🎲 {_tl('modules.variance.none')}")
+        return
+
+    hits = sum(1 for item in items if item.get("rolled", False))
+    total = len(items)
+    header = _tl("modules.variance.hit", hit=hits, total=total)
+    lines.append(f"  ④ 🎲 {header}")
+
+    for item in items:
+        name = item.get("name", "unknown")
+        prob = item.get("probability", 0.0)
+        if item.get("rolled", False):
+            chosen = item.get("chosen", "")
+            detail = _tl("variance.hit", name=name, prob=prob, chosen=chosen)
+            lines.append(f"    ✓ {detail}")
+        else:
+            detail = _tl("variance.miss", name=name, prob=prob)
+            lines.append(f"    ✗ {detail}")
 
 
 def _count_static_rules_in_parts(parts: list[str]) -> int:
@@ -692,14 +964,106 @@ def inject_context(
             parts.append(turn_hint)
         # ──────────────────────────────────────────────────
 
-        # ─── ④b Expression vector (FuzzyUtility) ─────────
+        # ─── debug_context: capture fixed signal state for detailed mode ───
+        debug_fs = {}
+        # message_length
+        ml_cfg = fixed_cfg.get("message_length", {})
+        if ml_cfg.get("enabled", False):
+            ml_threshold = ml_cfg.get("threshold", 50)
+            msg_len = len(user_message or "")
+            debug_fs["message_length"] = {
+                "visible": True,
+                "triggered": msg_len < ml_threshold,
+                "length": msg_len,
+                "threshold": ml_threshold,
+            }
+        # reply_gap
+        rg_cfg = fixed_cfg.get("reply_gap", {})
+        if rg_cfg.get("enabled", False):
+            rg_threshold = rg_cfg.get("threshold_minutes", 30)
+            rg_last_reply = None
+            rg_gap = None
+            rg_triggered = False
+            try:
+                rg_path = Path(rg_cfg.get("storage_path", "~/.hermes/reply_timing.json")).expanduser()
+                if rg_path.is_file():
+                    rg_data = json.loads(rg_path.read_text(encoding="utf-8"))
+                    last_ts = rg_data.get("last_reply_at")
+                    if last_ts:
+                        rg_gap = (time.time() - float(last_ts)) / 60.0
+                        rg_triggered = rg_gap > rg_threshold
+                        rg_last_reply = datetime.fromtimestamp(float(last_ts)).strftime("%Y-%m-%d %H:%M:%S")
+            except (json.JSONDecodeError, OSError, ValueError, TypeError):
+                pass
+            debug_fs["reply_gap"] = {
+                "enabled": True,
+                "triggered": rg_triggered,
+                "last_reply": rg_last_reply,
+                "gap_minutes": round(rg_gap, 1) if rg_gap is not None else None,
+                "threshold_minutes": rg_threshold,
+            }
+        # daily_turn_count
+        dc_cfg = fixed_cfg.get("daily_turn_count", {})
+        if dc_cfg.get("enabled", False):
+            dc_count = 0
+            dc_date = datetime.now().strftime("%Y-%m-%d")
+            try:
+                dc_path_raw = dc_cfg.get("storage_path", "~/.hermes/profiles/{profile}/state/daily_turn_count.json")
+                dc_profile = kwargs.get("profile_path", "")
+                if dc_profile:
+                    dc_path_raw = dc_path_raw.replace("{profile}", str(dc_profile))
+                dc_path = Path(dc_path_raw).expanduser()
+                if dc_path.is_file():
+                    dc_data = json.loads(dc_path.read_text(encoding="utf-8"))
+                    if isinstance(dc_data, dict) and dc_data.get("date") == dc_date:
+                        dc_count = dc_data.get("count", 0)
+            except (json.JSONDecodeError, OSError):
+                pass
+            debug_fs["daily_turn_count"] = {
+                "visible": True,
+                "triggered": True,
+                "count": dc_count,
+                "date": dc_date,
+            }
+        # ──────────────────────────────────────────────────
+
+        # ─── ④b Expression vector (FuzzyUtility) with delta capture ──
         ev_cfg = config.get("expression_vector", {})
+        debug_ev = {"enabled": False, "turn_count": 0, "dimensions": {}}
         if ev_cfg.get("enabled", False):
             try:
                 profile = kwargs.get("profile_path", "")
                 ev = _ExpressionVector(ev_cfg, profile_path=profile)
                 ev.load()
-                ev.update(user_message or "", session_id)
+                # Capture snapshot BEFORE any modification
+                snapshot_before = dict(ev.vectors)
+                if not _is_background_message(user_message or ""):
+                    ev.update(user_message or "", session_id)
+                # Record delta information from snapshot_before → current
+                msg_lower = (user_message or "").lower()
+                debug_ev["enabled"] = True
+                debug_ev["turn_count"] = turn_count
+                for dim_name in sorted(ev.dimensions.keys()):
+                    old_val = snapshot_before.get(dim_name, 0.0)
+                    new_val = ev.vectors.get(dim_name, 0.0)
+                    delta = new_val - old_val
+                    hit_keywords = []
+                    hit_count = 0
+                    decay_dims = []
+                    for kw in ev.dimensions.get(dim_name, []):
+                        if kw and kw.lower() in msg_lower:
+                            hit_keywords.append(kw)
+                            hit_count += 1
+                    if not hit_keywords and delta != 0:
+                        decay_dims.append(dim_name)
+                    debug_ev["dimensions"][dim_name] = {
+                        "old": old_val,
+                        "new": new_val,
+                        "delta": delta,
+                        "hit_keywords": hit_keywords,
+                        "hit_count": hit_count,
+                        "decay_dims": decay_dims if not hit_keywords else [],
+                    }
                 ev.save()
                 parts.append(ev.format_inject(turn_count))
             except Exception:
@@ -708,10 +1072,42 @@ def inject_context(
 
         # 5. Random variance
         var_count = 0
+        var_results = []
         if _is_enabled(modules, "variance"):
             var_results = _randomize_variance(config.get("variance", {}))
             parts.extend(var_results)
             var_count = len(var_results)
+
+        # ─── debug_context: capture variance item states ───
+        var_context_items = []
+        if _is_enabled(modules, "variance"):
+            var_cfg = config.get("variance", {})
+            if isinstance(var_cfg, dict):
+                for category, cat_cfg in var_cfg.items():
+                    if not isinstance(cat_cfg, dict):
+                        continue
+                    prob = cat_cfg.get("probability", 0.5)
+                    if not isinstance(prob, (int, float)):
+                        prob = 0.5
+                    elif not (0.0 <= prob <= 1.0):
+                        prob = 0.5
+                    # Check if this category's result is in the recently added var_results
+                    matched = False
+                    chosen_variant = None
+                    for vr in var_results:
+                        if isinstance(vr, str) and (category in vr or any(
+                            isinstance(v, str) and v in vr for v in cat_cfg.get("variants", [])
+                        )):
+                            matched = True
+                            chosen_variant = vr
+                            break
+                    var_context_items.append({
+                        "name": category,
+                        "probability": prob,
+                        "rolled": matched,
+                        "chosen": chosen_variant,
+                    })
+        # ──────────────────────────────────────────────────
 
         # 5. Memory recall
         if _is_enabled(modules, "memory"):
@@ -738,7 +1134,17 @@ def inject_context(
         _PENDING_DEBUG_BLOCK = None
         debug_val = modules.get("debug", "<missing>")
         if _is_enabled(modules, "debug"):
-            _PENDING_DEBUG_BLOCK = f"\n\n---\n{_debug_summary(modules, parts, var_count=var_count)}"
+            debug_context = {
+                "fixed_signals": debug_fs,
+                "expression_vector": debug_ev,
+                "variance": {"items": var_context_items},
+            }
+            _PENDING_DEBUG_BLOCK = f"\n\n---\n{_debug_summary(
+                modules, parts,
+                var_count=var_count,
+                config=config,
+                debug_context=debug_context,
+            )}"
             _trace("inject_context", f"SET debug={debug_val!r} pending={len(_PENDING_DEBUG_BLOCK)} chars")
         else:
             _trace("inject_context", f"SKIP debug={debug_val!r} enabled={_is_enabled(modules, 'debug')} config_root={'set' if _config._CONFIG_ROOT else 'None'}")

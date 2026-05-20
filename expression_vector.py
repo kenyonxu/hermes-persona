@@ -9,11 +9,40 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
 
 _logger = logging.getLogger("hermes_tool_slimmer.expression_vector")
+
+
+# ── 后台消息过滤 ───────────────────────────────────────────────────────────
+
+_BG_PREFIX = "[IMPORTANT: Background process"
+_BG_SIGNATURES = ["claude -p", "Command:", "Output:", "exit code"]
+_BG_MIN_LENGTH = 500
+_BG_SIGNATURE_THRESHOLD = 2
+
+
+def _is_background_message(msg: str) -> bool:
+    """判断是否为后台进程完成通知（不应计入表达向量）。
+
+    规则 A：前缀子串匹配 — 消息中包含 "[IMPORTANT: Background process"
+    规则 B：长度 + 特征词密度 — len > 500 且 ≥ 2 个特征词命中
+    OR 连接，命中任一规则返回 True。
+    任何异常返回 False（fail-open）。
+    """
+    try:
+        if _BG_PREFIX in msg:
+            return True
+        if len(msg) > _BG_MIN_LENGTH:
+            sig_hits = sum(1 for sig in _BG_SIGNATURES if sig in msg)
+            if sig_hits >= _BG_SIGNATURE_THRESHOLD:
+                return True
+        return False
+    except Exception:
+        return False
 
 
 class _ExpressionVector:
@@ -24,20 +53,18 @@ class _ExpressionVector:
         self.dimensions: dict[str, list[str]] = {}
         for dim_name, keywords in cfg.get("dimensions", {}).items():
             if isinstance(keywords, list):
-                self.dimensions[dim_name] = [str(k) for k in keywords]
+                self.dimensions[dim_name] = list(dict.fromkeys(str(k) for k in keywords))
 
-        # 2. 解析 score_rules，缺失维度用默认值 [1, -0.5, 1]
-        self.score_rules: dict[str, tuple[float, float, float]] = {}
-        default_rule = (1.0, -0.5, 1.0)
+        # 2. 解析 score_rules，缺失维度用默认值 [1, -0.5, 1, 0.95]
+        self.score_rules: dict[str, tuple[float, float, float, float]] = {}
+        default_rule = (1.0, -0.5, 1.0, 0.95)
         for dim_name in self.dimensions:
             raw = cfg.get("score_rules", {}).get(dim_name, list(default_rule))
-            if isinstance(raw, (list, tuple)) and len(raw) == 3:
+            if isinstance(raw, (list, tuple)) and len(raw) >= 3:
                 try:
-                    self.score_rules[dim_name] = (
-                        float(raw[0]),
-                        float(raw[1]),
-                        float(raw[2]),
-                    )
+                    vals = [float(raw[0]), float(raw[1]), float(raw[2])]
+                    decay = float(raw[3]) if len(raw) >= 4 else 0.95
+                    self.score_rules[dim_name] = (vals[0], vals[1], vals[2], decay)
                 except (ValueError, TypeError):
                     self.score_rules[dim_name] = default_rule
             else:
@@ -77,11 +104,14 @@ class _ExpressionVector:
         # 2. 逐维度处理
         msg_lower = (user_message or "").lower()
         for dim_name, keywords in self.dimensions.items():
-            hit_score, miss_penalty, weight = self.score_rules[dim_name]
+            hit_score, miss_penalty, weight, decay_factor = self.score_rules[dim_name]
+
+            # 比例衰减
+            self.vectors[dim_name] *= decay_factor
 
             # 计算该维度关键词命中次数
             hit_count = sum(
-                msg_lower.count(kw.lower())
+                self._count_keyword(msg_lower, kw)
                 for kw in keywords
                 if kw  # 跳过空字符串
             )
@@ -117,6 +147,23 @@ class _ExpressionVector:
                     msg_len,
                     " | ".join(changed_parts),
                 )
+
+    def _count_keyword(self, text: str, keyword: str) -> int:
+        """根据关键词类型自动选择匹配策略。
+
+        ASCII 短词（≤4 字符）→ \\b 词边界正则，避免子串误命中
+        中文 / 长英文短语 → str.count() 子串匹配
+        """
+        try:
+            if keyword.isascii() and len(keyword) <= 4:
+                pattern = re.compile(
+                    r"\b" + re.escape(keyword) + r"\b", re.IGNORECASE
+                )
+                return len(pattern.findall(text))
+            return text.count(keyword.lower())
+        except Exception:
+            # 正则编译失败 → fallback 子串匹配
+            return text.count(keyword.lower())
 
     def should_reset(self, current_session_id: str) -> bool:
         """检查是否需要重置向量。"""

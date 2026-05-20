@@ -86,6 +86,10 @@
       "kanban_path": "",
       "label": ""
     },
+    "debug": {
+      "detail": "compact"
+    },
+    "language": "auto",
     "guard": {
       "enabled": false,
       "rules": {

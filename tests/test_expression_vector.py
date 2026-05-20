@@ -91,19 +91,19 @@ class TestUpdateAlgorithm:
             assert ev.vectors[dim] >= 0.0
 
     def test_EV06_consecutive_hits_accumulate(self, ev):
-        """EV-06: 连续 3 次命中 work → 3.0。"""
+        """EV-06: 连续 3 次命中 work → 1+0.95+0.9025=2.8525（含 0.95 衰减）。"""
         for _ in range(3):
             ev.update("写代码", "s1")
-        assert ev.vectors["work"] == 3.0
+        assert ev.vectors["work"] == pytest.approx(2.8525)
 
     def test_EV07_hit_then_miss_mix(self, ev):
-        """EV-07: 2 命中 + 3 未命中（work: [1, -0.5, 1]）→ 0.5。"""
-        ev.update("写代码", "s1")  # work += 1 → 1
-        ev.update("写代码", "s1")  # work += 1 → 2
-        ev.update("天气真好", "s1")  # work += -0.5 → 1.5
-        ev.update("去散步", "s1")    # work += -0.5 → 1.0
-        ev.update("好开心", "s1")    # work += -0.5 → 0.5
-        assert ev.vectors["work"] == pytest.approx(0.5)
+        """EV-07: 2 命中 + 3 未命中，含 0.95 衰减 → 约 0.2456。"""
+        ev.update("写代码", "s1")  # work: 1.0
+        ev.update("写代码", "s1")  # work: 0.95 + 1.0 = 1.95
+        ev.update("天气真好", "s1")  # work: 1.95*0.95 + (-0.5) = 1.3525
+        ev.update("去散步", "s1")    # work: 1.3525*0.95 + (-0.5) = 0.784875
+        ev.update("好开心", "s1")    # work: 0.784875*0.95 + (-0.5) = 0.2456
+        assert ev.vectors["work"] == pytest.approx(0.2456, rel=1e-3)
 
     def test_EV08_variable_dimension_count(self):
         """EV-08: 4 维配置，维度数量可变。"""
@@ -173,11 +173,11 @@ class TestResetStrategy:
     """RS-01 ~ RS-06: should_reset() 重置策略测试。"""
 
     def test_RS01_session_same_session_no_reset(self, ev):
-        """RS-01: session 策略，同一 session 不清零。"""
-        ev.update("写代码", "s1")  # work += 1
+        """RS-01: session 策略，同一 session 不清零。两次命中含 0.95 衰减→1.95。"""
+        ev.update("写代码", "s1")  # work: 1.0
         assert ev.vectors["work"] == 1.0
-        ev.update("写代码", "s1")      # 同 session，不清零 → work += 1
-        assert ev.vectors["work"] == 2.0
+        ev.update("写代码", "s1")      # 同 session，不清零 → work: 0.95+1.0=1.95
+        assert ev.vectors["work"] == 1.95
 
     def test_RS02_session_new_session_resets(self, ev):
         """RS-02: session 策略，新 session 清零后重新累积。"""
@@ -188,7 +188,7 @@ class TestResetStrategy:
         assert ev.vectors["work"] == 1.0  # 从 0 重新开始
 
     def test_RS03_daily_same_day_no_reset(self, tmp_ev_path):
-        """RS-03: daily 策略，同日不清零。"""
+        """RS-03: daily 策略，同日不清零。两次命中含 0.95 衰减→1.95。"""
         cfg = {
             "dimensions": {"work": ["代码"]},
             "reset": "daily",
@@ -197,7 +197,7 @@ class TestResetStrategy:
         ev = _ExpressionVector(cfg)
         ev.update("代码", "s1")
         ev.update("代码", "s1")
-        assert ev.vectors["work"] == 2.0
+        assert ev.vectors["work"] == 1.95
 
     def test_RS04_daily_cross_day_resets(self, tmp_ev_path):
         """RS-04: daily 策略，跨日清零。"""
@@ -235,7 +235,7 @@ class TestResetStrategy:
         ev2 = _ExpressionVector(cfg)
         ev2.load()
         ev2.update("代码", "s2")  # 新 session → none 策略不清零
-        assert ev2.vectors["work"] == 2.0
+        assert ev2.vectors["work"] == 1.95
 
     def test_RS06_invalid_reset_value(self):
         """RS-06: 非法 reset 值→回退为 "session"。"""
@@ -306,7 +306,7 @@ class TestDiskPersistence:
         }
         ev2 = _ExpressionVector(cfg2)
         ev2.load()
-        assert ev2.vectors["work"] == 2.0   # 保留
+        assert ev2.vectors["work"] == 1.95   # 保留（含 0.95 衰减）
         assert ev2.vectors["future"] == 0.0  # 新维度初始 0
 
     def test_PERS06_load_removed_dimension(self, tmp_ev_path):
@@ -372,13 +372,13 @@ class TestFormatInject:
         assert "| 第 1 轮" in result
 
     def test_FMT03_float_rounding(self, ev):
-        """FMT-03: 浮点值四舍五入。work=1.5 → int(round(1.5)) = 2。"""
-        ev.update("代码", "s1")    # work += 1 → 1.0
-        ev.update("代码", "s1")    # work += 1 → 2.0
-        ev.update("天气好", "s1")  # work += -0.5 → 1.5
-        assert ev.vectors["work"] == pytest.approx(1.5)
+        """FMT-03: 浮点值四舍五入。含 0.95 衰减→ work=1.3525 → int(round(1.3525)) = 1。"""
+        ev.update("代码", "s1")    # work: 1.0
+        ev.update("代码", "s1")    # work: 0.95 + 1.0 = 1.95
+        ev.update("天气好", "s1")  # work: 1.95*0.95 + (-0.5) = 1.3525
+        assert ev.vectors["work"] == pytest.approx(1.3525)
         result = ev.format_inject(1)
-        assert "work:2" in result  # round(1.5) = 2
+        assert "work:1" in result  # round(1.3525) = 1
 
 
 # ── TestTraceLogging ─────────────────────────────────────────────────────

@@ -43,7 +43,10 @@ def _load_guard_config() -> dict:
         data = json.loads(raw)
         if not isinstance(data, dict):
             return {}
-        return data.get("hermes-persona", {}).get("guard", {})
+        guard_cfg = data.get("hermes-persona", {}).get("guard", {})
+        if not isinstance(guard_cfg, dict) or not guard_cfg.get("enabled", False):
+            return {}
+        return guard_cfg
     except (json.JSONDecodeError, OSError):
         return {}
 

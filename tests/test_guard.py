@@ -399,9 +399,7 @@ def test_audit_missing_enabled_defaults_false(monkeypatch):
 
 def test_load_guard_config_empty_when_disabled(monkeypatch):
     """When guard node doesn't exist, return {}."""
-    monkeypatch.setattr(
-        "guard._load_guard_config",
-        lambda: {},
-    )
-    assert _load_guard_config() == {}
-    assert check_tool_call("Bash(rm -rf /)", {}) is None
+    import guard as _guard
+    monkeypatch.setattr(_guard, "_load_guard_config", lambda: {})
+    assert _guard._load_guard_config() == {}
+    assert _guard.check_tool_call("Bash(rm -rf /)", {}) is None
