@@ -9,9 +9,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import config
-from . import guard
-from . import injector
+# Hermes loads plugins as packages — relative imports are correct.
+# pytest / standalone Python need absolute imports as fallback.
+try:
+    from . import config
+    from . import guard
+    from . import injector
+except ImportError:
+    import config
+    import guard
+    import injector
 
 
 def register(ctx) -> None:

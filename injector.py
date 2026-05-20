@@ -13,7 +13,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from . import config as _config
+import config as _config
 
 from dynamic_rules import _select_dynamic_rules
 from expression_vector import _ExpressionVector
