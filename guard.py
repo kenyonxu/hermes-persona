@@ -29,7 +29,7 @@ def _load_guard_config() -> dict:
 
     Uses the same _CONFIG_ROOT / fallback path strategy as injector._load_config().
     """
-    import config as _config
+    from . import config as _config
 
     if _config._CONFIG_ROOT is not None:
         config_path = _config._CONFIG_ROOT / "persona-config.json"

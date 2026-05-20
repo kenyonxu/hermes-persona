@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import config
-import guard
-import injector
+from . import config
+from . import guard
+from . import injector
 
 
 def register(ctx) -> None:
