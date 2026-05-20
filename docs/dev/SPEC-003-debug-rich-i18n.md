@@ -145,6 +145,58 @@ locales/
 - `language` 省略时从 `time.format` 推断，无 `time.format` 时默认 `"zh"`
 - 翻译文件缺失时回退到硬编码中文字符串（当前行为）
 
+### 2.5 turn_stage 每日轮数化
+
+#### 当前问题
+
+`turn_stage` 动态规则选择器使用**会话内轮数**（基于 `conversation_history` 长度）判断当前阶段：
+
+```
+turn 1-5   → early
+turn 6-20  → mid
+turn 21+   → late
+```
+
+每次 `/new` 或 Gateway 重启，轮数归零，`turn_stage` 退回 `early`。但知惠和主人的互动是**跨会话**的——一天内可能多次重启、开新对话，实际互动深度远超单会话轮数。会话轮数无法准确反映真实互动阶段。
+
+#### 解决方案
+
+改用 `daily_turn_count`（每日总轮数）替代会话内轮数。`daily_turn_count` 是 **US-002 已实现的固定信号**，特性：
+
+- **跨会话累积**：每次 LLM 调用递增，不因 `/new` 归零
+- **日期变化自动归零**：每天 00:00 自然重置，无需手动干预
+- **已持久化**：写入 `daily_turn_count.json`，Gateway 重启不丢失
+
+阶段映射阈值保持不变（early ≤5 / mid ≤20 / late >20）。
+
+#### 实现路径
+
+改动集中在 `injector.py::_select_dynamic_rules()`：
+
+1. 从 `daily_turn_count.json` 读取当日累计轮数，替代 `len(conversation_history)`
+2. 阶段映射逻辑不变，仅换数据源
+3. 回退：若 `daily_turn_count.json` 不可用（US-002 未启用或文件损坏），退回到当前会话内轮数
+
+```
+# 伪代码示意
+daily_count = _read_daily_turn_count()
+turn_count = daily_count if daily_count is not None else len(conversation_history)
+```
+
+#### 影响范围
+
+| 影响项 | 说明 |
+|--------|------|
+| `injector.py::_select_dynamic_rules()` | 数据源从 `conversation_history` 改为 `daily_turn_count.json` |
+| 动态规则选择行为 | 跨会话连续计数，不再每次 `/new` 退回 early |
+| debug 面板 | `③ time_slots / turn_stage / keyword` 状态无格式变化，无需适配 |
+| 现有测试 | 需新增跨会话场景测试；部分测试可能需要更新 mock |
+| `daily_turn_count.json` | **依赖 US-002 固定信号基础设施**（已实现） |
+
+#### 依赖
+
+- **US-002** `daily_turn_count` 固定信号 — 提供跨会话累积计数 + JSON 持久化
+
 ---
 
 ## 3. 非功能需求
