@@ -513,3 +513,53 @@ class TestVectorHistoryBackwardCompat:
         # 无 history 字段→初始化为空
         assert len(ev.vector_history) == 0
         assert ev._turn_counter == 0
+
+
+# ── TestBackgroundMessageFilter ────────────────────────────────────────────
+
+from expression_vector import _is_background_message
+
+
+class TestBackgroundMessageFilter:
+    """消息过滤判定函数测试。"""
+
+    def test_BG01_prefix_match(self):
+        """BG-01: 前缀命中 → True"""
+        msg = "[Kai.Xu] [IMPORTANT: Background process proc_abc completed ..."
+        assert _is_background_message(msg) is True
+
+    def test_BG02_density_match(self):
+        """BG-02: 长度>500 + ≥2特征词 → True"""
+        msg = "x" * 200 + "\nclaude -p 'test'\n" + "x" * 200 + "\nCommand: echo\n" + "x" * 200
+        assert len(msg) > 500
+        assert _is_background_message(msg) is True
+
+    def test_BG03_boundary_exactly_two(self):
+        """BG-03: 恰好2个特征词 → True（密度边界）"""
+        msg = "x" * 300 + "\nclaude -p 'test'\nexit code: 0\n" + "x" * 300
+        assert _is_background_message(msg) is True
+
+    def test_BG04_normal_message(self):
+        """BG-04: 正常消息 → False"""
+        msg = "知惠早～我来啦～"
+        assert _is_background_message(msg) is False
+
+    def test_BG05_long_normal_message(self):
+        """BG-05: 长但无特征词 → False"""
+        msg = "代码" * 300  # 600 chars
+        assert len(msg) > 500
+        assert _is_background_message(msg) is False
+
+    def test_BG06_single_signature_not_enough(self):
+        """BG-06: 长度>500 但仅1个特征词 → False"""
+        msg = "x" * 400 + "\nCommand: echo hello\n" + "x" * 200
+        assert _is_background_message(msg) is False
+
+    def test_BG07_short_background_prefix(self):
+        """BG-07: 前缀命中无视长度限制"""
+        msg = "[IMPORTANT: Background process done"
+        assert _is_background_message(msg) is True
+
+    def test_BG08_empty_message(self):
+        """BG-08: 空消息 → False"""
+        assert _is_background_message("") is False
