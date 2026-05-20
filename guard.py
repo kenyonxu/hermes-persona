@@ -34,7 +34,7 @@ def _load_guard_config() -> dict:
     if _config._CONFIG_ROOT is not None:
         config_path = _config._CONFIG_ROOT / "persona-config.json"
     else:
-        config_path = Path(__file__).resolve().parents[3] / "persona-config.json"
+        config_path = Path(__file__).resolve().parents[2] / "persona-config.json"
 
     try:
         if not config_path.is_file():
