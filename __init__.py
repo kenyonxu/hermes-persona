@@ -7,14 +7,24 @@ Usage:
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 # Hermes loads plugins as packages — relative imports are correct.
 # pytest / standalone Python need absolute imports as fallback.
+# Additionally, register short aliases in sys.modules so that
+# sub-modules (injector.py, guard.py) can use bare ``import config``
+# regardless of which code path loaded them.
 try:
     from . import config
     from . import guard
     from . import injector
+    # Register short aliases — Hermes puts modules under
+    # hermes_plugins.hermes_persona.<name>, so bare ``import config``
+    # in sub-modules would fail without these aliases.
+    sys.modules.setdefault("config", config)
+    sys.modules.setdefault("guard", guard)
+    sys.modules.setdefault("injector", injector)
 except ImportError:
     import config
     import guard
