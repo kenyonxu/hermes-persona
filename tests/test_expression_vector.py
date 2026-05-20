@@ -563,3 +563,91 @@ class TestBackgroundMessageFilter:
     def test_BG08_empty_message(self):
         """BG-08: 空消息 → False"""
         assert _is_background_message("") is False
+
+
+# ── TestKeywordCounting ────────────────────────────────────────────────────
+
+
+class TestKeywordCounting:
+    """词边界匹配 + 去重测试。"""
+
+    def test_KW01_short_ascii_word_boundary_no_false_match(self, tmp_path):
+        """KW-01: 'PR' 不匹配 'process approach'"""
+        ev_path = tmp_path / "ev_kw1.json"
+        cfg = {
+            "dimensions": {"work": ["PR"]},
+            "score_rules": {"work": [1, -0.5, 1]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.update("process approach", "s1")
+        assert ev.vectors["work"] == 0.0
+
+    def test_KW02_short_ascii_word_boundary_true_match(self, tmp_path):
+        """KW-02: 'PR' 匹配独立词 'review the PR please'"""
+        ev_path = tmp_path / "ev_kw2.json"
+        cfg = {
+            "dimensions": {"work": ["PR"]},
+            "score_rules": {"work": [1, -0.5, 1]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.update("review the PR please", "s1")
+        assert ev.vectors["work"] == 1.0
+
+    def test_KW03_git_not_matches_legitimate(self, tmp_path):
+        """KW-03: 'git' 不匹配 'legitimate'"""
+        ev_path = tmp_path / "ev_kw3.json"
+        cfg = {
+            "dimensions": {"work": ["git"]},
+            "score_rules": {"work": [1, -0.5, 1]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.update("legitimate concern", "s1")
+        assert ev.vectors["work"] == 0.0
+
+    def test_KW04_chinese_still_substring(self, tmp_path):
+        """KW-04: 中文仍用子串匹配"""
+        ev_path = tmp_path / "ev_kw4.json"
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.update("写代码测试", "s1")
+        assert ev.vectors["work"] == 1.0
+
+    def test_KW05_long_ascii_still_substring(self, tmp_path):
+        """KW-05: 长英文短语(>4) 仍用子串匹配"""
+        ev_path = tmp_path / "ev_kw5.json"
+        cfg = {
+            "dimensions": {"work": ["hermes-persona"]},
+            "score_rules": {"work": [1, -0.5, 1]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.update("hermes-persona 插件", "s1")
+        assert ev.vectors["work"] == 1.0
+
+    def test_KW06_duplicate_keywords_deduped(self, tmp_path):
+        """KW-06: 重复关键词自动去重"""
+        ev_path = tmp_path / "ev_kw6.json"
+        cfg = {
+            "dimensions": {"work": ["修复", "修复", "代码"]},
+            "score_rules": {"work": [1, -0.5, 1]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        # 关键词列表应去重
+        assert ev.dimensions["work"] == ["修复", "代码"]
+        ev.update("修复了一个Bug，修复了测试", "s1")
+        # "修复" 出现 2 次，但去重后只计 1 个关键词，hit_count = 2
+        assert ev.vectors["work"] == 2.0
