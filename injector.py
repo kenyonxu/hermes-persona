@@ -26,6 +26,20 @@ from variance import _randomize_variance
 _PENDING_DEBUG_BLOCK: str | None = None
 
 # ---------------------------------------------------------------------------
+# Diagnostic trace (remove after debugging)
+# ---------------------------------------------------------------------------
+
+def _trace(source: str, msg: str) -> None:
+    """Append a diagnostic line to /tmp/hermes_persona_trace.log."""
+    try:
+        from datetime import datetime
+        ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        with open("/tmp/hermes_persona_trace.log", "a") as f:
+            f.write(f"{ts} [{source}] {msg}\n")
+    except Exception:
+        pass
+
+# ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
 
@@ -724,6 +738,9 @@ def inject_context(
         _PENDING_DEBUG_BLOCK = None
         if _is_enabled(modules, "debug"):
             _PENDING_DEBUG_BLOCK = f"\n\n---\n{_debug_summary(modules, parts, var_count=var_count)}"
+            _trace("inject_context", f"SET pending={len(_PENDING_DEBUG_BLOCK)} chars")
+        else:
+            _trace("inject_context", "SKIP debug disabled")
 
         if non_debug_count == 0:
             return None
@@ -753,8 +770,10 @@ def transform_llm_output(
     try:
         if _PENDING_DEBUG_BLOCK:
             result = response_text + _PENDING_DEBUG_BLOCK
+            _trace("transform_llm_output", f"FOUND pending={len(_PENDING_DEBUG_BLOCK)} chars → appended")
             _PENDING_DEBUG_BLOCK = None
             return result
-        return None  # 不修改
+        _trace("transform_llm_output", "MISS pending is None")
+        return None
     except Exception:
         return None
