@@ -28,9 +28,9 @@ def ev_cfg_basic():
             "intimacy": ["陪伴", "累了", "温暖"],
         },
         "score_rules": {
-            "work": [1, -0.5, 1],
-            "future": [1, -1, 1],
-            "intimacy": [1, -0.5, 3],
+            "work": [1, -0.5, 1, 1.0],
+            "future": [1, -1, 1, 1.0],
+            "intimacy": [1, -0.5, 3, 1.0],
         },
         "reset": "session",
         "storage_path": "",  # 用 tmpdir 替换
@@ -191,6 +191,7 @@ class TestResetStrategy:
         """RS-03: daily 策略，同日不清零。两次命中含 0.95 衰减→1.95。"""
         cfg = {
             "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1, 1.0]},
             "reset": "daily",
             "storage_path": str(tmp_ev_path),
         }
@@ -225,6 +226,7 @@ class TestResetStrategy:
         """RS-05: none 策略，永不清零，跨 session 持续累积。"""
         cfg = {
             "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1, 1.0]},
             "reset": "none",
             "storage_path": str(tmp_ev_path),
         }
@@ -294,7 +296,7 @@ class TestDiskPersistence:
 
     def test_PERS05_load_new_dimension_added(self, tmp_ev_path):
         """PERS-05: 配置新增维度→新维度初始 0，已有维度保留。"""
-        cfg = {"dimensions": {"work": ["代码"]}, "storage_path": str(tmp_ev_path)}
+        cfg = {"dimensions": {"work": ["代码"]}, "score_rules": {"work": [1, -0.5, 1, 1.0]}, "storage_path": str(tmp_ev_path)}
         ev = _ExpressionVector(cfg)
         ev.update("写代码", "s1")
         ev.update("写代码", "s1")
@@ -302,6 +304,7 @@ class TestDiskPersistence:
 
         cfg2 = {
             "dimensions": {"work": ["代码"], "future": ["愿景"]},
+            "score_rules": {"work": [1, -0.5, 1, 1.0], "future": [1, -1, 1, 1.0]},
             "storage_path": str(tmp_ev_path),
         }
         ev2 = _ExpressionVector(cfg2)
@@ -651,3 +654,78 @@ class TestKeywordCounting:
         ev.update("修复了一个Bug，修复了测试", "s1")
         # "修复" 出现 2 次，但去重后只计 1 个关键词，hit_count = 2
         assert ev.vectors["work"] == 2.0
+
+
+# ── TestDecay ──────────────────────────────────────────────────────────────
+
+
+class TestDecay:
+    """衰减机制测试。"""
+
+    def test_DC01_decay_applied_before_hit(self, tmp_path):
+        """DC-01: 衰减先于命中执行。work=10 → *0.5 → 5 + 命中1 = 6"""
+        ev_path = tmp_path / "ev_dc1.json"
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1, 0.5]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.vectors["work"] = 10.0
+        ev.update("写代码", "s1")
+        assert ev.vectors["work"] == 6.0  # 10*0.5 + 1
+
+    def test_DC02_decay_with_miss(self, tmp_path):
+        """DC-02: 衰减 + 未命中：work=10 → *0.5 → 5 + (-0.5) = 4.5"""
+        ev_path = tmp_path / "ev_dc2.json"
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1, 0.5]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.vectors["work"] = 10.0
+        ev.update("天气不错", "s1")
+        assert ev.vectors["work"] == 4.5
+
+    def test_DC03_default_decay_is_095(self):
+        """DC-03: 三元组自动补齐 decay_factor=0.95"""
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1]},  # 旧格式
+            "reset": "session",
+            "storage_path": "",
+        }
+        ev = _ExpressionVector(cfg)
+        assert ev.score_rules["work"] == (1.0, -0.5, 1.0, 0.95)
+
+    def test_DC04_decay_one_turns_off(self, tmp_path):
+        """DC-04: decay_factor=1.0 关闭衰减（旧行为保留）"""
+        ev_path = tmp_path / "ev_dc4.json"
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1, 1.0]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.vectors["work"] = 10.0
+        ev.update("写代码", "s1")
+        # decay=1.0 → 不变 → + 命中 = 11
+        assert ev.vectors["work"] == 11.0
+
+    def test_DC05_decay_never_below_zero(self, tmp_path):
+        """DC-05: 衰减+未命中后不低于 0"""
+        ev_path = tmp_path / "ev_dc5.json"
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "score_rules": {"work": [1, -0.5, 1, 0.5]},
+            "reset": "session",
+            "storage_path": str(ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.vectors["work"] = 0.1
+        ev.update("天气不错", "s1")
+        assert ev.vectors["work"] == 0.0  # 0.1*0.5 + (-0.5) = -0.45 → max(0,)
