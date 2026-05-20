@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 import injector
+from expression_vector import _ExpressionVector
 from injector import (
     _inject_static_rules,
     _load_config,
@@ -672,6 +673,58 @@ class TestExpressionVectorIntegration:
 
         r2 = injector.inject_context(**defaults)
         assert "work:2" in r2["context"]
+
+    def test_INT_EV05_background_message_skipped(
+        self, temp_config_root, write_config, inject_context_defaults
+    ):
+        """INT-EV-05: 后台进程消息不触发表达向量更新。"""
+        ev_path = str(temp_config_root / "ev.json")
+        write_config({
+            "hermes-persona": {
+                "modules": {
+                    "time": False, "static_rules": False, "dynamic": False,
+                    "variance": False, "memory": False, "kanban": False,
+                    "debug": False,
+                },
+                "expression_vector": {
+                    "enabled": True,
+                    "dimensions": {"work": ["代码", "Bug"]},
+                    "score_rules": {"work": [1, -0.5, 1]},
+                    "reset": "session",
+                    "storage_path": ev_path,
+                },
+            }
+        })
+
+        # 先发一条正常消息，让 work 有值
+        defaults = {**inject_context_defaults, "user_message": "写代码"}
+        result = injector.inject_context(**defaults)
+        assert result is not None
+        assert "📊 [表达向量]" in result["context"]
+
+        ev = _ExpressionVector(
+            {"dimensions": {"work": ["代码", "Bug"]},
+             "score_rules": {"work": [1, -0.5, 1]},
+             "reset": "session", "storage_path": ev_path}
+        )
+        ev.load()
+        old_work = ev.vectors["work"]
+        assert old_work > 0
+
+        # 发后台进程完成消息
+        bg_msg = (
+            "[Kai.Xu] [IMPORTANT: Background process proc_123 completed"
+            " (exit code 0).\nCommand: claude -p 'write plan'\n"
+            "Output:\nPLAN-004 done."
+        )
+        defaults2 = {**inject_context_defaults, "user_message": bg_msg}
+        result2 = injector.inject_context(**defaults2)
+        assert result2 is not None
+        # 后台消息被过滤，context 仍包含表达向量（来自旧值）
+        assert "📊 [表达向量]" in result2["context"]
+
+        ev.load()
+        assert ev.vectors["work"] == old_work  # 未变
 
 
 # ── INT-FS: Fixed signals integration (US-002) ──────────────────────────
