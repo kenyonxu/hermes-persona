@@ -22,7 +22,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 
-from hermes_persona import injector  # noqa: E402
+import injector  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Benchmark configurations

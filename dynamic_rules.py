@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Dynamic rule selection: time slots, turn stages, and keyword matching.
 
 P1 implements time_slots + turn_stage. P2 adds keyword matching.

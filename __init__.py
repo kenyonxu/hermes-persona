@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import config
 import guard
 import injector
 
@@ -26,7 +27,7 @@ def register(ctx) -> None:
     """
     # Store profile path for config loading
     if hasattr(ctx, "profile_path") and ctx.profile_path:
-        injector._CONFIG_ROOT = Path(ctx.profile_path)
+        config._CONFIG_ROOT = Path(ctx.profile_path)
     # else: _CONFIG_ROOT stays None → _load_config() uses fallback path
 
     # P1: persona context injection

@@ -7,22 +7,21 @@ called by the Hermes runtime on every pre_llm_call hook.
 from __future__ import annotations
 
 import json
+import re
 import time
 import traceback
 from datetime import datetime
 from pathlib import Path
+
+import config as _config
 
 from dynamic_rules import _select_dynamic_rules
 from expression_vector import _ExpressionVector
 from variance import _randomize_variance
 
 # ---------------------------------------------------------------------------
-# Module-level variable set by __init__.py:register()
-# ---------------------------------------------------------------------------
-_CONFIG_ROOT: Path | None = None
-
-# ---------------------------------------------------------------------------
 # Pending debug block for transform_llm_output hook
+# NOTE: module-level variable is not thread-safe; assumes single-session runtime
 # ---------------------------------------------------------------------------
 _PENDING_DEBUG_BLOCK: str | None = None
 
@@ -96,8 +95,8 @@ def _load_config() -> dict:
         1. _CONFIG_ROOT / "persona-config.json"  (set by register())
         2. Path(__file__).resolve().parents[3] / "persona-config.json"  (fallback)
     """
-    if _CONFIG_ROOT is not None:
-        config_path = _CONFIG_ROOT / "persona-config.json"
+    if _config._CONFIG_ROOT is not None:
+        config_path = _config._CONFIG_ROOT / "persona-config.json"
     else:
         config_path = Path(__file__).resolve().parents[3] / "persona-config.json"
 
@@ -141,7 +140,7 @@ def _resolve_modules(config: dict) -> dict:
             else:
                 synthesized[key] = meta["default"]
         return synthesized
-    except Exception:
+    except (TypeError, KeyError, AttributeError):
         return {}
 
 
@@ -276,7 +275,6 @@ def _debug_summary(modules: dict, parts: list[str], var_count: int = 0) -> str:
     # ④b Expression vector
     ev_hit = any("📊 [表达向量]" in p for p in parts)
     if ev_hit:
-        import re
         ev_part = next(p for p in parts if "📊 [表达向量]" in p)
         match = re.search(r"\[表达向量\] (.+?) \|", ev_part)
         if match:
@@ -343,28 +341,6 @@ def _fmt_dynamic_sub_status(dyn_dict) -> str:
         return " / ".join(parts)
     except Exception:
         return "on"
-
-
-def _fmt_variance_status(parts: list[str]) -> str:
-    """Extract variance status from parts content."""
-    try:
-        # Variance items are the plain strings added by _randomize_variance
-        # that are not from time, static rules, dynamic, memory, or kanban
-        variance_items = []
-        for part in parts:
-            if not isinstance(part, str):
-                continue
-            if part.startswith("🕐") or part.startswith("📝") or part.startswith("📋"):
-                continue
-            if part.startswith("🕐 [") or part.startswith("💬 ["):
-                continue
-            # This is a static rule or variance — we can't easily distinguish
-            # So we report based on whether parts exist beyond known prefixes
-        if variance_items:
-            return " / ".join(variance_items)
-        return "无注入"
-    except Exception:
-        return "无数据"
 
 
 def _fmt_kanban_debug(parts: list[str]) -> str:
@@ -469,7 +445,7 @@ def _save_reply_timing(fixed_cfg: dict, now_ts: float) -> None:
         pass
 
 
-def _daily_turn_count_hint(fixed_cfg: dict) -> str | None:
+def _daily_turn_count_hint(fixed_cfg: dict, profile_path: str = "") -> str | None:
     """检查当日累计轮数，注入轮数感知信号。
 
     每日轮数在跨会话间累积（同一自然日内的所有消息）。
@@ -477,6 +453,7 @@ def _daily_turn_count_hint(fixed_cfg: dict) -> str | None:
 
     Args:
         fixed_cfg: fixed_signals 配置节。
+        profile_path: profile path for {profile} placeholder substitution.
 
     Returns:
         \"📊 今日第N轮 — …\" 或 None。
@@ -490,6 +467,8 @@ def _daily_turn_count_hint(fixed_cfg: dict) -> str | None:
         "storage_path",
         "~/.hermes/profiles/{profile}/state/daily_turn_count.json",
     )
+    if profile_path:
+        raw_path = raw_path.replace("{profile}", str(profile_path))
     storage_path = Path(raw_path).expanduser()
 
     # 读取或初始化
@@ -608,6 +587,7 @@ def _read_kanban(kanban_path: str, label: str) -> str | None:
             if len(items) >= 5:
                 break
             try:
+                # Empty file → split yields [""] → "" → skip
                 first_line = md_file.read_text(encoding="utf-8").split("\n")[0].strip()
                 if "优先级:" in first_line:
                     items.append(f"- {md_file.stem}: {first_line}")
@@ -693,7 +673,7 @@ def inject_context(
             parts.append(gap_hint)
         _save_reply_timing(fixed_cfg, now_ts)
 
-        turn_hint = _daily_turn_count_hint(fixed_cfg)
+        turn_hint = _daily_turn_count_hint(fixed_cfg, profile_path=kwargs.get("profile_path", ""))
         if turn_hint:
             parts.append(turn_hint)
         # ──────────────────────────────────────────────────
@@ -769,14 +749,7 @@ def transform_llm_output(
     Returns:
         追加后的完整文本，或 None（无 debug 块时不修改）。
     """
-    # ── DIAGNOSTIC PROBE ── remove after hook confirmed working
     global _PENDING_DEBUG_BLOCK
-    try:
-        with open("/tmp/transform_llm_trace.txt", "a") as f:
-            f.write(f"CALLED|session={session_id}|pending={'YES' if _PENDING_DEBUG_BLOCK else 'NO'}\n")
-    except Exception:
-        pass
-    # ── END PROBE ──
     try:
         if _PENDING_DEBUG_BLOCK:
             result = response_text + _PENDING_DEBUG_BLOCK

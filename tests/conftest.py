@@ -1,4 +1,4 @@
-"""Shared test fixtures for hermes_persona tests."""
+"""Shared test fixtures for hermes-persona tests."""
 
 import json
 import tempfile
@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import config
 import injector
 
 
@@ -13,10 +14,10 @@ import injector
 def temp_config_root():
     """Create a temporary directory and point _CONFIG_ROOT at it."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        old_root = injector._CONFIG_ROOT
-        injector._CONFIG_ROOT = Path(tmpdir)
+        old_root = config._CONFIG_ROOT
+        config._CONFIG_ROOT = Path(tmpdir)
         yield Path(tmpdir)
-        injector._CONFIG_ROOT = old_root
+        config._CONFIG_ROOT = old_root
 
 
 @pytest.fixture

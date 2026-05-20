@@ -218,7 +218,7 @@ class TestCodeGeneric:
         import glob
         from pathlib import Path
 
-        py_files = glob.glob("hermes_persona/**/*.py", recursive=True)
+        py_files = glob.glob("*.py", recursive=False)
         for py_file in py_files:
             content = Path(py_file).read_text(encoding="utf-8")
             assert term not in content, (

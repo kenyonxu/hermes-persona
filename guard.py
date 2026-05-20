@@ -9,6 +9,7 @@ Configuration is read from persona-config.json → hermes-persona.guard.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import re
 from datetime import datetime
@@ -28,10 +29,10 @@ def _load_guard_config() -> dict:
 
     Uses the same _CONFIG_ROOT / fallback path strategy as injector._load_config().
     """
-    from injector import _CONFIG_ROOT
+    import config as _config
 
-    if _CONFIG_ROOT is not None:
-        config_path = _CONFIG_ROOT / "persona-config.json"
+    if _config._CONFIG_ROOT is not None:
+        config_path = _config._CONFIG_ROOT / "persona-config.json"
     else:
         config_path = Path(__file__).resolve().parents[3] / "persona-config.json"
 
@@ -79,12 +80,26 @@ def check_tool_call(tool_name: str, args: dict, **kwargs) -> dict | None:
     if not isinstance(rules, dict):
         return None
 
+    def _check_patterns(rule, tool_name, args):
+        """Check tool_name pattern and optional arg_patterns."""
+        pattern = rule.get("pattern", "")
+        if pattern and re.search(pattern, tool_name):
+            return True
+        arg_patterns = rule.get("arg_patterns", {})
+        if arg_patterns and isinstance(arg_patterns, dict):
+            arg_name = arg_patterns.get("arg")
+            arg_pattern_str = arg_patterns.get("pattern")
+            if arg_name and arg_pattern_str:
+                arg_value = str(args.get(arg_name, ""))
+                if re.search(arg_pattern_str, arg_value):
+                    return True
+        return False
+
     # 1. Blocked rules — checked first, blocks the tool call
     for rule in rules.get("blocked", []):
         if not isinstance(rule, dict):
             continue
-        pattern = rule.get("pattern", "")
-        if pattern and re.search(pattern, tool_name):
+        if _check_patterns(rule, tool_name, args):
             return {
                 "blocked": True,
                 "reason": rule.get("reason", "此操作已被安全护栏阻止"),
@@ -94,8 +109,7 @@ def check_tool_call(tool_name: str, args: dict, **kwargs) -> dict | None:
     for rule in rules.get("require_confirmation", []):
         if not isinstance(rule, dict):
             continue
-        pattern = rule.get("pattern", "")
-        if pattern and re.search(pattern, tool_name):
+        if _check_patterns(rule, tool_name, args):
             return {
                 "require_confirmation": True,
                 "reason": rule.get("reason", "此操作需要确认"),
@@ -158,7 +172,11 @@ def audit_tool_call(tool_name: str, args: dict, result, **kwargs) -> None:
         )
 
         with open(log_path, "a", encoding="utf-8") as f:
-            f.write(log_entry)
+            fcntl.flock(f, fcntl.LOCK_EX)
+            try:
+                f.write(log_entry)
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
     except Exception:
         # Audit must never block or crash the agent
         pass
