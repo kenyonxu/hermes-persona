@@ -6,6 +6,7 @@ Per SPEC-002 §10.2 ~ §10.5: TC-IDs EV-01~14, RS-01~06, PERS-01~08, FMT-01~03.
 """
 
 import json
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -378,3 +379,137 @@ class TestFormatInject:
         assert ev.vectors["work"] == pytest.approx(1.5)
         result = ev.format_inject(1)
         assert "work:2" in result  # round(1.5) = 2
+
+
+# ── TestTraceLogging ─────────────────────────────────────────────────────
+
+
+class TestTraceLogging:
+    """trace 日志：update() 前后记录向量变化（DEBUG 级别）。"""
+
+    def test_trace_logging(self, caplog, ev):
+        """update 后 logger 在 DEBUG 级别输出变化的维度。"""
+        caplog.set_level(logging.DEBUG, logger="hermes_tool_slimmer.expression_vector")
+
+        ev.update("写代码", "s1")
+
+        # 应包含 [EV] 前缀和变化的维度
+        assert "[EV] update:" in caplog.text
+        assert "session=s1" in caplog.text
+        assert "work:" in caplog.text
+
+    def test_trace_logging_no_change(self, caplog, ev):
+        """空消息→所有维度从 0 衰减为 0（不变）→ 无日志。"""
+        caplog.set_level(logging.DEBUG, logger="hermes_tool_slimmer.expression_vector")
+
+        ev.update("", "s1")
+
+        # 从 0 到 0，没有真正变化，不应输出日志
+        assert "[EV] update:" not in caplog.text
+
+    def test_trace_logging_level_respected(self, caplog, ev):
+        """日志级别高于 DEBUG 时不输出。"""
+        caplog.set_level(logging.INFO, logger="hermes_tool_slimmer.expression_vector")
+
+        ev.update("写代码", "s1")
+
+        assert "[EV] update:" not in caplog.text
+
+
+# ── TestVectorHistory ────────────────────────────────────────────────────
+
+
+class TestVectorHistory:
+    """vector_history 持久化：追加 + 500 上限 + 往返恢复。"""
+
+    def test_vector_history_appended_on_save(self, ev, tmp_ev_path):
+        """每次 save() 追加一条历史记录。"""
+        ev.update("代码", "s1")
+        ev.save()
+
+        ev.update("愿景", "s1")
+        ev.save()
+
+        # 重新加载，验证历史
+        ev2 = _ExpressionVector({
+            "dimensions": ev.dimensions,
+            "score_rules": {"work": [1, -0.5, 1], "future": [1, -1, 1], "intimacy": [1, -0.5, 3]},
+            "storage_path": str(tmp_ev_path),
+        })
+        ev2.load()
+        assert len(ev2.vector_history) == 2
+        assert ev2.vector_history[0]["turn"] == 1
+        assert ev2.vector_history[1]["turn"] == 2
+        assert ev2.vector_history[0]["session_id"] == "s1"
+        assert "vectors" in ev2.vector_history[0]
+        assert "time" in ev2.vector_history[0]
+
+    def test_vector_history_500_limit(self, tmp_ev_path):
+        """超过 500 条时，只保留最近的 500 条。"""
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "storage_path": str(tmp_ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+
+        for i in range(600):
+            ev.update("代码", "s1")
+            ev.save()
+
+        ev2 = _ExpressionVector(cfg)
+        ev2.load()
+        assert len(ev2.vector_history) == 500
+        # 最早应该是 turn 101（前 100 条被丢弃）
+        assert ev2.vector_history[0]["turn"] == 101
+        assert ev2.vector_history[-1]["turn"] == 600
+
+    def test_vector_history_save_load_roundtrip(self, ev, tmp_ev_path):
+        """历史记录 save+load 往返一致。"""
+        ev.update("代码", "s1")
+        ev.save()
+        ev.update("愿景", "s1")
+        ev.save()
+
+        ev2 = _ExpressionVector({
+            "dimensions": ev.dimensions,
+            "score_rules": {"work": [1, -0.5, 1], "future": [1, -1, 1], "intimacy": [1, -0.5, 3]},
+            "storage_path": str(tmp_ev_path),
+        })
+        ev2.load()
+        assert ev2.vector_history[0]["vectors"]["work"] == 1.0
+        assert ev2.vector_history[1]["vectors"]["future"] == 1.0
+        assert ev2._turn_counter == 2
+
+
+# ── TestVectorHistoryBackwardCompat ──────────────────────────────────────
+
+
+class TestVectorHistoryBackwardCompat:
+    """向后兼容：旧数据（无 vector_history 字段）可正常加载。"""
+
+    def test_vector_history_backward_compat(self, tmp_ev_path):
+        """旧格式 JSON（无 vector_history/turn_counter）初始化空历史。"""
+        old_data = {
+            "version": 1,
+            "session_id": "old_sess",
+            "last_updated": "2026-05-20T10:00:00",
+            "vectors": {"work": 5.0},
+        }
+        tmp_ev_path.write_text(
+            json.dumps(old_data, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+        cfg = {
+            "dimensions": {"work": ["代码"]},
+            "storage_path": str(tmp_ev_path),
+        }
+        ev = _ExpressionVector(cfg)
+        ev.load()
+
+        # 旧数据正常加载
+        assert ev.vectors["work"] == 5.0
+        assert ev._session_id == "old_sess"
+        # 无 history 字段→初始化为空
+        assert len(ev.vector_history) == 0
+        assert ev._turn_counter == 0

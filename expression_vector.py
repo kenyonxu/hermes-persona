@@ -8,8 +8,12 @@ current vector values are injected into LLM context each turn.
 from __future__ import annotations
 
 import json
+import logging
+from collections import deque
 from datetime import datetime
 from pathlib import Path
+
+_logger = logging.getLogger("hermes_tool_slimmer.expression_vector")
 
 
 class _ExpressionVector:
@@ -57,8 +61,15 @@ class _ExpressionVector:
         self._session_id: str | None = None
         self._last_updated: datetime | None = None
 
+        # 6. 向量历史（最多 500 条）
+        self.vector_history: deque[dict] = deque(maxlen=500)
+        self._turn_counter: int = 0
+
     def update(self, user_message: str | None, session_id: str) -> None:
         """根据用户消息更新所有维度分数。"""
+        # 0. 保存更新前快照（用于 trace 日志）
+        snapshot_before = dict(self.vectors)
+
         # 1. 检查重置策略
         if self.should_reset(session_id):
             self.vectors = {dim: 0.0 for dim in self.dimensions}
@@ -86,6 +97,26 @@ class _ExpressionVector:
         # 3. 更新元数据
         self._last_updated = datetime.now()
         self._session_id = session_id
+        self._turn_counter += 1
+
+        # 4. trace 日志：记录发生变化的维度
+        if _logger.isEnabledFor(logging.DEBUG):
+            changed_parts = []
+            for dim_name in sorted(self.vectors):
+                old_val = snapshot_before.get(dim_name, 0.0)
+                new_val = self.vectors[dim_name]
+                if old_val != new_val:
+                    changed_parts.append(
+                        f"{dim_name}: {old_val:.1f}→{new_val:.1f}"
+                    )
+            if changed_parts:
+                msg_len = len(user_message) if user_message else 0
+                _logger.debug(
+                    "[EV] update: session=%s msg_len=%d → %s",
+                    session_id,
+                    msg_len,
+                    " | ".join(changed_parts),
+                )
 
     def should_reset(self, current_session_id: str) -> bool:
         """检查是否需要重置向量。"""
@@ -123,6 +154,16 @@ class _ExpressionVector:
             ts = data.get("last_updated")
             if ts:
                 self._last_updated = datetime.fromisoformat(ts)
+
+            # 加载向量历史（向后兼容：旧数据无此字段时初始化为空）
+            history_raw = data.get("vector_history")
+            if isinstance(history_raw, list):
+                self.vector_history = deque(history_raw, maxlen=500)
+            else:
+                self.vector_history = deque(maxlen=500)
+
+            # 加载 turn_counter（向后兼容：旧数据无此字段时初始化为 0）
+            self._turn_counter = int(data.get("turn_counter", 0))
         except (json.JSONDecodeError, OSError, ValueError, TypeError):
             return
 
@@ -130,6 +171,14 @@ class _ExpressionVector:
         """将向量状态写入磁盘。创建父目录（如果不存在）。"""
         try:
             self.storage_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 追加一条历史记录
+            self.vector_history.append({
+                "turn": self._turn_counter,
+                "session_id": self._session_id,
+                "time": datetime.now().isoformat(),
+                "vectors": dict(self.vectors),
+            })
 
             data = {
                 "version": 1,
@@ -140,6 +189,8 @@ class _ExpressionVector:
                     else None
                 ),
                 "vectors": self.vectors,
+                "turn_counter": self._turn_counter,
+                "vector_history": list(self.vector_history),
             }
             self.storage_path.write_text(
                 json.dumps(data, ensure_ascii=False, indent=2),
