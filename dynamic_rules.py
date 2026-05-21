@@ -3,10 +3,34 @@ from __future__ import annotations
 """Dynamic rule selection: time slots, turn stages, and keyword matching.
 
 P1 implements time_slots + turn_stage. P2 adds keyword matching.
+SPEC-006 upgrades keyword matching to expression-vector-based jieba engine.
 """
 
 import re
 from datetime import datetime
+from pathlib import Path
+
+from expression_vector import _KeywordMatcher, _RELOAD_KEYWORDS
+
+# ---------------------------------------------------------------------------
+# Keyword matcher instance (lazy, hot-reloadable)
+# ---------------------------------------------------------------------------
+
+_km: _KeywordMatcher | None = None
+
+
+def _get_keyword_matcher() -> _KeywordMatcher:
+    global _km, _RELOAD_KEYWORDS
+    keywords_dir = Path(__file__).resolve().parent / "keywords"
+    if _km is None or _RELOAD_KEYWORDS:
+        _km = _KeywordMatcher(keywords_dir)
+        _RELOAD_KEYWORDS = False
+    return _km
+
+
+# ---------------------------------------------------------------------------
+# Main selector
+# ---------------------------------------------------------------------------
 
 
 def _select_dynamic_rules(
@@ -44,6 +68,11 @@ def _select_dynamic_rules(
     return rules
 
 
+# ---------------------------------------------------------------------------
+# Time slots
+# ---------------------------------------------------------------------------
+
+
 def _match_time_slot(time_slots: dict) -> list[str]:
     """Match current time against configured time slots.
 
@@ -75,6 +104,11 @@ def _in_time_range(now: str, start: str, end: str) -> bool:
     else:
         # Cross-midnight range
         return now >= start or now < end
+
+
+# ---------------------------------------------------------------------------
+# Turn stages
+# ---------------------------------------------------------------------------
 
 
 def _match_turn_stage(
@@ -114,23 +148,44 @@ def _match_turn_stage(
     return matched
 
 
+# ---------------------------------------------------------------------------
+# Keyword matching (expression-vector powered, SPEC-006)
+# ---------------------------------------------------------------------------
+
+
 def _match_keyword(keywords: dict, user_message: str) -> list[str]:
-    """Match user message against keyword regex patterns.
+    """Match user message against expression-vector dimensions.
+
+    SPEC-006: Uses jieba-based expression vector engine with synonym expansion
+    and negation detection.  Falls back to regex for legacy pattern keys.
 
     Args:
-        keywords: {"pattern1": ["rule A", "rule B"], "pattern2": [...]}
+        keywords: {"dimension_name": ["rule A"], "legacy_pattern": ["rule B"], ...}
         user_message: The user's current message text.
 
     Returns:
-        Prefixed rule strings like ["💬 [pattern] rule A", ...].
-        First-match-wins: stops at the first matching pattern.
+        Prefixed rule strings like ["💬 [work] rule A", ...].
+        Multiple dimensions may match simultaneously (all matches returned).
         Empty message or no match → [].
     """
-    if not user_message:
+    if not user_message or not keywords:
         return []
 
-    for pattern, rules in keywords.items():
-        if re.search(pattern, user_message):
-            return [f"💬 [{pattern}] {r}" for r in rules]
+    km = _get_keyword_matcher()
+    matched_dims = km.match(user_message) if km._dimensions else []
 
-    return []
+    rules: list[str] = []
+    known_dims = set(km.dimensions.keys()) if km._dimensions else set()
+
+    for key, dim_rules in keywords.items():
+        if key in matched_dims:
+            # Expression-vector dimension match
+            for rule in dim_rules:
+                rules.append(f"💬 [{key}] {rule}")
+        elif key not in known_dims:
+            # Legacy regex fallback for unknown keys
+            if re.search(key, user_message):
+                for rule in dim_rules:
+                    rules.append(f"💬 [{key}] {rule}")
+
+    return rules

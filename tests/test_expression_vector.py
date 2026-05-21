@@ -7,12 +7,20 @@ Per SPEC-002 §10.2 ~ §10.5: TC-IDs EV-01~14, RS-01~06, PERS-01~08, FMT-01~03.
 
 import json
 import logging
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from expression_vector import _ExpressionVector
+from expression_vector import (
+    _ExpressionVector,
+    _KeywordMatcher,
+    _NEGATION_WORDS,
+    _DIMENSION_FILES,
+    _SYNONYMS_FILE,
+    _RELOAD_KEYWORDS,
+)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
@@ -739,3 +747,428 @@ class TestDecay:
         ev.vectors["work"] = 0.1
         ev.update("天气不错", "s1")
         assert ev.vectors["work"] == 0.0  # 0.1*0.5 + (-0.5) = -0.45 → max(0,)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SPEC-006: _KeywordMatcher 测试（jieba 分词 + 同义词扩展 + 否定检测）
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.fixture
+def kw_keywords_dir():
+    """Create a temporary keywords directory with test keyword files."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        kd = Path(tmpdir)
+
+        (kd / "care.json").write_text(
+            json.dumps({"keywords": ["吃饭", "饿", "下厨", "累", "散步"]}),
+            encoding="utf-8",
+        )
+
+        (kd / "work.json").write_text(
+            json.dumps({"keywords": ["代码", "Bug", "Debug", "测试", "部署", "merge"]}),
+            encoding="utf-8",
+        )
+
+        (kd / "play.json").write_text(
+            json.dumps({"keywords": ["游戏", "好玩", "音乐", "放松"]}),
+            encoding="utf-8",
+        )
+
+        (kd / "synonyms.json").write_text(
+            json.dumps({
+                "推送": "push",
+                "提交": "commit",
+                "合并": "merge",
+                "问题": "Bug",
+                "缺陷": "Bug",
+                "部署上线": "部署",
+                "发布": "deploy",
+                "单元测试": "测试",
+                "集成测试": "测试",
+            }),
+            encoding="utf-8",
+        )
+
+        yield kd
+
+
+@pytest.fixture
+def km(kw_keywords_dir):
+    """Create a _KeywordMatcher from the temporary keywords directory."""
+    return _KeywordMatcher(kw_keywords_dir)
+
+
+# ---------------------------------------------------------------------------
+# Construction & loading
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherConstruction:
+    def test_loads_dimensions(self, km):
+        assert "care" in km.dimensions
+        assert "work" in km.dimensions
+        assert "play" in km.dimensions
+
+    def test_dimension_keywords_are_frozenset(self, km):
+        assert isinstance(km.dimensions["care"], frozenset)
+        assert "吃饭" in km.dimensions["care"]
+        assert "下厨" in km.dimensions["care"]
+
+    def test_nonexistent_dir_raises(self):
+        with pytest.raises(FileNotFoundError):
+            _KeywordMatcher(Path("/nonexistent/keywords/dir"))
+
+    def test_empty_dir_does_not_crash(self, tmp_path):
+        km = _KeywordMatcher(tmp_path)
+        assert km.dimensions == {}
+        assert km.match("hello") == []
+
+    def test_malformed_json_skipped(self, tmp_path):
+        (tmp_path / "care.json").write_text("not json", encoding="utf-8")
+        (tmp_path / "work.json").write_text(
+            json.dumps({"keywords": ["代码"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(tmp_path)
+        assert "care" not in km.dimensions
+        assert "work" in km.dimensions
+
+    def test_missing_keywords_key(self, tmp_path):
+        (tmp_path / "care.json").write_text(
+            json.dumps({"something_else": []}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(tmp_path)
+        assert "care" not in km.dimensions
+
+
+# ---------------------------------------------------------------------------
+# Synonym mapping
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherSynonyms:
+    def test_bidirectional_mapping(self, km):
+        sm = km.synonym_map
+        assert "推送" in sm
+        push_cluster = sm["推送"]
+        assert "push" in push_cluster
+        assert "推送" in sm["push"]
+
+    def test_synonym_cluster_merging(self, km):
+        sm = km.synonym_map
+        bug_cluster = sm["Bug"]
+        assert "问题" in bug_cluster
+        assert "缺陷" in bug_cluster
+        assert "Bug" in bug_cluster
+
+    def test_synonym_self_inclusion(self, km):
+        sm = km.synonym_map
+        for word, synonyms in sm.items():
+            assert word in synonyms, f"{word} not in its own synonym set"
+
+    def test_no_synonyms_file(self, tmp_path):
+        (tmp_path / "care.json").write_text(
+            json.dumps({"keywords": ["吃饭"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(tmp_path)
+        assert km.synonym_map == {}
+
+    def test_malformed_synonyms_json(self, tmp_path):
+        (tmp_path / "care.json").write_text(
+            json.dumps({"keywords": ["吃饭"]}), encoding="utf-8"
+        )
+        (tmp_path / "synonyms.json").write_text("bad json", encoding="utf-8")
+        km = _KeywordMatcher(tmp_path)
+        assert km.synonym_map == {}
+
+
+# ---------------------------------------------------------------------------
+# Matching — dimension-based
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherMatchDimensions:
+    def test_direct_keyword_match(self, km):
+        result = km.match("我去写代码了")
+        assert "work" in result
+
+    def test_no_match(self, km):
+        result = km.match("今天天气真好")
+        assert result == []
+
+    def test_empty_message(self, km):
+        assert km.match("") == []
+
+    def test_multiple_dimensions(self, km):
+        result = km.match("写代码写累了想听音乐放松一下")
+        assert "work" in result
+        assert "care" in result
+        assert "play" in result
+
+    def test_deploy_synonym_match(self, km):
+        result = km.match("准备部署上线了")
+        assert "work" in result
+
+    def test_bug_synonym_match(self, km):
+        result = km.match("有个问题需要修复")
+        assert "work" in result
+
+    def test_jieba_segmentation(self, km):
+        result = km.match("今晚我要下厨做饭")
+        assert "care" in result
+
+
+# ---------------------------------------------------------------------------
+# Negation detection
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherNegation:
+    def test_simple_negation(self, kw_keywords_dir):
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["累"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+        result = km.match("我不累")
+        assert "care" not in result
+
+    def test_negation_within_window(self, kw_keywords_dir):
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["散步", "累"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+        result = km.match("今天不想去散步")
+        assert "care" not in result
+
+    def test_keyword_without_negation_still_matches(self, kw_keywords_dir):
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["累"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+        result = km.match("今天很累")
+        assert "care" in result
+
+    def test_multiple_keywords_one_negated(self, kw_keywords_dir):
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["饿", "累"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+        result = km.match("我不饿但是很累")
+        assert "care" in result  # matched via "累"
+
+
+# ---------------------------------------------------------------------------
+# Substring fallback matching
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherSubstringFallback:
+    def test_substring_match_for_multichar_keywords(self, kw_keywords_dir):
+        (kw_keywords_dir / "work.json").write_text(
+            json.dumps({"keywords": ["重构"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+        result = km.match("这个模块需要重构一下")
+        assert "work" in result
+
+    def test_single_char_keyword_still_matches(self, kw_keywords_dir):
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["饭"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+        result = km.match("吃饭")
+        assert "care" in result
+
+
+# ---------------------------------------------------------------------------
+# Hot reload
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherHotReload:
+    def test_reload_flag_triggers_reload(self, kw_keywords_dir):
+        import expression_vector as evm
+
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["吃饭"]}), encoding="utf-8"
+        )
+
+        km = _KeywordMatcher(kw_keywords_dir)
+        assert "care" in km.dimensions
+        assert "吃饭" in km.dimensions["care"]
+
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["散步", "喝水"]}), encoding="utf-8"
+        )
+
+        evm._RELOAD_KEYWORDS = True
+        result = km.match("我想喝水")
+        assert "care" in result
+        assert evm._RELOAD_KEYWORDS is False
+
+    def test_reload_without_flag_uses_cached(self, kw_keywords_dir):
+        import expression_vector as evm
+        evm._RELOAD_KEYWORDS = False
+
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["吃饭"]}), encoding="utf-8"
+        )
+        km = _KeywordMatcher(kw_keywords_dir)
+
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["新关键词"]}), encoding="utf-8"
+        )
+
+        result = km.match("吃饭了")
+        assert "care" in result
+
+
+# ---------------------------------------------------------------------------
+# Properties
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherProperties:
+    def test_dimensions_property_returns_copy(self, km):
+        dims = km.dimensions
+        dims["new"] = frozenset()
+        assert "new" not in km.dimensions
+
+    def test_synonym_map_property_returns_copy(self, km):
+        sm = km.synonym_map
+        sm["new_word"] = set()
+        assert "new_word" not in km.synonym_map
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+class TestKeywordMatcherHelpers:
+    def test_char_pos_to_token_idx_start(self):
+        idx = _KeywordMatcher._char_pos_to_token_idx(["hello", "world"], 0)
+        assert idx == 0
+
+    def test_char_pos_to_token_idx_middle(self):
+        idx = _KeywordMatcher._char_pos_to_token_idx(["hello", "world"], 6)
+        assert idx == 1
+
+    def test_char_pos_to_token_idx_out_of_range(self):
+        idx = _KeywordMatcher._char_pos_to_token_idx(["hello", "world"], 100)
+        assert idx is None
+
+    def test_negation_words_not_empty(self):
+        assert len(_NEGATION_WORDS) > 0
+        assert "不" in _NEGATION_WORDS
+        assert "没" in _NEGATION_WORDS
+
+    def test_dimension_files_list(self):
+        assert "care.json" in _DIMENSION_FILES
+        assert "work.json" in _DIMENSION_FILES
+
+
+# ---------------------------------------------------------------------------
+# Integration: _match_keyword with expression vectors
+# ---------------------------------------------------------------------------
+
+
+class TestMatchKeywordWithExpressionVector:
+    """Tests for _match_keyword using dimension-based matching."""
+
+    def test_dimension_key_triggers_rules(self, kw_keywords_dir):
+        from dynamic_rules import _match_keyword, _get_keyword_matcher
+        import dynamic_rules as dr
+
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {"work": ["工作模式启动"]}
+            result = _match_keyword(keywords, "发现一个Bug需要处理")
+            assert len(result) >= 1
+            assert "💬 [work] 工作模式启动" in result
+        finally:
+            dr._km = old_km
+
+    def test_dimension_key_no_match_returns_empty(self, kw_keywords_dir):
+        import dynamic_rules as dr
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {"work": ["工作模式"]}
+            result = dr._match_keyword(keywords, "今天天气真好")
+            assert result == []
+        finally:
+            dr._km = old_km
+
+    def test_legacy_regex_fallback(self, kw_keywords_dir):
+        import dynamic_rules as dr
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {"xyz_pattern_123": ["匹配到陌生模式"]}
+            result = dr._match_keyword(keywords, "xyz_pattern_123 is here")
+            assert "💬 [xyz_pattern_123] 匹配到陌生模式" in result
+        finally:
+            dr._km = old_km
+
+    def test_legacy_regex_no_match(self, kw_keywords_dir):
+        import dynamic_rules as dr
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {"no_match_pattern": ["规则"]}
+            result = dr._match_keyword(keywords, "hello world")
+            assert result == []
+        finally:
+            dr._km = old_km
+
+    def test_multiple_dimensions_all_return_rules(self, kw_keywords_dir):
+        import dynamic_rules as dr
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {
+                "work": ["工作规则"],
+                "care": ["关怀规则"],
+            }
+            result = dr._match_keyword(keywords, "写代码写累了")
+            assert "💬 [work] 工作规则" in result
+            assert "💬 [care] 关怀规则" in result
+        finally:
+            dr._km = old_km
+
+    def test_mixed_dimension_and_legacy(self, kw_keywords_dir):
+        import dynamic_rules as dr
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {
+                "work": ["工作规则"],
+                r"mystery_pattern": ["遗留规则"],
+            }
+            result = dr._match_keyword(keywords, "部署遇到mystery_pattern")
+            assert "💬 [work] 工作规则" in result
+            assert "💬 [mystery_pattern] 遗留规则" in result
+        finally:
+            dr._km = old_km
+
+    def test_negated_dimension_not_in_result(self, kw_keywords_dir):
+        (kw_keywords_dir / "care.json").write_text(
+            json.dumps({"keywords": ["累"]}), encoding="utf-8"
+        )
+        import dynamic_rules as dr
+        old_km = dr._km
+        dr._km = _KeywordMatcher(kw_keywords_dir)
+
+        try:
+            keywords = {"care": ["关怀规则"]}
+            result = dr._match_keyword(keywords, "我不累")
+            assert result == []
+        finally:
+            dr._km = old_km

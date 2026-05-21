@@ -266,13 +266,14 @@ class TestMatchKeyword:
         assert result == ["💬 [bug] 检测到Bug，请检查"]
 
     def test_keyword_first_match_wins(self):
-        """When two patterns both match, only the first is returned."""
+        """SPEC-006: All matching patterns are returned (not first-match-wins)."""
         keywords = {
             "bug": ["规则A"],
             "error": ["规则B"],
         }
         result = _match_keyword(keywords, "there is a bug and an error")
-        assert result == ["💬 [bug] 规则A"]
+        assert "💬 [bug] 规则A" in result
+        assert "💬 [error] 规则B" in result
 
     def test_keyword_empty_message(self):
         """Empty user_message returns []."""
@@ -304,14 +305,14 @@ class TestMatchKeyword:
         assert result2 == []
 
     def test_keyword_pattern_order(self):
-        """Config insertion order determines match priority."""
+        """SPEC-006: All matching legacy patterns are returned simultaneously."""
         keywords = {
             "first": ["第一规则"],
             "second": ["第二规则"],
         }
-        # Both match, but "first" comes first
         result = _match_keyword(keywords, "first second")
-        assert result == ["💬 [first] 第一规则"]
+        assert "💬 [first] 第一规则" in result
+        assert "💬 [second] 第二规则" in result
 
     def test_keyword_multiple_rules_per_pattern(self):
         """A single pattern can have multiple rules."""

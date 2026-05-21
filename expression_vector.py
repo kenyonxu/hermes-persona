@@ -255,3 +255,256 @@ class _ExpressionVector:
         ]
         dim_str = " ".join(dim_parts)
         return f"📊 [表达向量] {dim_str} | 第 {turn_count} 轮"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SPEC-006: 关键词匹配引擎（jieba 分词 + 同义词扩展 + 否定检测）
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_RELOAD_KEYWORDS = False
+
+_NEGATION_WORDS = frozenset({
+    "不", "没", "别", "无", "非", "否", "勿", "未", "莫",
+    "没有", "不要", "不必", "不用", "并非", "从不", "绝不",
+})
+
+_DIMENSION_FILES = [
+    "care.json",
+    "eros.json",
+    "intimacy.json",
+    "play.json",
+    "work.json",
+    "future.json",
+]
+
+_SYNONYMS_FILE = "synonyms.json"
+
+
+class _KeywordMatcher:
+    """基于 jieba 分词的关键词维度匹配引擎（SPEC-006）。
+
+    加载关键词词典文件，对用户消息进行分词、同义词扩展、否定检测，
+    返回触发的维度列表。
+    """
+
+    def __init__(self, keywords_dir: Path) -> None:
+        if not keywords_dir.is_dir():
+            raise FileNotFoundError(f"Keywords directory not found: {keywords_dir}")
+
+        self._keywords_dir = keywords_dir
+        self._dimensions: dict[str, frozenset[str]] = {}
+        self._synonym_map: dict[str, set[str]] = {}
+        self._load()
+
+    # ------------------------------------------------------------------
+    # Loading
+    # ------------------------------------------------------------------
+
+    def _load(self) -> None:
+        self._load_dimensions()
+        self._load_synonyms()
+
+    def _load_dimensions(self) -> None:
+        dimensions: dict[str, frozenset[str]] = {}
+        for filename in _DIMENSION_FILES:
+            dim_path = self._keywords_dir / filename
+            if not dim_path.is_file():
+                continue
+            dim_name = filename.replace(".json", "")
+            try:
+                data = json.loads(dim_path.read_text(encoding="utf-8"))
+                keywords = data.get("keywords", [])
+                if isinstance(keywords, list):
+                    cleaned = frozenset(str(k).strip() for k in keywords if k)
+                    if cleaned:
+                        dimensions[dim_name] = cleaned
+            except (json.JSONDecodeError, OSError):
+                continue
+        self._dimensions = dimensions
+
+    def _load_synonyms(self) -> None:
+        syn_path = self._keywords_dir / _SYNONYMS_FILE
+        if not syn_path.is_file():
+            self._synonym_map = {}
+            return
+        try:
+            raw = json.loads(syn_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            self._synonym_map = {}
+            return
+        if not isinstance(raw, dict):
+            self._synonym_map = {}
+            return
+        synonym_map: dict[str, set[str]] = {}
+        for src, tgt in raw.items():
+            src = str(src).strip()
+            tgt = str(tgt).strip()
+            if not src or not tgt:
+                continue
+            synonym_map.setdefault(src, set()).update({src, tgt})
+            synonym_map.setdefault(tgt, set()).update({src, tgt})
+        self._synonym_map = self._merge_synonym_clusters(synonym_map)
+
+    @staticmethod
+    def _merge_synonym_clusters(raw_map: dict[str, set[str]]) -> dict[str, set[str]]:
+        if not raw_map:
+            return {}
+        words = list(raw_map.keys())
+        word_to_idx = {w: i for i, w in enumerate(words)}
+        parent = list(range(len(words)))
+
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a: int, b: int) -> None:
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        for word, synonyms in raw_map.items():
+            wi = word_to_idx[word]
+            for syn in synonyms:
+                if syn in word_to_idx:
+                    union(wi, word_to_idx[syn])
+
+        clusters: dict[int, set[str]] = {}
+        for word, idx in word_to_idx.items():
+            root = find(idx)
+            clusters.setdefault(root, set()).add(word)
+
+        result: dict[str, set[str]] = {}
+        for word, idx in word_to_idx.items():
+            result[word] = clusters[find(idx)]
+        return result
+
+    # ------------------------------------------------------------------
+    # Matching
+    # ------------------------------------------------------------------
+
+    def match(self, user_message: str) -> list[str]:
+        global _RELOAD_KEYWORDS
+        if _RELOAD_KEYWORDS:
+            self._load()
+            _RELOAD_KEYWORDS = False
+
+        if not user_message or not self._dimensions:
+            return []
+
+        tokens = self._tokenize(user_message)
+        if not tokens:
+            return []
+
+        matched_dims: list[str] = []
+        for dim_name, keywords in self._dimensions.items():
+            if self._dimension_matches(tokens, keywords):
+                matched_dims.append(dim_name)
+
+        return matched_dims
+
+    # ------------------------------------------------------------------
+    # Tokenization
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        try:
+            import jieba
+        except ImportError:
+            return list(text)
+        return [t.strip() for t in jieba.cut(text) if t.strip()]
+
+    # ------------------------------------------------------------------
+    # Dimension matching
+    # ------------------------------------------------------------------
+
+    def _dimension_matches(self, tokens: list[str], keywords: frozenset[str]) -> bool:
+        raw_text = "".join(tokens)
+        for i, token in enumerate(tokens):
+            expanded = self._expand_token(token)
+            for term in expanded:
+                if term in keywords:
+                    if not self._is_negated(tokens, i):
+                        return True
+
+            for kw in keywords:
+                if len(kw) >= 1 and kw in token:
+                    kw_pos = token.find(kw)
+                    if self._token_prefix_has_negation(token, kw_pos):
+                        continue
+                    if not self._is_negated(tokens, i):
+                        return True
+
+        for kw in keywords:
+            if len(kw) >= 2 and kw in raw_text:
+                pos = raw_text.find(kw)
+                token_idx = self._char_pos_to_token_idx(tokens, pos)
+                if token_idx is not None and not self._is_negated(tokens, token_idx):
+                    return True
+
+        return False
+
+    def _expand_token(self, token: str) -> set[str]:
+        if token in self._synonym_map:
+            return self._synonym_map[token]
+        return {token}
+
+    # ------------------------------------------------------------------
+    # Negation detection
+    # ------------------------------------------------------------------
+
+    def _is_negated(self, tokens: list[str], keyword_idx: int, window: int = 2) -> bool:
+        start = max(0, keyword_idx - window)
+        for i in range(start, keyword_idx):
+            token = tokens[i]
+            if token in _NEGATION_WORDS:
+                return True
+            if self._is_general_negation_token(token):
+                return True
+        return False
+
+    def _is_general_negation_token(self, token: str) -> bool:
+        for neg in _NEGATION_WORDS:
+            if token.startswith(neg):
+                remainder = token[len(neg):]
+                if not remainder:
+                    return True
+                for kw_set in self._dimensions.values():
+                    if remainder in kw_set:
+                        return False
+                return True
+        return False
+
+    @staticmethod
+    def _token_prefix_has_negation(token: str, kw_pos: int) -> bool:
+        prefix = token[:kw_pos]
+        for neg in _NEGATION_WORDS:
+            if neg in prefix:
+                return True
+        return False
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _char_pos_to_token_idx(tokens: list[str], char_pos: int) -> int | None:
+        offset = 0
+        for idx, token in enumerate(tokens):
+            if offset <= char_pos < offset + len(token):
+                return idx
+            offset += len(token)
+        return None
+
+    # ------------------------------------------------------------------
+    # Public properties
+    # ------------------------------------------------------------------
+
+    @property
+    def dimensions(self) -> dict[str, frozenset[str]]:
+        return dict(self._dimensions)
+
+    @property
+    def synonym_map(self) -> dict[str, set[str]]:
+        return {k: set(v) for k, v in self._synonym_map.items()}
