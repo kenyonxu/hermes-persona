@@ -50,17 +50,45 @@ class _ExpressionVector:
     """表达向量引擎：关键词匹配 → 累加/衰减 → 磁盘持久化 → 格式化注入。"""
 
     def __init__(self, cfg: dict, profile_path: str | None = None):
-        # 1. 解析 dimensions（key 即维度名）
+        # 1. 解析 dimensions — 支持旧格式(list)和新格式(dict of dict, SPEC-006)
         self.dimensions: dict[str, list[str]] = {}
-        for dim_name, keywords in cfg.get("dimensions", {}).items():
-            if isinstance(keywords, list):
-                self.dimensions[dim_name] = list(dict.fromkeys(str(k) for k in keywords))
+        _dim_raw = cfg.get("dimensions", {})
+        _dim_meta: dict[str, dict] = {}  # 暂存 dict 格式的元数据
+        for dim_name, dim_val in _dim_raw.items():
+            if isinstance(dim_val, list):
+                # 旧格式: {"work": ["kw1", "kw2"]}
+                self.dimensions[dim_name] = list(dict.fromkeys(str(k) for k in dim_val))
+            elif isinstance(dim_val, dict):
+                # 新格式 (SPEC-006): {"work": {"label": "...", "keywords": [...], "score_rules": [...]}}
+                _dim_meta[dim_name] = dim_val
+                keywords = dim_val.get("keywords", [])
+                kp = dim_val.get("keywords_path", "")
+                if kp:
+                    # 外置关键词文件
+                    kp_path = Path(kp)
+                    if not kp_path.is_absolute():
+                        kp_path = Path(__file__).resolve().parent / kp_path
+                    try:
+                        if kp_path.is_file():
+                            data = json.loads(kp_path.read_text(encoding="utf-8"))
+                            kw_list = data.get("keywords", [])
+                            if isinstance(kw_list, list):
+                                keywords = list(kw_list)
+                    except (json.JSONDecodeError, OSError):
+                        pass
+                if isinstance(keywords, list) and keywords:
+                    self.dimensions[dim_name] = list(dict.fromkeys(str(k) for k in keywords))
 
-        # 2. 解析 score_rules，缺失维度用默认值 [1, -0.5, 1, 0.95]
+        # 2. 解析 score_rules — 优先维度内嵌 → 顶部旧格式 → 默认值
         self.score_rules: dict[str, tuple[float, float, float, float]] = {}
         default_rule = (1.0, -0.5, 1.0, 0.95)
+        top_rules = cfg.get("score_rules", {})
         for dim_name in self.dimensions:
-            raw = cfg.get("score_rules", {}).get(dim_name, list(default_rule))
+            # 优先：维度 dict 内的 score_rules
+            dim_cfg = _dim_meta.get(dim_name, {})
+            raw = dim_cfg.get("score_rules") if "score_rules" in dim_cfg else top_rules.get(dim_name)
+            if raw is None:
+                raw = list(default_rule)
             if isinstance(raw, (list, tuple)) and len(raw) >= 3:
                 try:
                     vals = [float(raw[0]), float(raw[1]), float(raw[2])]
