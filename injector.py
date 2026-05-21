@@ -7,6 +7,7 @@ called by the Hermes runtime on every pre_llm_call hook.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import traceback
@@ -18,7 +19,6 @@ import config as _config
 from dynamic_rules import _select_dynamic_rules
 from expression_vector import _ExpressionVector, _is_background_message
 from variance import _randomize_variance
-from locales import _t as _translate
 
 # ---------------------------------------------------------------------------
 # Pending debug block for transform_llm_output hook
@@ -32,6 +32,8 @@ _PENDING_DEBUG_BLOCK: str | None = None
 
 def _trace(source: str, msg: str) -> None:
     """Append a diagnostic line to /tmp/hermes_persona_trace.log."""
+    if not os.environ.get("HERMES_PERSONA_TRACE"):
+        return
     try:
         from datetime import datetime
         ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
@@ -519,9 +521,9 @@ def _fmt_detailed_fixed_signals(lines: list[str], fs: dict) -> None:
             if lines[i].startswith("    ④a") or lines[i].startswith("  ④a"):
                 insert_pos = i
                 break
-        # If we didn't find an existing ④a line, prepend
+        # If we didn't find an existing ④a line, append
         if insert_pos == len(lines):
-            lines.insert(0, f"  ④a 📏⏱️ {header}")
+            lines.append(f"  ④a 📏⏱️ {header}")
         else:
             lines[insert_pos] = f"  ④a 📏⏱️ {header}"
 

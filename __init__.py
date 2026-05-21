@@ -23,21 +23,21 @@ try:
     # ``import config`` at module level, which resolves via sys.modules
     # (not __path__), so the alias must exist before those modules load.
     sys.modules.setdefault("config", config)
+    from . import locales
     from . import guard
     from . import injector
-    from . import locales
+    sys.modules.setdefault("locales", locales)
     sys.modules.setdefault("guard", guard)
     sys.modules.setdefault("injector", injector)
-    sys.modules.setdefault("locales", locales)
 except ImportError:
     # Flat layout fallback: ensure plugin dir is on sys.path so bare
     # ``import config`` resolves.
     if _plugin_dir not in sys.path:
         sys.path.insert(0, _plugin_dir)
     import config
+    import locales
     import guard
     import injector
-    import locales
 
 
 def register(ctx) -> None:
