@@ -185,12 +185,21 @@ class _ExpressionVector:
         return False
 
     def load(self) -> None:
-        """从磁盘加载向量状态。文件不存在或格式错误时保持初始值。"""
-        try:
-            if not self.storage_path.is_file():
-                return
+        """从磁盘加载向量状态。文件不存在或格式错误时保持初始值。
 
-            data = json.loads(self.storage_path.read_text(encoding="utf-8"))
+        旧默认路径 fallback（SPEC 4.3）：新路径不存在时尝试从旧默认路径
+        ~/.hermes/expression_vector.json 读取，首次 save 时自然迁移到新路径。
+        """
+        try:
+            load_path = self.storage_path
+            if not load_path.is_file():
+                _OLD_DEFAULT = Path("~/.hermes/expression_vector.json").expanduser()
+                if _OLD_DEFAULT.is_file():
+                    load_path = _OLD_DEFAULT
+                else:
+                    return
+
+            data = json.loads(load_path.read_text(encoding="utf-8"))
             if not isinstance(data, dict) or data.get("version") != 1:
                 return
 

@@ -778,9 +778,18 @@ def _daily_turn_count_hint(fixed_cfg: dict, profile_path: str = "") -> str | Non
 
     # 读取或初始化
     data: dict = {"date": today_key, "count": 0}
+
+    # 旧默认路径 fallback（SPEC 4.3）：新路径不存在时尝试从旧默认路径读取
+    load_path = storage_path
+    if not load_path.is_file():
+        _OLD_DEFAULT_TEMPLATE = "~/.hermes/profiles/{profile}/state/daily_turn_count.json"
+        old_default = Path(_OLD_DEFAULT_TEMPLATE.replace("{profile}", profile_path or "")).expanduser()
+        if old_default.is_file():
+            load_path = old_default
+
     try:
-        if storage_path.is_file():
-            saved = json.loads(storage_path.read_text(encoding="utf-8"))
+        if load_path.is_file():
+            saved = json.loads(load_path.read_text(encoding="utf-8"))
             if isinstance(saved, dict) and saved.get("date") == today_key:
                 data = saved
             # 日期变化 → 自动归零

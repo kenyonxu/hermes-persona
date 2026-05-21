@@ -16,6 +16,13 @@ def temp_config_root():
     with tempfile.TemporaryDirectory() as tmpdir:
         old_root = config._CONFIG_ROOT
         config._CONFIG_ROOT = Path(tmpdir)
+
+        # 创建插件子目录结构（新文件布局）
+        plugin_dir = Path(tmpdir) / "plugins" / "hermes-persona"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "keywords").mkdir(exist_ok=True)
+        (plugin_dir / "state").mkdir(exist_ok=True)
+
         yield Path(tmpdir)
         config._CONFIG_ROOT = old_root
 
