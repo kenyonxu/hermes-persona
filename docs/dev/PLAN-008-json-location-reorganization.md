@@ -1,6 +1,6 @@
 # PLAN-008: JSON 文件位置整顿实施计划
 
-> 基于 SPEC-008，7 个 Phase，45 分钟完成。
+> 基于 SPEC-008，7 个 Phase，50 分钟完成。
 
 ---
 
@@ -111,6 +111,18 @@ raw_path = cfg.get(
 
 > **向后兼容：** 用户如果在 `persona-config.json` 里显式指定了 `storage_path`，不会被覆盖。只有未配置时才走新默认值。
 
+### 改动：`expression_vector.py` — 旧默认路径 fallback（SPEC 4.3）
+
+在 `load()` 方法中增加旧默认路径检测：新路径不存在 + 旧路径 `~/.hermes/expression_vector.json` 存在时，读取旧路径数据并在后续操作中自然迁移到新路径。
+
+```python
+# 在 load() 中追加（伪代码）：
+_OLD_DEFAULT = Path("~/.hermes/expression_vector.json").expanduser()
+if not self.storage_path.is_file() and _OLD_DEFAULT.is_file():
+    self.storage_path = _OLD_DEFAULT  # 本次读取从旧路径
+    # 后续 save() 时会回写新路径，自然迁移
+```
+
 ### 同步：`examples/persona-config.json` L101
 
 **旧：** `"storage_path": "~/.hermes/profiles/{profile}/state/expression_vector.json"`
@@ -162,6 +174,10 @@ dc_path_raw = dc_cfg.get("storage_path", "~/.hermes/profiles/{profile}/state/dai
 dc_path_raw = dc_cfg.get("storage_path", str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json"))
 ```
 
+### 改动：`injector.py` — 旧默认路径 fallback（SPEC 4.3）
+
+在 `_daily_turn_count_hint()` 中增加旧默认路径检测：新路径不存在 + 旧路径 `~/.hermes/profiles/{profile}/state/daily_turn_count.json` 存在时，读取旧路径数据，在随后的 `save()` 中写入新路径。
+
 **风险：** 低 | **回滚：** `git checkout -- injector.py`
 
 **验证：**
@@ -175,7 +191,7 @@ python -m pytest tests/test_fixed_signals.py -q
 
 **目标：** 删除废弃文件，保护运行时生成文件不入版本控制。
 
-### 改动：`~/github/hermes-persona/.gitignore`
+### 改动：`.gitignore`
 
 追加：
 ```
@@ -231,7 +247,7 @@ plugin_dir.mkdir(parents=True)
 
 ### 新增：`tests/test_config_paths.py`
 
-7 个测试用例：
+8 个测试用例：
 
 | 用例 | 场景 | 预期 |
 |------|------|------|
@@ -242,6 +258,7 @@ plugin_dir.mkdir(parents=True)
 | LOC-05 | state/ 自动创建 → expression_vector.json 写入 | 文件存在 |
 | LOC-06 | state/ 自动创建 → daily_turn_count.json 写入 | 文件存在 |
 | LOC-07 | 用户显式 storage_path 不覆盖 | 使用用户指定的路径 |
+| LOC-08 | 旧路径有状态文件，新路径无 → fallback 读取 | 读旧路径，首次 save 写新路径 |
 
 **风险：** 中 | **回滚：** `git checkout -- tests/conftest.py && rm tests/test_config_paths.py`
 
@@ -262,18 +279,33 @@ plugin_dir.mkdir(parents=True)
 
 ---
 
+## Phase 7 — 文档更新（5 分钟）
+
+**目标：** 更新 README / DESIGN / CHANGELOG 中文档配置位置信息。
+
+| # | 改动 | 文件 | 内容 |
+|---|------|------|------|
+| 7.1 | 更新配置文件位置说明 | `README.md` | 将配置路径从 `~/.hermes/profiles/{profile}/` 改为 `plugins/hermes-persona/` |
+| 7.2 | 更新目录结构描述 | `DESIGN.md` | 同步新的 `state/`、`keywords/`、`locales/` 布局 |
+| 7.3 | 追加变更记录 | `CHANGELOG.md` | 记录 JSON 位置整顿 + 向后兼容策略 + 迁移步骤 |
+
+**风险：** 低 | **回滚：** `git checkout -- README.md DESIGN.md CHANGELOG.md`
+
+---
+
 ## 总计
 
 | Phase | 内容 | 时间 | 风险 |
 |-------|------|------|------|
 | 0 | 前置检查 | 5 分钟 | 低 |
 | 1 | config.py 公共函数 + injector/guard 统一 | 10 分钟 | 中 |
-| 2 | expression_vector 默认路径 | 10 分钟 | 中 |
-| 3 | daily_turn_count 默认路径 | 5 分钟 | 低 |
+| 2 | expression_vector 默认路径 + 旧路径 fallback | 10 分钟 | 中 |
+| 3 | daily_turn_count 默认路径 + 旧路径 fallback | 5 分钟 | 低 |
 | 4 | 清理 + .gitignore | 5 分钟 | 低 |
 | 5 | 测试更新 | 5 分钟 | 中 |
 | 6 | 全程验收 | 5 分钟 | 低 |
-| **合计** | | **45 分钟** | |
+| 7 | 文档更新 | 5 分钟 | 低 |
+| **合计** | | **50 分钟** | |
 
 ---
 
@@ -281,4 +313,18 @@ plugin_dir.mkdir(parents=True)
 
 1. **双层 fallback，不碰 pytest ci：** 测试中 `_CONFIG_ROOT` 仍然指向临时目录，L1 插件目录不存在时自动 fallback 到 L2/L3，测试无需大改
 2. **state/ 进 .gitignore：** 运行时生成文件不入版本控制
-3. **配置迁移手动执行：** 从 profile 根 → 插件目录的复制由部署脚本/手动完成，代码层只保证路径解析正确
+3. **配置迁移手动执行：** 从 profile 根 → 插件目录的复制由部署脚本/手动完成，代码层只保证路径解析正确。SPEC 4.2 的 `_migrate_json_locations()` 自动迁移标记为"可选非阻塞"，此处选择手动方案以减少代码侵入面
+4. **旧默认路径 fallback（SPEC 4.3）：** 对于未显式配置 `storage_path` 的用户，状态文件（expression_vector / daily_turn_count）需检测旧默认路径是否存在，存在则先读旧路径，首次 save 时自然迁移到新路径。避免默认用户丢失历史状态数据
+
+
+---
+
+### Review Record
+- **Date:** 2026-05-21
+- **Reviewer:** Claude Code
+- **Verdict:** CHANGES REQUIRED（4 个问题，已全部修复）
+- **Issues found:** 4
+  1. SPEC 4.3 跨路径读取 + 自然迁移未实现 → 已追加到 Phase 2/3
+  2. SPEC LOC-06 测试用例缺失 → 已追加为 LOC-08
+  3. SPEC Phase 6 文档更新缺失 → 已追加 Phase 7
+  4. SPEC 4.2 自动迁移降级未说明 → 已追加关键决策 #3
