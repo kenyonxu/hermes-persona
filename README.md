@@ -78,6 +78,31 @@ hermes plugins list | grep persona
 | 看板注入 | `project` | 首轮注入项目看板状态 |
 | 安全护栏 | `guard` | 工具调用安全检查 + 审计日志 |
 
+## 目录结构
+
+```
+plugins/hermes-persona/
+├── persona-config.json          ← 用户唯一需要手改的配置文件
+├── keywords/                    ← 维度关键词（可手改或热加载）
+│   ├── work.json
+│   ├── intimacy.json
+│   ├── play.json
+│   ├── care.json
+│   ├── eros.json
+│   ├── future.json
+│   └── synonyms.json
+├── locales/                     ← 多语言模板
+│   ├── en.json
+│   └── zh.json
+├── state/                       ← 运行时自动生成（不入版本控制）
+│   ├── expression_vector.json
+│   └── daily_turn_count.json
+└── examples/
+    └── persona-config.json      ← 模板（新用户复制用）
+```
+
+> 💡 **配置文件查找顺序**：插件目录（新规范）→ profile 根目录（旧规范）→ repo 根目录（开发环境）。现有用户无需迁移，旧路径仍然有效。
+
 ## 文档索引
 
 | 文档 | 内容 |
@@ -92,7 +117,7 @@ hermes plugins list | grep persona
 ## 常见问题
 
 **Q: 配置文件放哪里？**
-A: 放在 Hermes profile 目录下，如 `~/.hermes/profiles/default/persona-config.json`。插件通过 `register(ctx)` 自动获取 `ctx.profile_path`。
+A: 放在插件目录下，如 `~/.hermes/profiles/default/plugins/hermes-persona/persona-config.json`。也兼容旧路径（profile 根目录），插件通过三层 fallback 自动定位：插件目录 → profile 根目录 → repo 根目录。
 
 **Q: 安装后所有 profile 都生效吗？**
 A: 取决于安装命令执行时的上下文：

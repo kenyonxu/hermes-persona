@@ -39,6 +39,16 @@ All notable changes to hermes-persona will be documented in this file.
 
 ---
 
+#### SPEC-008: JSON File Location Reorganization
+- **Unified file layout**: all user-editable JSON configs and runtime state files consolidated under `plugins/hermes-persona/` — `persona-config.json`, `keywords/` (7 JSONs), `locales/` (en/zh), `state/` (expression_vector, daily_turn_count), `examples/`.
+- **Three-layer fallback in `config.py`**: `_resolve_config_path()` resolves config path via plugin dir → `_CONFIG_ROOT` (legacy profile root) → caller fallback (repo root). `injector.py` and `guard.py` unified to use this single function.
+- **State file default path migration**: `expression_vector.json` default from `~/.hermes/` to `state/`; `daily_turn_count.json` default from `~/.hermes/profiles/{profile}/state/` to `state/`.
+- **Legacy state file fallback**: if new path has no state file but old default path does, read from old path and migrate to new path on first `save()`.
+- **`.gitignore`**: added `state/` to prevent runtime-generated files from being committed.
+- **Test coverage**: 13 new path-resolution tests (`test_config_paths.py`), total 346 passed.
+
+---
+
 #### US-001: Module Switch (completed prior)
 - **Module registry** (`_MODULE_REGISTRY`): declarative control for 7 modules (time, static_rules, dynamic, variance, memory, kanban, debug).
 - **Sub-channel control**: `dynamic.time_slots`, `dynamic.turn_stage`, `dynamic.keyword` independently switchable.
@@ -86,6 +96,16 @@ All notable changes to hermes-persona will be documented in this file.
 
 ### 测试状态
 - **232/232 测试通过**（0.18s）：31 表达向量 + 9 固定信号 + 9 集成 + 183 基线。
+
+---
+
+#### SPEC-008: JSON 文件位置整顿
+- **统一文件布局**：所有用户可编辑的 JSON 配置和运行时状态文件统一到 `plugins/hermes-persona/` 下——`persona-config.json`、`keywords/`（7 个 JSON）、`locales/`（en/zh）、`state/`（expression_vector、daily_turn_count）、`examples/`。
+- **三层 fallback**：`config.py` 新增 `_resolve_config_path()` 公共函数，按插件目录 → `_CONFIG_ROOT`（旧 profile 根目录）→ 调用方自行处理（repo 根目录）顺序解析配置路径。`injector.py` 和 `guard.py` 统一调用此函数。
+- **状态文件默认路径迁移**：`expression_vector.json` 默认路径从 `~/.hermes/` 迁移到 `state/`；`daily_turn_count.json` 默认路径从 `~/.hermes/profiles/{profile}/state/` 迁移到 `state/`。
+- **旧状态文件 fallback**：新路径不存在但旧默认路径存在时，读取旧路径数据，在首次 `save()` 时写入新路径实现自然迁移。
+- **`.gitignore`**：追加 `state/`，防止运行时生成文件被提交。
+- **测试覆盖**：13 个新增路径解析测试（`test_config_paths.py`），全量 346 passed。
 
 ---
 

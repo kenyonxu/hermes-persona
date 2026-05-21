@@ -26,6 +26,26 @@ Hermes Agent 的 Plugin Hook 机制提供了三个关键点：
 2. JSON 有严格的结构约束，减少格式歧义
 3. 用户群体更熟悉 JSON（JavaScript/TypeScript 开发者占多数）
 
+## 文件布局
+
+所有用户可编辑的 JSON 配置和运行时状态文件统一在插件目录下：
+
+```
+plugins/hermes-persona/
+├── persona-config.json          ← 用户唯一需要手改的配置文件
+├── keywords/                    ← 维度关键词（7 个 JSON，用户可定制）
+├── locales/                     ← 多语言模板（en.json / zh.json）
+├── state/                       ← 运行时自动生成（expression_vector / daily_turn_count）
+└── examples/                    ← 模板（新用户复制用）
+```
+
+**路径解析策略**：`config.py` 提供 `_resolve_config_path()` 公共函数，三层 fallback：
+1. 插件目录（新规范，优先）
+2. `_CONFIG_ROOT`（旧规范 profile 根目录，向后兼容）
+3. 调用方自行处理（如 repo 根目录 fallback）
+
+`injector.py` 和 `guard.py` 统一通过此函数加载配置，避免重复维护多套路径逻辑。状态文件（`expression_vector.json`、`daily_turn_count.json`）默认写入 `state/`，若旧路径存在状态文件则自动读取并在首次 `save()` 时迁移到新路径。
+
 ## 七大模块设计
 
 | 模块 | 配置节点 | 设计理由 |
