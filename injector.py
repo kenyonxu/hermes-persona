@@ -300,9 +300,12 @@ def _debug_summary(
 
     # ③ Dynamic
     if _is_enabled(modules, "dynamic"):
-        dyn = modules.get("dynamic", {})
-        sub_status = _fmt_dynamic_sub_status(dyn)
-        lines.append(f"  ③ ⚡ {sub_status}")
+        if dynamic_rules:
+            lines.append(f"  ③ ⚡ {len(dynamic_rules)}条动态规则触发:")
+            for r in dynamic_rules:
+                lines.append(f"     {r}")
+        else:
+            lines.append("  ③ ⚡ 无规则触发")
     else:
         lines.append("  ③ ⚡ 已停用")
 
@@ -617,20 +620,6 @@ def _count_static_rules_in_parts(parts: list[str]) -> int:
         return 0
 
 
-def _fmt_dynamic_sub_status(dyn_dict) -> str:
-    """Format dynamic subchannel status string."""
-    try:
-        if not isinstance(dyn_dict, dict):
-            return "on" if dyn_dict else "off"
-        parts = []
-        for key in ("time_slots", "turn_stage", "keyword"):
-            status = "on" if dyn_dict.get(key, True) else "off"
-            parts.append(f"{key}: {status}")
-        return " / ".join(parts)
-    except Exception:
-        return "on"
-
-
 def _fmt_kanban_debug(parts: list[str]) -> str:
     """Extract kanban items from parts and show summary."""
     try:
@@ -938,17 +927,17 @@ def inject_context(
 
         # 3. Dynamic rules (subchannel-controllable)
         turn_count = len(conversation_history or []) // 2  # ← 提前，④b 复用
+        dynamic_rules: list[str] = []
         if _has_any_dynamic(modules):
             dynamic_cfg = config.get("dynamic", {})
-            parts.extend(
-                _select_dynamic_rules(
-                    dynamic_cfg,
-                    user_message,
-                    is_first_turn,
-                    turn_count,
-                    modules=modules.get("dynamic", {}),
-                )
+            dynamic_rules = _select_dynamic_rules(
+                dynamic_cfg,
+                user_message,
+                is_first_turn,
+                turn_count,
+                modules=modules.get("dynamic", {}),
             )
+            parts.extend(dynamic_rules)
 
         # ─── ④a Fixed signals ────────────────────────────
         fixed_cfg = config.get("fixed_signals", {})
