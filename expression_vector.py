@@ -17,24 +17,25 @@ from pathlib import Path
 _logger = logging.getLogger("hermes_tool_slimmer.expression_vector")
 
 
-# ── 后台消息过滤 ───────────────────────────────────────────────────────────
+# ── 系统消息过滤 ───────────────────────────────────────────────────────────
 
-_BG_PREFIX = "[IMPORTANT: Background process"
+_BG_MARKER = "[IMPORTANT:"
 _BG_SIGNATURES = ["claude -p", "Command:", "Output:", "exit code"]
 _BG_MIN_LENGTH = 500
 _BG_SIGNATURE_THRESHOLD = 2
 
 
 def _is_background_message(msg: str) -> bool:
-    """判断是否为后台进程完成通知（不应计入表达向量）。
+    """判断是否为系统转发消息（不应计入表达向量）。
 
-    规则 A：前缀子串匹配 — 消息中包含 "[IMPORTANT: Background process"
+    规则 A：系统标记匹配 — 消息中包含 "[IMPORTANT:"（覆盖后台进程通知、
+            skill 内容注入等所有系统转发消息）
     规则 B：长度 + 特征词密度 — len > 500 且 ≥ 2 个特征词命中
     OR 连接，命中任一规则返回 True。
     任何异常返回 False（fail-open）。
     """
     try:
-        if _BG_PREFIX in msg:
+        if _BG_MARKER in msg:
             return True
         if len(msg) > _BG_MIN_LENGTH:
             sig_hits = sum(1 for sig in _BG_SIGNATURES if sig in msg)
