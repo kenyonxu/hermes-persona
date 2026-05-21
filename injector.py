@@ -993,26 +993,7 @@ def _clean_variance_item(item: str) -> str:
     return cleaned.strip()
 
 
-def _filter_fixed_rules(rules: list[str]) -> list[str]:
-    """筛选固定规则：排除已被转译模块覆盖的规则。
 
-    排除条件：
-        - 以 🦊 开头  → 狐耳/尾巴规则，已被随机变化取代
-        - 以 💬 开头  → 比喻优先规则，已被散落提示取代
-        - 以 📊 开头且包含「表达向量」 → 表达向量说明，已被 top3 取代
-    """
-    filtered: list[str] = []
-    for rule in rules:
-        if not isinstance(rule, str):
-            continue
-        if rule.startswith("🦊"):
-            continue
-        if rule.startswith("💬"):
-            continue
-        if rule.startswith("📊") and "表达向量" in rule:
-            continue
-        filtered.append(rule)
-    return filtered
 
 
 # ---------------------------------------------------------------------------
@@ -1081,7 +1062,7 @@ def inject_context(
             ctx_cfg = config.get("context", {})
             static_rules = _inject_static_rules(ctx_cfg, is_first_turn)
             if _translate_mode:
-                _filtered_rules = _filter_fixed_rules(static_rules)
+                _filtered_rules = list(static_rules)
             else:
                 parts.extend(static_rules)
 
@@ -1349,6 +1330,8 @@ def inject_context(
                 config=config,
                 debug_context=debug_context,
             )}"
+            if _translate_mode:
+                _PENDING_DEBUG_BLOCK += f"\n\n🔮 [转译结果]:\n{narrative}"
             _trace("inject_context", f"SET debug={debug_val!r} pending={len(_PENDING_DEBUG_BLOCK)} chars")
         else:
             _trace("inject_context", f"SKIP debug={debug_val!r} enabled={_is_enabled(modules, 'debug')} config_root={'set' if _config._CONFIG_ROOT else 'None'}")

@@ -8,7 +8,6 @@ import injector as injector
 from injector import (
     _assemble_narrative,
     _clean_variance_item,
-    _filter_fixed_rules,
 )
 
 
@@ -146,55 +145,6 @@ class TestAssembleNarrative:
         assert result == "现在时间是：周四，20:29。"
 
 
-class TestFilterFixedRules:
-    """_filter_fixed_rules() 单元测试 — T-07."""
-
-    def test_T07_excludes_replaced_rules(self):
-        """T-07: 🦊/💬/📊表达向量 规则被排除。"""
-        rules = [
-            "🦊 狐耳/尾巴=情绪外显器官...",
-            "💬 比喻优先...",
-            "🌿 感知表达自然化...",
-            "💎 核心态度...",
-            "📊 表达向量的六维数值动态反映主人状态...",
-            "📊 使用Claude Code后台执行任务时要给充足权限",
-            "🌙 永远不赶主人去睡觉...",
-        ]
-        filtered = _filter_fixed_rules(rules)
-        assert len(filtered) == 4
-        # 保留的
-        assert any("🌿" in r for r in filtered)
-        assert any("💎" in r for r in filtered)
-        assert any("永远不赶主人去睡觉" in r for r in filtered)
-        assert any("使用Claude Code" in r for r in filtered)
-        # 排除的
-        assert not any("🦊" in r for r in filtered)
-        assert not any("狐耳" in r for r in filtered)
-        assert not any("比喻优先" in r for r in filtered)
-        assert not any("表达向量的六维" in r for r in filtered)
-
-    def test_keep_cc_background_rule(self):
-        """📊 使用Claude Code... 规则（不含「表达向量」）不被误排除。"""
-        rules = [
-            "📊 使用Claude Code后台执行任务时要给充足权限",
-            "📊 表达向量的六维数值动态反映主人状态...",
-        ]
-        filtered = _filter_fixed_rules(rules)
-        assert len(filtered) == 1
-        assert "使用Claude Code" in filtered[0]
-
-    def test_empty_rules_returns_empty(self):
-        """空列表 → 返回空列表。"""
-        assert _filter_fixed_rules([]) == []
-
-    def test_non_string_rules_skipped(self):
-        """非字符串元素被跳过。"""
-        rules = ["🌿 感知表达自然化", None, 123]
-        filtered = _filter_fixed_rules(rules)
-        assert len(filtered) == 1
-        assert "🌿" in filtered[0]
-
-
 class TestTranslateIntegration:
     """translate 模式集成测试 — T-06."""
 
@@ -241,6 +191,31 @@ class TestTranslateIntegration:
         assert "现在时间是" in result["context"]
         assert "主人目前的状态是" not in result["context"]  # ev 未启用
         assert "感知表达自然化" in result["context"]
+
+    def test_translate_debug_includes_narrative(self):
+        """translate + debug 同时开启 → debug 块末尾包含转译结果。"""
+        config = {
+            "modules": {"translate": True, "debug": True},
+            "time": {},
+            "context": {"rules": ["测试规则"]},
+            "variance": {},
+            "debug": {"detail": "compact"},
+        }
+        with patch("injector._load_config", return_value=config):
+            result = injector.inject_context(
+                session_id="test",
+                user_message="你好",
+                conversation_history=[],
+                is_first_turn=True,
+                model="test",
+                platform="test",
+            )
+        assert result is not None
+        debug_block = injector._PENDING_DEBUG_BLOCK
+        assert debug_block is not None
+        assert "🔮 [转译结果]" in debug_block
+        assert "现在时间是" in debug_block
+        assert "测试规则" in debug_block
 
 
 class TestCleanVarianceItem:
