@@ -710,7 +710,8 @@ def _reply_gap_hint(fixed_cfg: dict) -> tuple[str | None, float]:
         threshold_minutes = 30
 
     now = time.time()
-    raw_path = rg_cfg.get("storage_path", "~/.hermes/reply_timing.json")
+    rg_default = str(Path(__file__).resolve().parent / "state" / "reply_timing.json")
+    raw_path = rg_cfg.get("storage_path", "") or rg_default
     storage_path = Path(raw_path).expanduser()
 
     hint = None
@@ -739,7 +740,8 @@ def _save_reply_timing(fixed_cfg: dict, now_ts: float) -> None:
     if not rg_cfg.get("enabled", False):
         return
 
-    raw_path = rg_cfg.get("storage_path", "~/.hermes/reply_timing.json")
+    rg_default = str(Path(__file__).resolve().parent / "state" / "reply_timing.json")
+    raw_path = rg_cfg.get("storage_path", "") or rg_default
     storage_path = Path(raw_path).expanduser()
 
     try:
@@ -1013,7 +1015,8 @@ def inject_context(
             rg_gap = None
             rg_triggered = False
             try:
-                rg_path = Path(rg_cfg.get("storage_path", "~/.hermes/reply_timing.json")).expanduser()
+                rg_dbg_default = str(Path(__file__).resolve().parent / "state" / "reply_timing.json")
+                rg_path = Path(rg_cfg.get("storage_path", "") or rg_dbg_default).expanduser()
                 if rg_path.is_file():
                     rg_data = json.loads(rg_path.read_text(encoding="utf-8"))
                     last_ts = rg_data.get("last_reply_at")
