@@ -768,10 +768,8 @@ def _daily_turn_count_hint(fixed_cfg: dict, profile_path: str = "") -> str | Non
         return None
 
     today_key = datetime.now().strftime("%Y-%m-%d")
-    raw_path = dc_cfg.get(
-        "storage_path",
-        str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json"),
-    )
+    dc_default = str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json")
+    raw_path = dc_cfg.get("storage_path", "") or dc_default
     if profile_path:
         raw_path = raw_path.replace("{profile}", str(profile_path))
     storage_path = Path(raw_path).expanduser()
@@ -1038,7 +1036,8 @@ def inject_context(
             dc_count = 0
             dc_date = datetime.now().strftime("%Y-%m-%d")
             try:
-                dc_path_raw = dc_cfg.get("storage_path", str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json"))
+                dc_default_dbg = str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json")
+                dc_path_raw = dc_cfg.get("storage_path", "") or dc_default_dbg
                 dc_profile = kwargs.get("profile_path", "")
                 if dc_profile:
                     dc_path_raw = dc_path_raw.replace("{profile}", str(dc_profile))

@@ -105,10 +105,8 @@ class _ExpressionVector:
             self.reset_policy = "session"
 
         # 4. 存储路径（替换 {profile} 占位符）
-        raw_path = cfg.get(
-            "storage_path",
-            str(Path(__file__).resolve().parent / "state" / "expression_vector.json"),
-        )
+        default_path = str(Path(__file__).resolve().parent / "state" / "expression_vector.json")
+        raw_path = cfg.get("storage_path", "") or default_path
         if profile_path:
             raw_path = raw_path.replace("{profile}", str(profile_path))
         self.storage_path: Path = Path(raw_path).expanduser()
