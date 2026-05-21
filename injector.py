@@ -967,11 +967,11 @@ def _assemble_narrative(
         top_labels = [f"{label}（{trend}）" for label, _, trend in top3]
         lines.append(f"主人目前的状态是{'，'.join(top_labels)}。")
 
-    # ── ④ 随机变化（抽中的） ──
+    # ── ④ 随机变化（抽中的）─ 直接放行，条目本身即为完整句 ──
     if variance_items:
         for item in variance_items:
             clean = _clean_variance_item(item)
-            lines.append(f"使用{clean}的肢体语言来对你的语言表达进行补充。")
+            lines.append(clean)
 
     # ── ⑤ 固定规则（自然收尾） ──
     if fixed_rules:
@@ -982,14 +982,12 @@ def _assemble_narrative(
 
 
 def _clean_variance_item(item: str) -> str:
-    """清理随机变化条目：去除 emoji 前缀和「的肢体语言表达」后缀。"""
+    """去除 emoji 前缀，保留其余内容原样输出。"""
     cleaned = item
     for prefix in ("🦊 ", "💬 ", "📊 ", "🌿 ", "💎 ", "🌙 "):
         if cleaned.startswith(prefix):
             cleaned = cleaned[len(prefix):]
             break
-    if "的肢体语言表达" in cleaned:
-        cleaned = cleaned.split("的肢体语言表达")[0]
     return cleaned.strip()
 
 

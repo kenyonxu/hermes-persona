@@ -226,20 +226,20 @@ class TestCleanVarianceItem:
         assert _clean_variance_item("🦊 蓬松的大狐尾") == "蓬松的大狐尾"
         assert _clean_variance_item("💬 温柔感强") == "温柔感强"
 
-    def test_removes_body_language_suffix(self):
-        """去除「的肢体语言表达」后缀。"""
+    def test_suffix_preserved(self):
+        """「的肢体语言表达」后缀不再被剥离——保留原样。"""
         result = _clean_variance_item("蓬松的大狐尾的肢体语言表达")
-        assert result == "蓬松的大狐尾"
+        assert result == "蓬松的大狐尾的肢体语言表达"
 
     def test_no_change_when_clean(self):
         """无需清理时原样返回。"""
         assert _clean_variance_item("蓬松的大狐尾") == "蓬松的大狐尾"
         assert _clean_variance_item("温柔感强") == "温柔感强"
 
-    def test_emoji_and_suffix_both_removed(self):
-        """同时去除 emoji 前缀和后缀。"""
+    def test_emoji_removed_suffix_preserved(self):
+        """去除 emoji 前缀，保留后缀。"""
         result = _clean_variance_item("🦊 蓬松的大狐尾的肢体语言表达")
-        assert result == "蓬松的大狐尾"
+        assert result == "蓬松的大狐尾的肢体语言表达"
 
 
 class TestExpressionVectorTop3:
