@@ -16,7 +16,11 @@ from pathlib import Path
 
 import config as _config
 
-from dynamic_rules import _select_dynamic_rules
+from dynamic_rules import (
+    _get_time_slot_desc,
+    _get_turn_stage_hint,
+    _select_dynamic_rules,
+)
 from expression_vector import _ExpressionVector, _is_background_message
 from variance import _randomize_variance
 
@@ -93,6 +97,13 @@ _MODULE_REGISTRY: dict[str, dict] = {
         "description": "Debug Mode — 在注入上下文末尾追加人类可读的注入摘要",
         "default": False,
         "phase": 7,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
+    "translate": {
+        "description": "注入规则转译 — 自然语言拼装替代逐模块堆叠",
+        "default": False,
+        "phase": 8,
         "legacy_key": None,
         "legacy_path": None,
     },
@@ -918,6 +929,93 @@ def _read_kanban(kanban_path: str, label: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Narrative assembly (translate mode)
+# ---------------------------------------------------------------------------
+
+
+def _assemble_narrative(
+    weekday: str,
+    current_time: str,
+    time_slot_desc: str,
+    today_turn: int,
+    turn_stage_hint: str | None,
+    top3: list[tuple[str, float, str]],
+    variance_items: list[str],
+    fixed_rules: list[str],
+) -> str:
+    """将分散的模块注入数据拼装为一段流畅的自然语言指令。
+
+    各数据源独立，缺失项优雅跳过（不抛异常、不输出该段落）。
+    """
+    lines: list[str] = []
+
+    # ── ① 时间感知 + 时段规则 ──
+    if time_slot_desc:
+        lines.append(f"现在时间是：{weekday}，{current_time}。{time_slot_desc}")
+    else:
+        lines.append(f"现在时间是：{weekday}，{current_time}。")
+
+    # ── ② 轮数追踪 + 轮数阶段 ──
+    if today_turn > 0:
+        turn_line = f"这是今天的第{today_turn}轮对话。"
+        if turn_stage_hint:
+            turn_line += f" {turn_stage_hint}。"
+        lines.append(turn_line)
+
+    # ── ③ 表达向量 top 3 转译 ──
+    if top3:
+        top_labels = [f"{label}（{trend}）" for label, _, trend in top3]
+        lines.append(f"主人目前的状态是{'，'.join(top_labels)}。")
+
+    # ── ④ 随机变化（抽中的） ──
+    if variance_items:
+        for item in variance_items:
+            clean = _clean_variance_item(item)
+            lines.append(f"使用{clean}的肢体语言来对你的语言表达进行补充。")
+
+    # ── ⑤ 固定规则（自然收尾） ──
+    if fixed_rules:
+        rules_text = "；".join(fixed_rules)
+        lines.append(rules_text + "。")
+
+    return "\n\n".join(lines)
+
+
+def _clean_variance_item(item: str) -> str:
+    """清理随机变化条目：去除 emoji 前缀和「的肢体语言表达」后缀。"""
+    cleaned = item
+    for prefix in ("🦊 ", "💬 ", "📊 ", "🌿 ", "💎 ", "🌙 "):
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+            break
+    if "的肢体语言表达" in cleaned:
+        cleaned = cleaned.split("的肢体语言表达")[0]
+    return cleaned.strip()
+
+
+def _filter_fixed_rules(rules: list[str]) -> list[str]:
+    """筛选固定规则：排除已被转译模块覆盖的规则。
+
+    排除条件：
+        - 以 🦊 开头  → 狐耳/尾巴规则，已被随机变化取代
+        - 以 💬 开头  → 比喻优先规则，已被散落提示取代
+        - 以 📊 开头且包含「表达向量」 → 表达向量说明，已被 top3 取代
+    """
+    filtered: list[str] = []
+    for rule in rules:
+        if not isinstance(rule, str):
+            continue
+        if rule.startswith("🦊"):
+            continue
+        if rule.startswith("💬"):
+            continue
+        if rule.startswith("📊") and "表达向量" in rule:
+            continue
+        filtered.append(rule)
+    return filtered
+
+
+# ---------------------------------------------------------------------------
 # Main entry point: inject_context()
 # ---------------------------------------------------------------------------
 
@@ -951,47 +1049,99 @@ def inject_context(
         modules = _resolve_modules(config)
         parts: list[str] = []
 
+        # ── translate 模式：提前提取时间变量 ──
+        _now = datetime.now()
+        _weekday_cn = _WEEKDAY_CN[_now.weekday()]
+        _current_time = _now.strftime("%H:%M")
+
+        # ── 判断 translate 模式 ──
+        _translate_mode = _is_enabled(modules, "translate")
+
+        # translate 模式下的数据容器
+        _time_slot_desc = ""
+        _turn_stage_hint = None
+        _today_turn = 0
+        _top3: list[tuple[str, float, str]] = []
+        _variance_items: list[str] = []
+        _filtered_rules: list[str] = []
+
         # 1. Time context
         if _is_enabled(modules, "time"):
             time_cfg = config.get("time", {})
-            fmt = time_cfg.get("format", "cn_full")
-            parts.append(_time_context(fmt))
+            if _translate_mode:
+                # translate 模式：时间已在前面从 _now 提取，跳过格式化注入
+                pass
+            else:
+                fmt = time_cfg.get("format", "cn_full")
+                parts.append(_time_context(fmt))
 
         # 2. Static rules
         static_rules: list[str] = []
         if _is_enabled(modules, "static_rules"):
             ctx_cfg = config.get("context", {})
             static_rules = _inject_static_rules(ctx_cfg, is_first_turn)
-            parts.extend(static_rules)
+            if _translate_mode:
+                _filtered_rules = _filter_fixed_rules(static_rules)
+            else:
+                parts.extend(static_rules)
 
         # 3. Dynamic rules (subchannel-controllable)
         turn_count = len(conversation_history or []) // 2  # ← 提前，④b 复用
         dynamic_rules: list[str] = []
         if _has_any_dynamic(modules):
             dynamic_cfg = config.get("dynamic", {})
-            dynamic_rules = _select_dynamic_rules(
-                dynamic_cfg,
-                user_message,
-                is_first_turn,
-                turn_count,
-                modules=modules.get("dynamic", {}),
-            )
-            parts.extend(dynamic_rules)
+            if _translate_mode:
+                dyn_mod = modules.get("dynamic", {})
+                if dyn_mod is None or not isinstance(dyn_mod, dict):
+                    dyn_mod = {}
+                if dyn_mod.get("time_slots", True):
+                    _time_slot_desc = _get_time_slot_desc(
+                        dynamic_cfg.get("time_slots", {})
+                    )
+                if dyn_mod.get("turn_stage", True):
+                    _turn_stage_hint = _get_turn_stage_hint(
+                        dynamic_cfg.get("turn_stage", {}),
+                        is_first_turn,
+                        turn_count,
+                    )
+            else:
+                dynamic_rules = _select_dynamic_rules(
+                    dynamic_cfg,
+                    user_message,
+                    is_first_turn,
+                    turn_count,
+                    modules=modules.get("dynamic", {}),
+                )
+                parts.extend(dynamic_rules)
 
         # ─── ④a Fixed signals ────────────────────────────
         fixed_cfg = config.get("fixed_signals", {})
-        hint = _message_length_hint(user_message or "", fixed_cfg)
-        if hint:
-            parts.append(hint)
 
-        gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
-        if gap_hint:
-            parts.append(gap_hint)
-        _save_reply_timing(fixed_cfg, now_ts)
+        if _translate_mode:
+            # translate 模式：提取 today_turn 原始值，保持副作用
+            turn_hint = _daily_turn_count_hint(
+                fixed_cfg, profile_path=kwargs.get("profile_path", "")
+            )
+            if turn_hint:
+                _m = re.search(r"今日第(\d+)轮", turn_hint)
+                if _m:
+                    _today_turn = int(_m.group(1))
+            # translate 模式下也需要保存 reply_timing
+            gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
+            _save_reply_timing(fixed_cfg, now_ts)
+        else:
+            hint = _message_length_hint(user_message or "", fixed_cfg)
+            if hint:
+                parts.append(hint)
 
-        turn_hint = _daily_turn_count_hint(fixed_cfg, profile_path=kwargs.get("profile_path", ""))
-        if turn_hint:
-            parts.append(turn_hint)
+            gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
+            if gap_hint:
+                parts.append(gap_hint)
+            _save_reply_timing(fixed_cfg, now_ts)
+
+            turn_hint = _daily_turn_count_hint(fixed_cfg, profile_path=kwargs.get("profile_path", ""))
+            if turn_hint:
+                parts.append(turn_hint)
         # ──────────────────────────────────────────────────
 
         # ─── debug_context: capture fixed signal state for detailed mode ───
@@ -1097,7 +1247,10 @@ def inject_context(
                         "decay_dims": decay_dims if not hit_keywords else [],
                     }
                 ev.save()
-                parts.append(ev.format_inject(turn_count))
+                if _translate_mode:
+                    _top3 = ev.top3(n=3, trend=True)
+                else:
+                    parts.append(ev.format_inject(turn_count))
             except Exception:
                 pass  # fail-open：表达向量失败不阻断后续注入
         # ──────────────────────────────────────────────────
@@ -1107,8 +1260,11 @@ def inject_context(
         var_results = []
         if _is_enabled(modules, "variance"):
             var_results = _randomize_variance(config.get("variance", {}))
-            parts.extend(var_results)
-            var_count = len(var_results)
+            if _translate_mode:
+                _variance_items = list(var_results)
+            else:
+                parts.extend(var_results)
+                var_count = len(var_results)
 
         # ─── debug_context: capture variance item states ───
         var_context_items = []
@@ -1157,6 +1313,20 @@ def inject_context(
             )
             if kanban is not None:
                 parts.append(kanban)
+
+        # ── translate 拼装 ──
+        if _translate_mode:
+            narrative = _assemble_narrative(
+                weekday=_weekday_cn,
+                current_time=_current_time,
+                time_slot_desc=_time_slot_desc,
+                today_turn=_today_turn,
+                turn_stage_hint=_turn_stage_hint,
+                top3=_top3,
+                variance_items=_variance_items,
+                fixed_rules=_filtered_rules,
+            )
+            parts.insert(0, narrative)
 
         # Record non-debug content count before debug injection
         non_debug_count = len(parts)

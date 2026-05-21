@@ -24,6 +24,27 @@ _BG_SIGNATURES = ["claude -p", "Command:", "Output:", "exit code"]
 _BG_MIN_LENGTH = 500
 _BG_SIGNATURE_THRESHOLD = 2
 
+# ── 维度标签默认映射 ─────────────────────────────────────────────────────────
+
+_DEFAULT_LABELS: dict[str, str] = {
+    "intimacy": "亲密温度",
+    "care": "关怀守护",
+    "work": "工作投入",
+    "play": "轻松玩乐",
+    "future": "未来愿景",
+    "eros": "私密温度",
+}
+
+
+def _trend(current: float, previous: float) -> str:
+    """比较当前值与上轮值，返回趋势箭头。"""
+    if current > previous:
+        return "↑"
+    elif current < previous:
+        return "↓"
+    else:
+        return "→"
+
 
 def _is_background_message(msg: str) -> bool:
     """判断是否为系统转发消息（不应计入表达向量）。
@@ -52,6 +73,7 @@ class _ExpressionVector:
     def __init__(self, cfg: dict, profile_path: str | None = None):
         # 1. 解析 dimensions — 支持旧格式(list)和新格式(dict of dict, SPEC-006)
         self.dimensions: dict[str, list[str]] = {}
+        self.dimension_labels: dict[str, str] = {}
         _dim_raw = cfg.get("dimensions", {})
         _dim_meta: dict[str, dict] = {}  # 暂存 dict 格式的元数据
         for dim_name, dim_val in _dim_raw.items():
@@ -61,6 +83,9 @@ class _ExpressionVector:
             elif isinstance(dim_val, dict):
                 # 新格式 (SPEC-006): {"work": {"label": "...", "keywords": [...], "score_rules": [...]}}
                 _dim_meta[dim_name] = dim_val
+                label = dim_val.get("label", "")
+                if label:
+                    self.dimension_labels[dim_name] = str(label)
                 keywords = dim_val.get("keywords", [])
                 kp = dim_val.get("keywords_path", "")
                 if kp:
@@ -291,6 +316,44 @@ class _ExpressionVector:
         ]
         dim_str = " ".join(dim_parts)
         return f"📊 [表达向量] {dim_str} | 第 {turn_count} 轮"
+
+    def top3(self, n: int = 3, trend: bool = True) -> list[tuple[str, float, str]]:
+        """返回排序后的 top n 维度信息。
+
+        按向量值降序排列，取前 n 个。分值为 0 的维度不返回。
+        trend_arrow 为空字符串当 trend=False 或无法计算趋势时。
+
+        Args:
+            n: 返回维度数量，默认 3。
+            trend: 是否计算趋势箭头。
+
+        Returns:
+            list of (label, score, trend_arrow)。少于 n 个维度时有几个返回几个。
+        """
+        sorted_dims = sorted(
+            [(dim, val) for dim, val in self.vectors.items() if val > 0],
+            key=lambda x: x[1],
+            reverse=True,
+        )[:n]
+
+        prev_vectors: dict[str, float] = {}
+        if trend and self.vector_history:
+            prev_vectors = self.vector_history[-1].get("vectors", {})
+
+        result: list[tuple[str, float, str]] = []
+        for dim_name, score in sorted_dims:
+            label = self.dimension_labels.get(dim_name)
+            if not label:
+                label = _DEFAULT_LABELS.get(dim_name, dim_name)
+
+            arrow = ""
+            if trend:
+                prev_val = prev_vectors.get(dim_name, 0.0)
+                arrow = _trend(score, prev_val)
+
+            result.append((label, round(score), arrow))
+
+        return result
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SPEC-006: 关键词匹配引擎（jieba 分词 + 同义词扩展 + 否定检测）

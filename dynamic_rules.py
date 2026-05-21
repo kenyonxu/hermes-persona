@@ -106,6 +106,26 @@ def _in_time_range(now: str, start: str, end: str) -> bool:
         return now >= start or now < end
 
 
+def _get_time_slot_desc(time_slots: dict) -> str:
+    """提取当前匹配时段的原始规则文本（不含格式化前缀）。
+
+    与 _match_time_slot() 使用相同的时间匹配逻辑，但返回第一条匹配规则的
+    原始文本而非格式化字符串。
+    """
+    now = datetime.now().strftime("%H:%M")
+    for slot_range, rules in time_slots.items():
+        try:
+            start, end = slot_range.split("-", 1)
+            start = start.strip()
+            end = end.strip()
+        except ValueError:
+            continue
+        if _in_time_range(now, start, end):
+            for rule in rules:
+                return str(rule)
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # Turn stages
 # ---------------------------------------------------------------------------
@@ -146,6 +166,42 @@ def _match_turn_stage(
             break
 
     return matched
+
+
+def _get_turn_stage_hint(
+    turn_stages: dict, is_first_turn: bool, turn_count: int
+) -> str | None:
+    """提取当前轮数阶段的提示文本（不含格式化前缀）。
+
+    与 _match_turn_stage() 使用相同的匹配逻辑，但返回提示文本本身。
+    """
+    if is_first_turn and "first_turn" in turn_stages:
+        rules = turn_stages["first_turn"]
+        if rules:
+            return str(rules[0])
+
+    stage_keys = []
+    for key in turn_stages:
+        if key == "first_turn":
+            continue
+        try:
+            num = int(key.replace("after_", ""))
+            stage_keys.append((num, key))
+        except (ValueError, AttributeError):
+            continue
+
+    stage_keys.sort(key=lambda x: x[0])
+    matched_key = None
+    for threshold, key in stage_keys:
+        if turn_count >= threshold:
+            matched_key = key
+
+    if matched_key:
+        rules = turn_stages[matched_key]
+        if rules:
+            return str(rules[0])
+
+    return None
 
 
 # ---------------------------------------------------------------------------
