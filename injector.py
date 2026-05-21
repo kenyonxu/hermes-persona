@@ -412,16 +412,25 @@ def _detailed_summary(
 
     # ② Static rules
     if _is_enabled(modules, "static_rules"):
-        rule_count = _count_static_rules_in_parts(parts)
-        lines.append(f"  ② 📜 {_t('modules.static_rules', count=rule_count)}")
+        static_rules = debug_context.get("static_rules", [])
+        if static_rules:
+            lines.append(f"  ② 📜 {len(static_rules)}条静态规则:")
+            for r in static_rules:
+                lines.append(f"     {r}")
+        else:
+            lines.append(f"  ② 📜 {_t('modules.static_rules', count=0)}")
     else:
         lines.append(f"  ② 📜 {_t('modules.static_rules.stopped')}")
 
     # ③ Dynamic
     if _is_enabled(modules, "dynamic"):
-        dyn = modules.get("dynamic", {})
-        sub_status = _fmt_dynamic_sub_status(dyn)
-        lines.append(f"  ③ ⚡ {_t('modules.dynamic.status', status=sub_status)}")
+        dynamic_rules = debug_context.get("dynamic_rules", [])
+        if dynamic_rules:
+            lines.append(f"  ③ ⚡ {len(dynamic_rules)}条动态规则触发:")
+            for r in dynamic_rules:
+                lines.append(f"     {r}")
+        else:
+            lines.append("  ③ ⚡ 无规则触发")
     else:
         lines.append(f"  ③ ⚡ {_t('modules.dynamic.stopped')}")
 
@@ -940,9 +949,11 @@ def inject_context(
             parts.append(_time_context(fmt))
 
         # 2. Static rules
+        static_rules: list[str] = []
         if _is_enabled(modules, "static_rules"):
             ctx_cfg = config.get("context", {})
-            parts.extend(_inject_static_rules(ctx_cfg, is_first_turn))
+            static_rules = _inject_static_rules(ctx_cfg, is_first_turn)
+            parts.extend(static_rules)
 
         # 3. Dynamic rules (subchannel-controllable)
         turn_count = len(conversation_history or []) // 2  # ← 提前，④b 复用
@@ -1148,6 +1159,8 @@ def inject_context(
                 "fixed_signals": debug_fs,
                 "expression_vector": debug_ev,
                 "variance": {"items": var_context_items},
+                "static_rules": static_rules,
+                "dynamic_rules": dynamic_rules,
             }
             _PENDING_DEBUG_BLOCK = f"\n\n---\n{_debug_summary(
                 modules, parts,
