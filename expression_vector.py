@@ -78,7 +78,8 @@ class _ExpressionVector:
 
         # 4. 存储路径（替换 {profile} 占位符）
         raw_path = cfg.get(
-            "storage_path", "~/.hermes/expression_vector.json"
+            "storage_path",
+            str(Path(__file__).resolve().parent / "state" / "expression_vector.json"),
         )
         if profile_path:
             raw_path = raw_path.replace("{profile}", str(profile_path))

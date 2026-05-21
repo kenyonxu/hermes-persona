@@ -112,9 +112,9 @@ def _load_config() -> dict:
         1. _CONFIG_ROOT / "persona-config.json"  (set by register())
         2. Path(__file__).resolve().parents[3] / "persona-config.json"  (fallback)
     """
-    if _config._CONFIG_ROOT is not None:
-        config_path = _config._CONFIG_ROOT / "persona-config.json"
-    else:
+    config_path = _config._resolve_config_path("persona-config.json")
+    if config_path is None:
+        # L3 fallback: repo 根目录（pytest 等场景）
         config_path = Path(__file__).resolve().parents[2] / "persona-config.json"
 
     try:
@@ -770,7 +770,7 @@ def _daily_turn_count_hint(fixed_cfg: dict, profile_path: str = "") -> str | Non
     today_key = datetime.now().strftime("%Y-%m-%d")
     raw_path = dc_cfg.get(
         "storage_path",
-        "~/.hermes/profiles/{profile}/state/daily_turn_count.json",
+        str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json"),
     )
     if profile_path:
         raw_path = raw_path.replace("{profile}", str(profile_path))
@@ -1029,7 +1029,7 @@ def inject_context(
             dc_count = 0
             dc_date = datetime.now().strftime("%Y-%m-%d")
             try:
-                dc_path_raw = dc_cfg.get("storage_path", "~/.hermes/profiles/{profile}/state/daily_turn_count.json")
+                dc_path_raw = dc_cfg.get("storage_path", str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json"))
                 dc_profile = kwargs.get("profile_path", "")
                 if dc_profile:
                     dc_path_raw = dc_path_raw.replace("{profile}", str(dc_profile))
