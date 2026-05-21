@@ -1032,7 +1032,7 @@ def inject_context(
 
         # ── translate 模式：提前提取时间变量 ──
         _now = datetime.now()
-        _weekday_cn = _WEEKDAY_CN[_now.weekday()]
+        _weekday_cn = f"周{_WEEKDAY_CN[_now.weekday()]}"
         _current_time = _now.strftime("%H:%M")
 
         # ── 判断 translate 模式 ──
