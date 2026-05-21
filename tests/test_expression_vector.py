@@ -28,9 +28,9 @@ def ev_cfg_basic():
             "intimacy": ["陪伴", "累了", "温暖"],
         },
         "score_rules": {
-            "work": [1, -0.5, 1, 1.0],
-            "future": [1, -1, 1, 1.0],
-            "intimacy": [1, -0.5, 3, 1.0],
+            "work": [1, -0.5, 1],
+            "future": [1, -1, 1],
+            "intimacy": [1, -0.5, 3],
         },
         "reset": "session",
         "storage_path": "",  # 用 tmpdir 替换
@@ -191,7 +191,7 @@ class TestResetStrategy:
         """RS-03: daily 策略，同日不清零。两次命中含 0.95 衰减→1.95。"""
         cfg = {
             "dimensions": {"work": ["代码"]},
-            "score_rules": {"work": [1, -0.5, 1, 1.0]},
+            "score_rules": {"work": [1, -0.5, 1, 0.95]},
             "reset": "daily",
             "storage_path": str(tmp_ev_path),
         }
@@ -226,7 +226,7 @@ class TestResetStrategy:
         """RS-05: none 策略，永不清零，跨 session 持续累积。"""
         cfg = {
             "dimensions": {"work": ["代码"]},
-            "score_rules": {"work": [1, -0.5, 1, 1.0]},
+            "score_rules": {"work": [1, -0.5, 1, 0.95]},
             "reset": "none",
             "storage_path": str(tmp_ev_path),
         }
@@ -296,7 +296,7 @@ class TestDiskPersistence:
 
     def test_PERS05_load_new_dimension_added(self, tmp_ev_path):
         """PERS-05: 配置新增维度→新维度初始 0，已有维度保留。"""
-        cfg = {"dimensions": {"work": ["代码"]}, "score_rules": {"work": [1, -0.5, 1, 1.0]}, "storage_path": str(tmp_ev_path)}
+        cfg = {"dimensions": {"work": ["代码"]}, "score_rules": {"work": [1, -0.5, 1, 0.95]}, "storage_path": str(tmp_ev_path)}
         ev = _ExpressionVector(cfg)
         ev.update("写代码", "s1")
         ev.update("写代码", "s1")
@@ -304,7 +304,7 @@ class TestDiskPersistence:
 
         cfg2 = {
             "dimensions": {"work": ["代码"], "future": ["愿景"]},
-            "score_rules": {"work": [1, -0.5, 1, 1.0], "future": [1, -1, 1, 1.0]},
+            "score_rules": {"work": [1, -0.5, 1, 0.95], "future": [1, -1, 1, 0.95]},
             "storage_path": str(tmp_ev_path),
         }
         ev2 = _ExpressionVector(cfg2)

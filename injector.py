@@ -300,12 +300,16 @@ def _debug_summary(
 
     # ③ Dynamic
     if _is_enabled(modules, "dynamic"):
-        if dynamic_rules:
-            lines.append(f"  ③ ⚡ {len(dynamic_rules)}条动态规则触发:")
-            for r in dynamic_rules:
-                lines.append(f"     {r}")
+        dyn = modules.get("dynamic", {})
+        if isinstance(dyn, dict):
+            sub_parts = []
+            for key in ("time_slots", "turn_stage", "keyword"):
+                status = "on" if dyn.get(key, True) else "off"
+                sub_parts.append(f"{key}: {status}")
+            sub_status = " / ".join(sub_parts)
         else:
-            lines.append("  ③ ⚡ 无规则触发")
+            sub_status = "on" if dyn else "off"
+        lines.append(f"  ③ ⚡ {sub_status}")
     else:
         lines.append("  ③ ⚡ 已停用")
 
@@ -618,6 +622,21 @@ def _count_static_rules_in_parts(parts: list[str]) -> int:
         return count
     except Exception:
         return 0
+
+
+def _fmt_dynamic_sub_status(dyn_dict) -> str:
+    """Format dynamic subchannel status string for compact/debug display."""
+    try:
+        if not isinstance(dyn_dict, dict):
+            return "on" if dyn_dict else "off"
+        parts = []
+        for key in ("time_slots", "turn_stage", "keyword"):
+            status = "on" if dyn_dict.get(key, True) else "off"
+            parts.append(f"{key}: {status}")
+        return " / ".join(parts)
+    except Exception:
+        return "on"
+
 
 
 def _fmt_kanban_debug(parts: list[str]) -> str:
