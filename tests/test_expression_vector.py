@@ -567,6 +567,16 @@ class TestBackgroundMessageFilter:
         """BG-08: 空消息 → False"""
         assert _is_background_message("") is False
 
+    def test_BG09_skill_injection(self):
+        """BG-09: [IMPORTANT: Skill obsidian injected 15000 chars... → True"""
+        msg = "[IMPORTANT: The user has invoked the \"obsidian\" skill, indicating"
+        assert _is_background_message(msg) is True
+
+    def test_BG10_important_other_type(self):
+        """BG-10: [IMPORTANT: 其他系统转发类型 → True"""
+        msg = "[IMPORTANT: System notification — gateway restart required"
+        assert _is_background_message(msg) is True
+
 
 # ── TestKeywordCounting ────────────────────────────────────────────────────
 

@@ -10,9 +10,12 @@ import pytest
 import injector
 from expression_vector import _ExpressionVector
 from injector import (
+    _debug_summary,
+    _detailed_summary,
     _inject_static_rules,
     _load_config,
     _recall_memories,
+    _resolve_debug_detail,
     _time_context,
     inject_context,
 )
@@ -875,3 +878,101 @@ class TestFullIntegration:
         assert pos_dynamic < pos_ev, (
             f"dynamic ({pos_dynamic}) 应在 expression_vector ({pos_ev}) 之前"
         )
+
+
+# ── TestDebugMode ────────────────────────────────────────────────────────────
+
+
+class TestResolveDebugDetail:
+    """_resolve_debug_detail() 模式解析测试。"""
+
+    def test_DBG01_boolean_true_defaults_compact(self):
+        """debug: true → compact"""
+        assert _resolve_debug_detail({"debug": True}) == "compact"
+
+    def test_DBG02_boolean_false_defaults_compact(self):
+        """debug: false → compact"""
+        assert _resolve_debug_detail({"debug": False}) == "compact"
+
+    def test_DBG03_dict_detailed(self):
+        """debug.detail: 'detailed' → detailed"""
+        assert _resolve_debug_detail({"debug": {"detail": "detailed"}}) == "detailed"
+
+    def test_DBG04_dict_compact(self):
+        """debug.detail: 'compact' → compact"""
+        assert _resolve_debug_detail({"debug": {"detail": "compact"}}) == "compact"
+
+    def test_DBG05_dict_no_detail_defaults_compact(self):
+        """debug: {} → compact（缺失 detail 键）"""
+        assert _resolve_debug_detail({"debug": {"enabled": True}}) == "compact"
+
+    def test_DBG06_missing_debug_key(self):
+        """debug 键不存在 → compact"""
+        assert _resolve_debug_detail({}) == "compact"
+
+
+class TestDebugCompactMode:
+    """compact 模式：显示条数/状态，不展开规则内容。"""
+
+    def test_DBG07_compact_static_rules_show_count_only(self):
+        modules = {"debug": True, "static_rules": True, "time": False,
+                   "dynamic": False, "variance": False, "memory": False, "kanban": False}
+        static = ["规则A", "规则B"]
+        summary = _debug_summary(modules, [], static_rules=static, dynamic_rules=None)
+        assert "🔧 [Debug] 本轮注入:" in summary
+        assert "2条静态规则" in summary
+        assert "规则A" not in summary  # compact 不展开
+
+    def test_DBG08_compact_dynamic_shows_sub_status(self):
+        modules = {"debug": True, "time": False, "static_rules": False,
+                   "dynamic": {"time_slots": True, "turn_stage": False, "keyword": True},
+                   "variance": False, "memory": False, "kanban": False}
+        summary = _debug_summary(modules, [], static_rules=None, dynamic_rules=["🕐 [22:00] test"])
+        assert "time_slots: on" in summary
+        assert "turn_stage: off" in summary
+        assert "keyword: on" in summary
+        assert "🕐 [22:00] test" not in summary  # compact 不展开
+
+
+class TestDebugDetailedMode:
+    """detailed 模式：展开每条规则的具体内容。"""
+
+    def _make_modules(self, **overrides):
+        base = {"debug": {"detail": "detailed"}, "time": False,
+                "static_rules": True, "dynamic": True,
+                "variance": False, "memory": False, "kanban": False}
+        base.update(overrides)
+        return base
+
+    def test_DBG09_detailed_header(self):
+        modules = self._make_modules(static_rules=False, dynamic=False)
+        summary = _debug_summary(modules, [], static_rules=[], dynamic_rules=[])
+        assert "本轮注入 (详细)" in summary
+
+    def test_DBG10_detailed_shows_static_rule_text(self):
+        modules = self._make_modules(dynamic=False)
+        static = ["🦊 狐耳与狐尾联动的肢体语言表达", "💬 女仆比喻优先"]
+        summary = _debug_summary(modules, [], static_rules=static, dynamic_rules=[])
+        assert "2条静态规则:" in summary
+        assert "🦊 狐耳与狐尾联动的肢体语言表达" in summary
+        assert "💬 女仆比喻优先" in summary
+
+    def test_DBG11_detailed_shows_dynamic_rule_text(self):
+        modules = self._make_modules(static_rules=False)
+        dynamic = ["🕐 [22:00-05:00] 深夜陪伴模式", "💬 [代码|架构] 工蜂模式"]
+        summary = _debug_summary(modules, [], static_rules=[], dynamic_rules=dynamic)
+        assert "2条动态规则触发:" in summary
+        assert "🕐 [22:00-05:00] 深夜陪伴模式" in summary
+        assert "💬 [代码|架构] 工蜂模式" in summary
+
+    def test_DBG12_detailed_no_rules(self):
+        modules = self._make_modules()
+        summary = _debug_summary(modules, [], static_rules=[], dynamic_rules=[])
+        assert "无静态规则" in summary
+        assert "无规则触发" in summary
+
+    def test_DBG13_detailed_disabled(self):
+        modules = self._make_modules(static_rules=False, dynamic=False)
+        summary = _debug_summary(modules, [], static_rules=None, dynamic_rules=None)
+        assert "📜 已停用" in summary
+        assert "⚡ 已停用" in summary
