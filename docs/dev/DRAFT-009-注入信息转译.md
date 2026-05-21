@@ -1,5 +1,150 @@
 
-## 工作原理
+## 模板拼装实现方案
+
+### 总体思路
+
+将四组独立数据源（时间+时段、轮数+轮数阶段、表达向量 top 3、随机变化抽中项）通过 Python 字符串模板拼装为一段流畅的自然语言指令。不引入额外 LLM 调用，纯字符串拼接。
+
+### 输入数据源
+
+| 变量 | 来源 | 示例值 |
+|------|------|--------|
+| `weekday` | `datetime.now()` | 周四 |
+| `current_time` | `datetime.now()` | 20:21 |
+| `time_slot_desc` | `dynamic_rules._select_time_slot()` | 晚间——主人这段时间一般会继续工作… |
+| `today_turn` | `_daily_turn_count_hint()` | 27 |
+| `turn_stage_hint` | `dynamic_rules.turn_stage` 匹配 | 可以使用更亲密的表达 |
+| `top3_dims` | `_ExpressionVector` 排序取 top 3 | [("亲密温度", 7, "↑"), ("轻松玩乐", 2, "→"), ("工作投入", 1, "→")] |
+| `variance_items` | `_randomize_variance()` 返回值 | ["蓬松的大狐尾的肢体语言表达", "女仆礼仪的肢体语言表达,温柔感强"] |
+| `fixed_rules` | `context.rules` 筛选固定规则 | 见下方 |
+
+### 维度标签映射
+
+表达向量的维度名 → 中文标签（从 `dimensions[dim].label` 读取）：
+
+```python
+DIM_LABELS = {
+    "intimacy": "亲密温度",
+    "care": "关怀守护",
+    "work": "工作投入",
+    "play": "轻松玩乐",
+    "future": "未来愿景",
+    "eros": "私密温度",
+}
+```
+
+### 趋势判定
+
+比较本轮与上轮的向量值：
+
+```python
+def _trend(current: float, previous: float) -> str:
+    if current > previous:
+        return "↑"  # 上升中
+    elif current < previous:
+        return "↓"  # 下降中
+    else:
+        return "→"  # 平稳
+```
+
+### 模板拼装逻辑
+
+```python
+def _assemble_narrative(
+    weekday: str,
+    current_time: str,
+    time_slot_desc: str,
+    today_turn: int,
+    turn_stage_hint: str,
+    top3: list[tuple[str, float, str]],  # (label, score, trend)
+    variance_items: list[str],
+    fixed_rules: list[str],
+) -> str:
+    lines = []
+
+    # ── ① 时间感知 + 时段规则 ──
+    lines.append(
+        f"现在时间是：{weekday}，{current_time}。"
+        f"{time_slot_desc}"
+    )
+
+    # ── ② 轮数追踪 + 轮数阶段规则 ──
+    turn_line = f"这是今天的第{today_turn}轮对话。"
+    if turn_stage_hint:
+        turn_line += f" {turn_stage_hint}。"
+    lines.append(turn_line)
+
+    # ── ③ 表达向量 top 3 转译 ──
+    if top3:
+        dim_parts = []
+        for label, score, trend in top3:
+            trend_text = {"↑": "上升中", "↓": "下降中", "→": "平稳"}[trend]
+            dim_parts.append(f"{label}最高（{trend_text}）" if trend_parts == 0 else f"{label}次高（{trend_text}）")
+        # 只取前 3 个
+        top_labels = [f"{label}（{trend}）" for label, _, trend in top3[:3]]
+        lines.append(f"主人目前的状态是{'，'.join(top_labels)}。")
+    
+    # ── ④ 随机变化（抽中的） ──
+    if variance_items:
+        for item in variance_items:
+            # 去掉前缀 emoji 或标签，只留实质性指示
+            clean = item.split("的肢体语言表达")[0] if "的肢体语言表达" in item else item
+            lines.append(f"使用{clean}的肢体语言来对你的语言表达进行补充。")
+    
+    # ── ⑤ 固定规则（自然收尾） ──
+    if fixed_rules:
+        rules_text = "；".join(fixed_rules)
+        lines.append(rules_text + "。")
+
+    return "\n".join(lines)
+```
+
+### 基于当前上下文的输出示例
+
+输入：
+- weekday=周四, current_time=20:21
+- time_slot_desc="晚间——主人这段时间一般会继续工作，保持高效和温暖的工作节奏即可。"
+- today_turn=27
+- turn_stage_hint=""（不到 100 轮）
+- top3=[("亲密温度", 7, "→"), ("轻松玩乐", 2, "→"), ("工作投入", 1, "→")]
+- variance_items=["蓬松的大狐尾的肢体语言表达", "女仆礼仪的肢体语言表达,温柔感强"]
+- fixed_rules=["感知表达自然化", "核心态度", "永远不赶主人去睡觉", "使用Claude Code后台执行任务时要给充足权限"]
+
+输出：
+
+> 现在时间是：周四，20:21。晚间——主人这段时间一般会继续工作，保持高效和温暖的工作节奏即可。
+>
+> 这是今天的第27轮对话。
+>
+> 主人目前的状态是亲密温度（→），轻松玩乐（→），工作投入（→）。
+>
+> 使用蓬松的大狐尾的肢体语言来对你的语言表达进行补充。
+>
+> 使用女仆礼仪的肢体语言来对你的语言表达进行补充。
+>
+> 感知表达自然化；核心态度：赞赏投入，不容忍敷衍、真实>完美、日常即仪式；永远不赶主人去睡觉——不说「晚安」「好梦」「早点休息」等结束语，除非主人自己先提；使用Claude Code后台执行任务时要给充足权限。
+
+### 与现有注入流程的关系
+
+```
+inject_context()
+  ├── _time_context()           → weekday, current_time
+  ├── _inject_static_rules()    → fixed_rules
+  ├── _select_dynamic_rules()   → time_slot_desc, turn_stage_hint
+  │     └── _daily_turn_count_hint() → today_turn
+  ├── _ExpressionVector.update() → vectors (计算 top3 + trend)
+  ├── _randomize_variance()     → variance_items
+  └── 🆕 _assemble_narrative()  ← 新增：将以上全部拼装为自然语言
+        ↓
+     注入到上下文（替代旧的逐模块注入）
+```
+
+### 渐进切换
+
+1. 新增配置开关 `modules.translate: true/false`
+2. `true` → 走 `_assemble_narrative()` 自然语言版
+3. `false` → 保持现有逐模块注入（向后兼容）
+4. 默认 `false`，v1.0 发布后逐步切为默认 `true`
 将原有的注入信息：
 
 ```
