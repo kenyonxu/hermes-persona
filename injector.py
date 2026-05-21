@@ -1077,12 +1077,7 @@ def inject_context(
                     _time_slot_desc = _get_time_slot_desc(
                         dynamic_cfg.get("time_slots", {})
                     )
-                if dyn_mod.get("turn_stage", True):
-                    _turn_stage_hint = _get_turn_stage_hint(
-                        dynamic_cfg.get("turn_stage", {}),
-                        is_first_turn,
-                        turn_count,
-                    )
+                # turn_stage 改用每日累积轮数，在 _today_turn 提取后计算
             else:
                 dynamic_rules = _select_dynamic_rules(
                     dynamic_cfg,
@@ -1105,6 +1100,13 @@ def inject_context(
                 _m = re.search(r"今日第(\d+)轮", turn_hint)
                 if _m:
                     _today_turn = int(_m.group(1))
+            # 用每日累积轮数计算轮数阶段（不是会话内轮数）
+            if modules.get("dynamic", {}).get("turn_stage", True):
+                _turn_stage_hint = _get_turn_stage_hint(
+                    config.get("dynamic", {}).get("turn_stage", {}),
+                    is_first_turn,
+                    _today_turn,
+                )
             # translate 模式下也需要保存 reply_timing
             gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
             _save_reply_timing(fixed_cfg, now_ts)
