@@ -25,8 +25,10 @@ try:
     sys.modules.setdefault("config", config)
     from . import guard
     from . import injector
+    from . import locales
     sys.modules.setdefault("guard", guard)
     sys.modules.setdefault("injector", injector)
+    sys.modules.setdefault("locales", locales)
 except ImportError:
     # Flat layout fallback: ensure plugin dir is on sys.path so bare
     # ``import config`` resolves.
@@ -35,6 +37,7 @@ except ImportError:
     import config
     import guard
     import injector
+    import locales
 
 
 def register(ctx) -> None:
@@ -62,9 +65,7 @@ def register(ctx) -> None:
     # Load config and initialize locale system (after _CONFIG_ROOT is set)
     try:
         config_data = injector._load_config()
-        from locales import _init_locales as _init_l10n
-
-        _init_l10n(_plugin_dir, config_data)
+        locales._init_locales(_plugin_dir, config_data)
     except Exception:
         pass  # locale failure is non-fatal; plugin still works
 
