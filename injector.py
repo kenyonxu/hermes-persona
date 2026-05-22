@@ -164,11 +164,26 @@ def _resolve_modules(config: dict) -> dict:
     """解析 modules 配置，优先新格式，回退旧格式合成。
 
     返回值始终为 dict（保证调用方无需判空）。
+    当 modules dict 存在但不包含全部已注册模块时，缺失键从旧格式或
+    registry default 补全，确保新增模块在旧配置中不会静默关闭。
     """
     try:
         modules = config.get("modules")
         if isinstance(modules, dict):
-            return modules
+            # 补全 modules dict 中缺失的键（从旧格式或 default）
+            result = dict(modules)
+            for key, meta in _MODULE_REGISTRY.items():
+                if key not in result:
+                    lp = meta.get("legacy_path")
+                    if lp:
+                        section = config.get(lp[0])
+                        if isinstance(section, dict):
+                            result[key] = section.get(lp[1], meta["default"])
+                        else:
+                            result[key] = meta["default"]
+                    else:
+                        result[key] = meta["default"]
+            return result
 
         synthesized: dict[str, bool] = {}
         for key, meta in _MODULE_REGISTRY.items():
@@ -1124,7 +1139,9 @@ def inject_context(
                     if _m:
                         _today_turn = int(_m.group(1))
                 # 用每日累积轮数计算轮数阶段（不是会话内轮数）
-                if modules.get("dynamic", {}).get("turn_stage", True):
+                dyn_mod = modules.get("dynamic", {})
+                turn_stage_on = dyn_mod.get("turn_stage", True) if isinstance(dyn_mod, dict) else bool(dyn_mod)
+                if turn_stage_on:
                     _turn_stage_hint = _get_turn_stage_hint(
                         config.get("dynamic", {}).get("turn_stage", {}),
                         is_first_turn,

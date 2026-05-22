@@ -68,10 +68,19 @@ class TestResolveModules:
             )
 
     def test_modules_empty_object(self):
-        """modules={} → all modules use default values."""
+        """modules={} → missing keys filled from legacy config or registry defaults."""
         config = {"modules": {}}
         modules = injector._resolve_modules(config)
-        assert modules == {}
+        # All registered modules get their default values merged in
+        for key, meta in injector._MODULE_REGISTRY.items():
+            assert key in modules, f"{key} should be merged into modules"
+            expected = meta["default"]
+            actual = modules[key]
+            if isinstance(actual, dict):
+                # dynamic sub-channel dicts default to all True
+                assert actual.get("enabled", True) is True
+            else:
+                assert actual == expected, f"{key}: expected {expected}, got {actual}"
 
     def test_legacy_missing_section(self):
         """Only time.enabled=False in config → memory/kanban use defaults."""
