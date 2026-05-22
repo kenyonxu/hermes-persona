@@ -1036,6 +1036,13 @@ def inject_context(
         # ── 判断 translate 模式 ──
         _translate_mode = _is_enabled(modules, "translate")
 
+        # ── 黑名单过滤：非对话来源只注入时间，跳过后续所有模块 ──
+        _sources_blacklist = modules.get("sources_blacklist", [])
+        if platform in _sources_blacklist:
+            if _is_enabled(modules, "time"):
+                return {"context": f"🕐 时间：{_weekday_cn}，{_current_time}"}
+            return None
+
         # translate 模式下的数据容器
         _time_slot_desc = ""
         _turn_stage_hint = None
