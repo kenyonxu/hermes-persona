@@ -58,8 +58,6 @@ hermes plugins list | grep persona   # 验证
         "keyword": true
       },
       "variance": true,
-      "expression_vector": true,
-      "fixed_signals": true,
       "memory": false,
       "kanban": true,
       "translate": true,
@@ -79,9 +77,7 @@ hermes plugins list | grep persona   # 验证
 | `dynamic.turn_stage` | bool | 轮数阶段规则 |
 | `dynamic.keyword` | bool | 关键词触发规则 |
 | `variance` | bool | 随机表达变化 |
-| `expression_vector` | bool | 多维度表达向量 |
-| `fixed_signals` | bool | 固定信号检测 |
-| `memory` | bool | 外部记忆召回 |
+| `memory` | bool | 外部记忆召回（需 `pip install httpx`） |
 | `kanban` | bool | 看板状态注入（仅首轮） |
 | `translate` | bool | 注入规则转译模式（见 §9） |
 | `sources_blacklist` | list | 来源过滤（见 §10） |
@@ -170,8 +166,9 @@ hermes plugins list | grep persona   # 验证
 ```
 
 - `first_turn`：仅首轮
-- `after_N`：每日累积轮数 ≥ N 时触发，取最大匹配
-- 轮数为每日跨会话累积，跨日自动归零
+- `after_N`：轮数 ≥ N 时触发，取最大匹配
+- **非 translate 模式**：轮数 = 当前会话轮数（`会话消息数 / 2`）
+- **translate 模式**：轮数 = 每日跨会话累积轮数，跨日自动归零
 
 #### 4.3 关键词触发（`keyword`）
 
@@ -194,8 +191,8 @@ hermes plugins list | grep persona   # 验证
 }
 ```
 
-- `pattern`：正则表达式，命中后注入 `rules` 中的所有条目
-- 首次命中即停止（first-match-wins）
+- `pattern`：正则表达式或维度名，命中后注入 `rules` 中的所有条目
+- 所有匹配的维度同时返回（all-matches），不限于单条
 
 ---
 
@@ -358,6 +355,8 @@ hermes plugins list | grep persona   # 验证
 
 转译模板：时间 + 轮数 + 状态 + 随机变化 + 行为守则 → 拼装为单一人格自述。
 
+> 开启 translate 后，各模块不再独立输出带 emoji 标记的指令行，统一由 `_assemble_narrative()` 编织为一段自然语言段落。`turn_stage` 的轮数来源也切换为每日跨会话累积轮数（从磁盘状态文件读取），而非会话内轮数。
+
 ---
 
 ### 10. 来源过滤（`sources_blacklist`）
@@ -395,6 +394,8 @@ hermes plugins list | grep persona   # 验证
 | `detail` | `"basic"` / `"detailed"` | `detailed` 显示完整注入分解（时段、轮数、表达向量分数、固定信号、随机变化命中） |
 
 > Debug 块通过 `transform_llm_output` hook 追加到 LLM 回复末尾，不消耗额外 token 用于 "要求 LLM 自己输出"，也无需 LLM 自觉配合。
+>
+> **已知限制**：`_PENDING_DEBUG_BLOCK` 使用模块级变量传递，非线程安全。单会话运行时无影响；多会话并发场景下 debug 块可能串话。
 
 ---
 
