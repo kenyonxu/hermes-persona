@@ -12,7 +12,15 @@ import injector
 
 @pytest.fixture
 def temp_config_root():
-    """Create a temporary directory and point _CONFIG_ROOT at it."""
+    """Create a temporary directory and point _CONFIG_ROOT at it.
+
+    Also temporarily moves aside the repo root's persona-config.json
+    so that _resolve_config_path L1 (Path(__file__).parent / filename)
+    doesn't shadow the test config written to _CONFIG_ROOT.
+    """
+    repo_config = Path(__file__).resolve().parent.parent / "persona-config.json"
+    repo_config_backup = repo_config.with_suffix(".json.bak")
+
     with tempfile.TemporaryDirectory() as tmpdir:
         old_root = config._CONFIG_ROOT
         config._CONFIG_ROOT = Path(tmpdir)
@@ -23,8 +31,19 @@ def temp_config_root():
         (plugin_dir / "keywords").mkdir(exist_ok=True)
         (plugin_dir / "state").mkdir(exist_ok=True)
 
-        yield Path(tmpdir)
-        config._CONFIG_ROOT = old_root
+        # 临时移走 repo 根的 persona-config.json（避免 L1 遮蔽测试配置）
+        if repo_config.is_file():
+            repo_config.rename(repo_config_backup)
+            restore = True
+        else:
+            restore = False
+
+        try:
+            yield Path(tmpdir)
+        finally:
+            config._CONFIG_ROOT = old_root
+            if restore:
+                repo_config_backup.rename(repo_config)
 
 
 @pytest.fixture
