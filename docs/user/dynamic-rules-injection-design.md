@@ -4,7 +4,7 @@
 
 > 版本：v1.0
 > 日期：2026-05-22
-> 作者：Zhihui & Kai.Xu
+> 作者：Kai.Xu
 > 关联：hermes-persona 插件 / `persona-config.json`
 
 ---

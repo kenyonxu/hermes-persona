@@ -994,7 +994,7 @@ def _assemble_narrative(
     # ── ③ 表达向量 top 3 转译 ──
     if top3:
         top_labels = [f"{label}（{trend}）" for label, _, trend in top3]
-        lines.append(f"主人目前的状态是{'，'.join(top_labels)}。")
+        lines.append(f"当前用户状态是{'，'.join(top_labels)}。")
 
     # ── ④ 随机变化（抽中的）─ 直接放行，条目本身即为完整句 ──
     if variance_items:

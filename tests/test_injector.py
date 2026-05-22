@@ -207,7 +207,7 @@ class TestCodeGeneric:
     """Ensure code contains no role-specific / character-specific content."""
 
     ROLE_TERMS = [
-        "知惠", "Zhihui", "zhihui",
+        "Luna", "luna-bot", "luna",
         "兽娘", "兽耳", "女仆",
         "阿格莱雅", "Aglaea", "aglaea",
         "克莱茵", "Klein", "klein",

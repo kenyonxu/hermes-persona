@@ -325,7 +325,7 @@ hermes plugins list | grep persona   # 验证
 {
   "guard": {
     "enabled": true,
-    "audit": { "enabled": true, "log_path": "~/.hermes/profiles/zhihui/audit.log" },
+    "audit": { "enabled": true, "log_path": "~/.hermes/profiles/default/audit.log" },
     "rules": {
       "blocked": [
         { "pattern": "rm -rf", "reason": "递归强制删除已被阻止" }

@@ -4,7 +4,7 @@
 
 > 版本：v1.0
 > 日期：2026-05-22
-> 作者：Zhihui & Kai.Xu
+> 作者：Kai.Xu
 > 仓库：[hermes-persona](https://github.com/kenyonxu/hermes-persona)
 
 ---
@@ -281,9 +281,9 @@ def _read_kanban(kanban_path, label=""):
 
 仅注入时间上下文，无需任何额外配置。
 
-### 4.2 知惠完整配置（带记忆 + 看板 + 动态规则）
+### 4.2 完整配置示例（带记忆 + 看板 + 动态规则）
 
-> 以下为知惠（Zhihui）角色的配置示例。通用用户请替换为自己的路径和规则。
+> 以下为完整配置示例。请替换为自己的路径和规则。
 
 ```json
 {
@@ -305,7 +305,7 @@ def _read_kanban(kanban_path, label=""):
         "🦊 表达守则：狐耳/尾巴 = 情绪外显，每回合至少用一个身体语言描述",
         "💬 女仆比喻优先：打扫（整理混乱）、泡茶（关怀之待）、修补（修复与弥合）",
         "💎 核心价值观：欣赏认真、不容敷衍、真实>完美、日常即仪式",
-        "👘 自称「知惠」，称呼用户为「主人」"
+        "👘 使用自定义称呼，保持角色一致性"
       ],
       "rules_first_turn_only": [
         "🔰 本会话首次交流。若主人刚回来，活泼灵动些；若已是深夜，温柔些。"
@@ -336,7 +336,7 @@ def _read_kanban(kanban_path, label=""):
       },
       "keyword": {
         "报错|bug|error|坏了|炸了|挂了": [
-          "⚠️ 主人遇到问题了——先安抚（「别急主人，知惠看看」），再分析方案"
+          "⚠️ 用户遇到问题了——先安抚，再分析方案"
         ],
         "哈哈|开心|好耶|太棒了": [
           "😊 主人心情好——可以活泼欢快些，一起享受此刻"
@@ -382,7 +382,7 @@ def _read_kanban(kanban_path, label=""):
     "project": {
       "enabled": true,
       "kanban_path": "/home/user/projects/my-kanban/Inprogress",
-      "label": "📋 知惠看板:"
+      "label": "📋 项目看板:"
     }
   }
 }
@@ -430,7 +430,7 @@ plugins/hermes-persona/
 name: hermes-persona
 version: 1.0.0
 description: Dynamic persona context injection engine for Hermes Agent
-author: Kai.Xu & Zhihui
+author: Kai.Xu 
 provides_hooks:
   - pre_llm_call
   - transform_llm_output
@@ -476,8 +476,8 @@ provides_skills:
 **问：插件代码是否硬编码了角色特定内容？**
 答：没有。所有角色相关内容（人格规则、记忆地址、看板路径）均通过 `persona-config.json` 配置。`injector.py` 是纯通用代码。
 
-**问：如何查看「知惠专属配置」？**
-答：见第四章"配置示例"→ 4.2 知惠完整配置。所有带 `🦊` 标记的条目为知惠专属。
+**问：如何查看完整配置示例？**
+答：见第四章"配置示例"→ 4.2 完整配置。所有带标记的条目为角色专属配置。
 
 **问：没有记忆后端能用吗？**
 答：可以。默认 `modules.memory` 为 `false`，仅注入时间 + 行为守则。

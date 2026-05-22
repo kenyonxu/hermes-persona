@@ -19,17 +19,17 @@ class TestAssembleNarrative:
         result = _assemble_narrative(
             weekday="周四",
             current_time="20:29",
-            time_slot_desc="晚间——主人这段时间一般会继续工作，保持高效和温暖的工作节奏即可。",
+            time_slot_desc="晚间——用户这段时间一般会继续工作，保持高效和温暖的工作节奏即可。",
             today_turn=30,
             turn_stage_hint=None,
             top3=[("工作投入", 16, "→"), ("亲密温度", 5, "→")],
             variance_items=["蓬松的大狐尾", "女仆礼仪,温柔感强"],
-            fixed_rules=["感知表达自然化", "核心态度", "永远不赶主人去睡觉"],
+            fixed_rules=["感知表达自然化", "核心态度", "永远不主动结束对话"],
         )
         assert "现在时间是：周四，20:29" in result
-        assert "晚间——主人这段时间一般会继续工作" in result
+        assert "晚间——用户这段时间一般会继续工作" in result
         assert "这是今天的第30轮对话" in result
-        assert "主人目前的状态是" in result
+        assert "当前用户状态是" in result
         assert "工作投入（→）" in result
         assert "亲密温度（→）" in result
         assert "蓬松的大狐尾" in result
@@ -66,7 +66,7 @@ class TestAssembleNarrative:
         )
         assert "现在时间是" in result
         assert "这是今天的第5轮对话" in result
-        assert "主人目前的状态是" not in result
+        assert "当前用户状态是" not in result
         assert "蓬松的大狐尾" in result
 
     def test_T04_empty_variance_items(self):
@@ -82,7 +82,7 @@ class TestAssembleNarrative:
             fixed_rules=["感知表达自然化"],
         )
         assert "使用" not in result
-        assert "主人目前的状态是" in result
+        assert "当前用户状态是" in result
 
     def test_T05_only_one_dimension(self):
         """T-05: 只有 1 个维度有值 → 只输出有值的维度。"""
@@ -97,7 +97,7 @@ class TestAssembleNarrative:
             fixed_rules=["感知表达自然化"],
         )
         assert "工作投入（→）" in result
-        assert "主人目前的状态是工作投入（→）。" in result
+        assert "当前用户状态是工作投入（→）。" in result
 
     def test_T08_today_turn_zero(self):
         """T-08: today_turn=0 → 跳过轮数段落。"""
@@ -113,7 +113,7 @@ class TestAssembleNarrative:
         )
         assert "现在时间是" in result
         assert "这是今天的第" not in result
-        assert "主人目前的状态是" in result
+        assert "当前用户状态是" in result
 
     def test_turn_stage_hint_appended(self):
         """turn_stage_hint 不为 None 时追加到轮数段落。"""
@@ -168,7 +168,7 @@ class TestTranslateIntegration:
         assert "🕐" in result["context"]
         assert "测试规则" in result["context"]
         assert "现在时间是" not in result["context"]
-        assert "主人目前的状态是" not in result["context"]
+        assert "当前用户状态是" not in result["context"]
 
     def test_translate_true_uses_narrative(self):
         """translate: true → context 以 narrative 格式开头。"""
@@ -189,7 +189,7 @@ class TestTranslateIntegration:
             )
         assert result is not None
         assert "现在时间是" in result["context"]
-        assert "主人目前的状态是" not in result["context"]  # ev 未启用
+        assert "当前用户状态是" not in result["context"]  # ev 未启用
         assert "感知表达自然化" in result["context"]
 
     def test_translate_debug_includes_narrative(self):

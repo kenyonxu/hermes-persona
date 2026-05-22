@@ -27,3 +27,5 @@ state/
 
 # Persona config (dev only, not versioned)
 /persona-config.json
+/keywords/
+/graphify-out/

@@ -4,7 +4,7 @@
 
 > Version: v1.0  
 > Date: 2026-05-16  
-> Author: Zhihui & Kai.Xu  
+> Author: Kai.Xu  
 > Repository: [hermes-persona](https://github.com/kenyonxu/hermes-persona)
 
 ---
@@ -212,9 +212,9 @@ def _read_kanban(kanban_path, label=""):
 
 Only time context is injected, no additional setup required.
 
-### 4.2 Zhihui Full Configuration 🦊
+### 4.2 Full Configuration Example 🦊
 
-> ⚠️ The following is a configuration example specific to Zhihui. Generic users should replace with their own paths and rules.
+> ⚠️ The following is a full configuration example. Replace with your own paths and rules.
 
 ```json
 {
@@ -228,7 +228,7 @@ Only time context is injected, no additional setup required.
         "🦊 Expression rule: Fox ears/tail = emotional display, use at least one body language description per turn",
         "💬 Maid metaphor priority: cleaning (sorting chaos), brewing tea (caring wait), mending (repairing and bridging)",
         "💎 Core values: Appreciate effort, tolerate no perfunctory work, real > perfect, everyday is ritual",
-        "👘 Self-reference as 「知惠」, address user as 「主人」"
+        "👘 Use custom self-reference and address terms, maintaining character consistency"
       ],
       "rules_first_turn_only": [
         "🔰 This is the first turn of this session. If the master just returned, be lively; if late at night, be gentle."
@@ -242,7 +242,7 @@ Only time context is injected, no additional setup required.
     "project": {
       "enabled": true,
       "kanban_path": "/home/kai-remote/github/kai-knowledge-base/KaiKnowledgeBase/Projects/Kanbans/Inprogress",
-      "label": "📋 Zhihui Kanban:"
+      "label": "📋 Project Kanban:"
     }
   }
 }
@@ -286,7 +286,7 @@ Only time context is injected, no additional setup required.
 name: hermes-persona
 version: 1.0.0
 description: Dynamic persona context injection engine for Hermes Agent
-author: Kai.Xu & Zhihui
+author: Kai.Xu 
 provides_hooks:
   - pre_llm_call
   - transform_llm_output  # debug block injection
@@ -315,8 +315,8 @@ provides_skills:
 **Q: Does the plugin code hard-code character-specific content?**  
 A: No. All character-related content (persona rules, memory addresses, kanban paths) is configured via `persona-config.json`. `injector.py` is purely generic code.
 
-**Q: How do I view the "Zhihui special configuration"?**  
-A: See Chapter IV "Example Configurations" → 4.2 Zhihui Full Configuration. All items marked with `🦊` are specific to Zhihui.
+**Q: How do I view the full configuration example?**  
+A: See Chapter IV "Example Configurations" → 4.2 Full Configuration. All marked items are character-specific.
 
 **Q: Can it be used without a memory backend?**  
 A: Yes. Default is `memory.enabled: false`, only time + persona rules are injected.
@@ -326,4 +326,4 @@ A: Place one `persona-config.json` in each profile directory, switching profiles
 
 ---
 
-*🦊 Zhihui & Kai.Xu · 2026-05-16 · hermes-persona/docs/*
+*🦊 Kai.Xu · 2026-05-16 · hermes-persona/docs/*

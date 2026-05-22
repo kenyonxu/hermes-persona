@@ -361,7 +361,7 @@ Pre-tool-call safety checks. Supports two rule types:
 {
   "guard": {
     "enabled": true,
-    "audit": { "enabled": true, "log_path": "~/.hermes/profiles/zhihui/audit.log" },
+    "audit": { "enabled": true, "log_path": "~/.hermes/profiles/default/audit.log" },
     "rules": {
       "blocked": [
         { "pattern": "rm -rf", "reason": "Recursive force delete has been blocked" }

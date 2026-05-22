@@ -1,7 +1,7 @@
 name: hermes-persona
 version: 1.0.0
 description: Dynamic persona context injection engine for Hermes Agent
-author: Kai.Xu & Zhihui
+author: Kai.Xu
 provides_hooks:
   - pre_llm_call
   - transform_llm_output  # US-002: debug block injection

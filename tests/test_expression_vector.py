@@ -552,7 +552,7 @@ class TestBackgroundMessageFilter:
 
     def test_BG04_normal_message(self):
         """BG-04: 正常消息 → False"""
-        msg = "知惠早～我来啦～"
+        msg = "早上好～"
         assert _is_background_message(msg) is False
 
     def test_BG05_long_normal_message(self):
