@@ -440,6 +440,10 @@ Don't want to guess what the engine is doing? With debug enabled, a full injecti
 
 > The debug block is appended to the LLM response via the `transform_llm_output` hook. It costs no extra tokens for "asking the LLM to self-report" and requires no LLM cooperation.
 >
+> ⚠️ **Upstream Dependency**: The `transform_llm_output` hook in Hermes Agent has a known **streaming suppression issue** on streaming platforms (Discord / Telegram / ACP) — plugin-transformed response content may be silently discarded before reaching the user. A fix has been submitted upstream ([NousResearch/hermes-agent#29119](https://github.com/NousResearch/hermes-agent/pull/29119)), pending merge. In the meantime:
+> - **CLI mode**: Debug blocks work fine ✅
+> - **Streaming platforms**: Debug output may not appear until the upstream fix is merged
+>
 > **Known Limitation**: `_PENDING_DEBUG_BLOCK` uses module-level variable passing and is not thread-safe. No impact for single-session usage; debug blocks may interleave under multi-session concurrent scenarios.
 
 ---
