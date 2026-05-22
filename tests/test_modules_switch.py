@@ -16,9 +16,9 @@ import injector
 
 class TestModuleRegistry:
     def test_all_expected_modules_registered(self):
-        """_MODULE_REGISTRY must contain 8 module keys (including debug and translate)."""
+        """_MODULE_REGISTRY must contain 10 module keys."""
         registry = injector._MODULE_REGISTRY
-        expected_keys = {"time", "static_rules", "dynamic", "variance", "memory", "kanban", "debug", "translate"}
+        expected_keys = {"time", "static_rules", "dynamic", "fixed_signals", "expression_vector", "variance", "memory", "kanban", "debug", "translate"}
         assert set(registry.keys()) == expected_keys
 
     def test_each_module_has_required_fields(self):
@@ -81,6 +81,18 @@ class TestResolveModules:
         # memory default is False, kanban default is False
         assert modules["memory"] is False
         assert modules["kanban"] is False
+
+    def test_legacy_synthesis_expression_vector(self):
+        """No modules key, expression_vector.enabled=true → modules['expression_vector']=True."""
+        config = {"expression_vector": {"enabled": True}}
+        modules = injector._resolve_modules(config)
+        assert modules["expression_vector"] is True
+
+    def test_legacy_synthesis_expression_vector_default(self):
+        """No modules key, no expression_vector section → default False."""
+        config = {}
+        modules = injector._resolve_modules(config)
+        assert modules["expression_vector"] is False
 
 
 # ── TestIsEnabled ─────────────────────────────────────────────────────────
@@ -365,6 +377,68 @@ class TestModuleSwitchIntegration:
         }):
             result = injector.inject_context(**inject_context_defaults)
         assert result is None
+
+    # ── expression_vector / fixed_signals module switches (SPEC-011) ──────
+
+    def test_expression_vector_module_switch_off(self, inject_context_defaults):
+        """modules.expression_vector=False → EV not initialized even if ev_cfg.enabled=True."""
+        with patch("injector._load_config", return_value={
+            "modules": {"time": True, "expression_vector": False},
+            "time": {"format": "cn_full"},
+            "expression_vector": {
+                "enabled": True,
+                "dimensions": {
+                    "work": {"label": "工作", "keywords": ["代码"], "score_rules": [1, -0.5, 1, 0.95]},
+                },
+                "reset": "session",
+                "storage_path": "",
+            },
+        }):
+            result = injector.inject_context(**inject_context_defaults)
+        context = result["context"] if result else ""
+        assert "表达向量" not in context
+
+    def test_expression_vector_func_switch_off(self, inject_context_defaults):
+        """modules.expression_vector=True but ev_cfg.enabled=False → EV not initialized."""
+        with patch("injector._load_config", return_value={
+            "modules": {"time": True, "expression_vector": True},
+            "time": {"format": "cn_full"},
+            "expression_vector": {
+                "enabled": False,
+                "dimensions": {
+                    "work": {"label": "工作", "keywords": ["代码"], "score_rules": [1, -0.5, 1, 0.95]},
+                },
+                "reset": "session",
+                "storage_path": "",
+            },
+        }):
+            result = injector.inject_context(**inject_context_defaults)
+        context = result["context"] if result else ""
+        assert "表达向量" not in context
+
+    def test_fixed_signals_module_switch_off(self, inject_context_defaults):
+        """modules.fixed_signals=False → all fixed signal hints skipped."""
+        with patch("injector._load_config", return_value={
+            "modules": {"time": True, "fixed_signals": False},
+            "time": {"format": "cn_full"},
+            "fixed_signals": {
+                "message_length": {"enabled": True, "threshold": 50},
+                "reply_gap": {"enabled": True, "threshold_minutes": 30},
+                "daily_turn_count": {"enabled": True, "thresholds": {"morning": 10}, "storage_path": ""},
+            },
+        }):
+            result = injector.inject_context(
+                user_message="hi",
+                session_id="test",
+                conversation_history=[],
+                is_first_turn=True,
+                model="claude",
+                platform="test",
+            )
+        context = result["context"] if result else ""
+        assert "消息较短" not in context
+        assert "欢迎回来" not in context
+        assert "今日第" not in context
 
 
 # ── TestDebugMode ────────────────────────────────────────────────────────

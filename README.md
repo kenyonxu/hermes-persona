@@ -58,6 +58,8 @@ hermes plugins list | grep persona   # 验证
         "keyword": true
       },
       "variance": true,
+      "expression_vector": true,
+      "fixed_signals": true,
       "memory": false,
       "kanban": true,
       "translate": true,
@@ -77,6 +79,8 @@ hermes plugins list | grep persona   # 验证
 | `dynamic.turn_stage` | bool | 轮数阶段规则 |
 | `dynamic.keyword` | bool | 关键词触发规则 |
 | `variance` | bool | 随机表达变化 |
+| `expression_vector` | bool | 多维度表达向量（需同时开启 `expression_vector.enabled`） |
+| `fixed_signals` | bool | 固定信号检测（消息长度 / 回复间隔 / 每日轮数） |
 | `memory` | bool | 外部记忆召回（需 `pip install httpx`） |
 | `kanban` | bool | 看板状态注入（仅首轮） |
 | `translate` | bool | 注入规则转译模式（见 §9） |

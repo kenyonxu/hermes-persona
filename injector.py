@@ -72,6 +72,20 @@ _MODULE_REGISTRY: dict[str, dict] = {
         "legacy_key": None,
         "legacy_path": None,
     },
+    "fixed_signals": {
+        "description": "固定信号检测（消息长度 / 回复间隔 / 每日轮数）",
+        "default": True,
+        "phase": 4,
+        "legacy_key": None,
+        "legacy_path": None,
+    },
+    "expression_vector": {
+        "description": "多维度表达向量追踪与注入",
+        "default": False,
+        "phase": 4,
+        "legacy_key": "expression_vector",
+        "legacy_path": ("expression_vector", "enabled"),
+    },
     "variance": {
         "description": "随机表达变化注入",
         "default": True,
@@ -1096,111 +1110,111 @@ def inject_context(
                 parts.extend(dynamic_rules)
 
         # ─── ④a Fixed signals ────────────────────────────
-        fixed_cfg = config.get("fixed_signals", {})
+        debug_fs: dict[str, dict] = {}
+        if _is_enabled(modules, "fixed_signals"):
+            fixed_cfg = config.get("fixed_signals", {})
 
-        if _translate_mode:
-            # translate 模式：提取 today_turn 原始值，保持副作用
-            turn_hint = _daily_turn_count_hint(
-                fixed_cfg, profile_path=kwargs.get("profile_path", "")
-            )
-            if turn_hint:
-                _m = re.search(r"今日第(\d+)轮", turn_hint)
-                if _m:
-                    _today_turn = int(_m.group(1))
-            # 用每日累积轮数计算轮数阶段（不是会话内轮数）
-            if modules.get("dynamic", {}).get("turn_stage", True):
-                _turn_stage_hint = _get_turn_stage_hint(
-                    config.get("dynamic", {}).get("turn_stage", {}),
-                    is_first_turn,
-                    _today_turn,
+            if _translate_mode:
+                # translate 模式：提取 today_turn 原始值，保持副作用
+                turn_hint = _daily_turn_count_hint(
+                    fixed_cfg, profile_path=kwargs.get("profile_path", "")
                 )
-            # translate 模式下也需要保存 reply_timing
-            gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
-            _save_reply_timing(fixed_cfg, now_ts)
-        else:
-            hint = _message_length_hint(user_message or "", fixed_cfg)
-            if hint:
-                parts.append(hint)
+                if turn_hint:
+                    _m = re.search(r"今日第(\d+)轮", turn_hint)
+                    if _m:
+                        _today_turn = int(_m.group(1))
+                # 用每日累积轮数计算轮数阶段（不是会话内轮数）
+                if modules.get("dynamic", {}).get("turn_stage", True):
+                    _turn_stage_hint = _get_turn_stage_hint(
+                        config.get("dynamic", {}).get("turn_stage", {}),
+                        is_first_turn,
+                        _today_turn,
+                    )
+                # translate 模式下也需要保存 reply_timing
+                gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
+                _save_reply_timing(fixed_cfg, now_ts)
+            else:
+                hint = _message_length_hint(user_message or "", fixed_cfg)
+                if hint:
+                    parts.append(hint)
 
-            gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
-            if gap_hint:
-                parts.append(gap_hint)
-            _save_reply_timing(fixed_cfg, now_ts)
+                gap_hint, now_ts = _reply_gap_hint(fixed_cfg)
+                if gap_hint:
+                    parts.append(gap_hint)
+                _save_reply_timing(fixed_cfg, now_ts)
 
-            turn_hint = _daily_turn_count_hint(fixed_cfg, profile_path=kwargs.get("profile_path", ""))
-            if turn_hint:
-                parts.append(turn_hint)
-        # ──────────────────────────────────────────────────
+                turn_hint = _daily_turn_count_hint(fixed_cfg, profile_path=kwargs.get("profile_path", ""))
+                if turn_hint:
+                    parts.append(turn_hint)
 
-        # ─── debug_context: capture fixed signal state for detailed mode ───
-        debug_fs = {}
-        # message_length
-        ml_cfg = fixed_cfg.get("message_length", {})
-        if ml_cfg.get("enabled", False):
-            ml_threshold = ml_cfg.get("threshold", 50)
-            msg_len = len(user_message or "")
-            debug_fs["message_length"] = {
-                "visible": True,
-                "triggered": msg_len < ml_threshold,
-                "length": msg_len,
-                "threshold": ml_threshold,
-            }
-        # reply_gap
-        rg_cfg = fixed_cfg.get("reply_gap", {})
-        if rg_cfg.get("enabled", False):
-            rg_threshold = rg_cfg.get("threshold_minutes", 30)
-            rg_last_reply = None
-            rg_gap = None
-            rg_triggered = False
-            try:
-                rg_dbg_default = str(Path(__file__).resolve().parent / "state" / "reply_timing.json")
-                rg_path = Path(rg_cfg.get("storage_path", "") or rg_dbg_default).expanduser()
-                if rg_path.is_file():
-                    rg_data = json.loads(rg_path.read_text(encoding="utf-8"))
-                    last_ts = rg_data.get("last_reply_at")
-                    if last_ts:
-                        rg_gap = (time.time() - float(last_ts)) / 60.0
-                        rg_triggered = rg_gap > rg_threshold
-                        rg_last_reply = datetime.fromtimestamp(float(last_ts)).strftime("%Y-%m-%d %H:%M:%S")
-            except (json.JSONDecodeError, OSError, ValueError, TypeError):
-                pass
-            debug_fs["reply_gap"] = {
-                "enabled": True,
-                "triggered": rg_triggered,
-                "last_reply": rg_last_reply,
-                "gap_minutes": round(rg_gap, 1) if rg_gap is not None else None,
-                "threshold_minutes": rg_threshold,
-            }
-        # daily_turn_count
-        dc_cfg = fixed_cfg.get("daily_turn_count", {})
-        if dc_cfg.get("enabled", False):
-            dc_count = 0
-            dc_date = datetime.now().strftime("%Y-%m-%d")
-            try:
-                dc_default_dbg = str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json")
-                dc_path_raw = dc_cfg.get("storage_path", "") or dc_default_dbg
-                dc_profile = kwargs.get("profile_path", "")
-                if dc_profile:
-                    dc_path_raw = dc_path_raw.replace("{profile}", str(dc_profile))
-                dc_path = Path(dc_path_raw).expanduser()
-                if dc_path.is_file():
-                    dc_data = json.loads(dc_path.read_text(encoding="utf-8"))
-                    if isinstance(dc_data, dict) and dc_data.get("date") == dc_date:
-                        dc_count = dc_data.get("count", 0)
-            except (json.JSONDecodeError, OSError):
-                pass
-            debug_fs["daily_turn_count"] = {
-                "visible": True,
-                "triggered": True,
-                "count": dc_count,
-                "date": dc_date,
-            }
+            # ─── debug_context: capture fixed signal state for detailed mode ───
+            # message_length
+            ml_cfg = fixed_cfg.get("message_length", {})
+            if ml_cfg.get("enabled", False):
+                ml_threshold = ml_cfg.get("threshold", 50)
+                msg_len = len(user_message or "")
+                debug_fs["message_length"] = {
+                    "visible": True,
+                    "triggered": msg_len < ml_threshold,
+                    "length": msg_len,
+                    "threshold": ml_threshold,
+                }
+            # reply_gap
+            rg_cfg = fixed_cfg.get("reply_gap", {})
+            if rg_cfg.get("enabled", False):
+                rg_threshold = rg_cfg.get("threshold_minutes", 30)
+                rg_last_reply = None
+                rg_gap = None
+                rg_triggered = False
+                try:
+                    rg_dbg_default = str(Path(__file__).resolve().parent / "state" / "reply_timing.json")
+                    rg_path = Path(rg_cfg.get("storage_path", "") or rg_dbg_default).expanduser()
+                    if rg_path.is_file():
+                        rg_data = json.loads(rg_path.read_text(encoding="utf-8"))
+                        last_ts = rg_data.get("last_reply_at")
+                        if last_ts:
+                            rg_gap = (time.time() - float(last_ts)) / 60.0
+                            rg_triggered = rg_gap > rg_threshold
+                            rg_last_reply = datetime.fromtimestamp(float(last_ts)).strftime("%Y-%m-%d %H:%M:%S")
+                except (json.JSONDecodeError, OSError, ValueError, TypeError):
+                    pass
+                debug_fs["reply_gap"] = {
+                    "enabled": True,
+                    "triggered": rg_triggered,
+                    "last_reply": rg_last_reply,
+                    "gap_minutes": round(rg_gap, 1) if rg_gap is not None else None,
+                    "threshold_minutes": rg_threshold,
+                }
+            # daily_turn_count
+            dc_cfg = fixed_cfg.get("daily_turn_count", {})
+            if dc_cfg.get("enabled", False):
+                dc_count = 0
+                dc_date = datetime.now().strftime("%Y-%m-%d")
+                try:
+                    dc_default_dbg = str(Path(__file__).resolve().parent / "state" / "daily_turn_count.json")
+                    dc_path_raw = dc_cfg.get("storage_path", "") or dc_default_dbg
+                    dc_profile = kwargs.get("profile_path", "")
+                    if dc_profile:
+                        dc_path_raw = dc_path_raw.replace("{profile}", str(dc_profile))
+                    dc_path = Path(dc_path_raw).expanduser()
+                    if dc_path.is_file():
+                        dc_data = json.loads(dc_path.read_text(encoding="utf-8"))
+                        if isinstance(dc_data, dict) and dc_data.get("date") == dc_date:
+                            dc_count = dc_data.get("count", 0)
+                except (json.JSONDecodeError, OSError):
+                    pass
+                debug_fs["daily_turn_count"] = {
+                    "visible": True,
+                    "triggered": True,
+                    "count": dc_count,
+                    "date": dc_date,
+                }
         # ──────────────────────────────────────────────────
 
         # ─── ④b Expression vector (FuzzyUtility) with delta capture ──
         ev_cfg = config.get("expression_vector", {})
         debug_ev = {"enabled": False, "turn_count": 0, "dimensions": {}}
-        if ev_cfg.get("enabled", False):
+        if _is_enabled(modules, "expression_vector") and ev_cfg.get("enabled", False):
             try:
                 profile = kwargs.get("profile_path", "")
                 ev = _ExpressionVector(ev_cfg, profile_path=profile)
