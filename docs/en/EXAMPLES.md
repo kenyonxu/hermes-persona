@@ -1,5 +1,7 @@
 # hermes-persona Multi-Role Configuration Examples
 
+> 📖 [简体中文](../user/EXAMPLES.md)
+
 > 3 complete, ready-to-use `persona-config.json` examples — Black Cat Luna / Code Reviewer / General Assistant
 
 ---
@@ -13,6 +15,16 @@
 ```json
 {
   "hermes-persona": {
+    "modules": {
+      "time": true,
+      "static_rules": true,
+      "dynamic": { "time_slots": true, "turn_stage": false, "keyword": true },
+      "variance": true,
+      "expression_vector": false,
+      "fixed_signals": false,
+      "memory": false,
+      "kanban": false
+    },
     "time": {
       "enabled": true,
       "format": "cn_full"
@@ -175,6 +187,16 @@
 ```json
 {
   "hermes-persona": {
+    "modules": {
+      "time": true,
+      "static_rules": true,
+      "dynamic": { "time_slots": true, "turn_stage": true, "keyword": true },
+      "variance": true,
+      "expression_vector": false,
+      "fixed_signals": false,
+      "memory": false,
+      "kanban": true
+    },
     "time": {
       "enabled": true,
       "format": "cn_full"
@@ -336,6 +358,16 @@
 ```json
 {
   "hermes-persona": {
+    "modules": {
+      "time": true,
+      "static_rules": true,
+      "dynamic": { "time_slots": true, "turn_stage": true, "keyword": true },
+      "variance": true,
+      "expression_vector": false,
+      "fixed_signals": false,
+      "memory": false,
+      "kanban": false
+    },
     "time": {
       "enabled": true,
       "format": "cn_full"
@@ -472,8 +504,8 @@
 ## How to Use
 
 1. Choose one of the examples above and copy the JSON content
-2. Save it as `persona-config.json` in your Hermes profile directory (e.g. `~/.hermes/profiles/default/`)
-3. Restart the Hermes gateway for the configuration to take effect
+2. Save it as `persona-config.json` in your profile's plugin directory: `~/.hermes/profiles/<name>/plugins/hermes-persona/persona-config.json`
+3. Restart the Hermes gateway for the configuration to take effect (first time only; subsequent changes are hot-reloaded)
 4. Send any message, and the Agent will include the corresponding persona context in the system prompt
 
 To fine-tune, simply modify the fields in the JSON file — no Python code changes needed.

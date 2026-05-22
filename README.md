@@ -1,3 +1,8 @@
+<h3 align="center">
+  <a href="README.md">简体中文</a> · <a href="README_EN.md">English</a>
+</h3>
+<p align="center">— ✦ —</p>
+
 # hermes-persona
 
 > 为 Hermes Agent 构建的通用人格上下文注入引擎——代码通用、配置驱动、开箱即用

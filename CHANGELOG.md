@@ -1,3 +1,8 @@
+<h3 align="center">
+  <a href="CHANGELOG.md">简体中文</a> · <a href="CHANGELOG_EN.md">English</a>
+</h3>
+<p align="center">— ✦ —</p>
+
 # Changelog
 
 ## [1.0.0] — 2026-05-22

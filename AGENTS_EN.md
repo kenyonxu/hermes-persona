@@ -1,3 +1,8 @@
+<h3 align="center">
+  <a href="AGENTS.md">简体中文</a> · <a href="AGENTS_EN.md">English</a>
+</h3>
+<p align="center">— ✦ —</p>
+
 # AGENTS_EN.md — hermes-persona Contributor Guide
 
 ## Project Overview
@@ -29,7 +34,7 @@ Covers core modules: static rule injection, dynamic rules (time-of-day / turn-co
 ### Branching & PRs
 
 1. Fork the repository
-2. Create a feature branch from `main`: `feat/your-feature-name`
+2. Create a feature branch from `master`: `feat/your-feature-name`
 3. Make your changes
 4. Ensure tests pass: `python -m pytest tests/ -v`
 5. Submit a PR
@@ -46,12 +51,13 @@ Covers core modules: static rule injection, dynamic rules (time-of-day / turn-co
 pre_llm_call hook
   ↓
 inject_context()
-  ├── get_time()          → Time awareness
-  ├── get_static_rules()  → Static rules (injected every turn)
-  ├── get_dynamic_rules() → Dynamic rules (time-of-day / turn-count / keyword)
-  ├── get_variance()      → Random variation
-  ├── recall_memories()   → Memory recall
-  └── get_project_state() → Kanban injection
+  ├── _time_context()          → Time awareness
+  ├── _inject_static_rules()   → Static rules (every turn)
+  ├── _select_dynamic_rules()  → Dynamic (time-slots → turn-stage → keyword)
+  ├── _randomize_variance()    → Random expression variation
+  ├── _recall_memories()       → Memory recall
+  ├── _read_kanban()           → Kanban injection (first turn only)
+  └── _transform_narrative()   → Translate to character narrative (optional)
   ↓
 System prompt context
 ```

@@ -1,3 +1,8 @@
+<h3 align="center">
+  <a href="AGENTS.md">简体中文</a> · <a href="AGENTS_EN.md">English</a>
+</h3>
+<p align="center">— ✦ —</p>
+
 # AGENTS.md — hermes-persona 贡献者指南
 
 ## 项目简介

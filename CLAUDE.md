@@ -24,7 +24,7 @@ US 审批 → 切 feature 分支 → SPEC → PLAN → CODE → 测试通过 →
 
 - 代码改动 = 切分支 + PR 合并。
 - `docs/dev/` 下的 US/SPEC/PLAN 文档可以在 master 上直接写。
-- 当前活跃分支：`feature/001-module-switch`
+- 当前活跃分支：以 `git branch --show-current` 为准
 
 ## 工程文档规范
 

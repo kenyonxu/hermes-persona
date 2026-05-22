@@ -1,9 +1,11 @@
 # hermes-persona Plugin Design Document
 
-> Version: v0.2 Draft  
+> 📖 [简体中文](../user/hermes-persona-plugin-design.md)
+
+> Version: v1.0  
 > Date: 2026-05-16  
 > Author: Zhihui & Kai.Xu  
-> Repository: [hermes-agent-guide](https://github.com/kenyonxu/hermes-agent-guide)
+> Repository: [hermes-persona](https://github.com/kenyonxu/hermes-persona)
 
 ---
 
@@ -19,9 +21,10 @@
 ```
 ┌──────────────────────────────────────────┐
 │  hermes-persona Plugin (Generic Engine)  │
-│  ├─ pre_llm_call  → Dynamic injection per turn │
-│  ├─ pre_tool_call → Safety guardrails (optional) │
-│  └─ post_tool_call → Tool audit (optional)  │
+│  ├─ pre_llm_call         → Dynamic injection per turn │
+│  ├─ transform_llm_output → Debug block injection     │
+│  ├─ pre_tool_call        → Safety guardrails (optional) │
+│  └─ post_tool_call       → Tool audit (optional)    │
 ├──────────────────────────────────────────┤
 │  persona-config.json (User Config File)  │
 │  ├─ context.rules   → Persona expression rules │
@@ -97,8 +100,8 @@ import json
 def _load_config():
     """Load plugin configuration. Returns defaults when not configured."""
     try:
-        cfg_path = Path(__file__).resolve().parents[3] / "persona-config.json"
-        # resolve: plugins/00-hermes-persona/injector.py → profile root
+        cfg_path = Path(__file__).resolve().parents[2] / "persona-config.json"
+        # resolve: plugins/hermes-persona/injector.py → profile root
         if cfg_path.exists():
             return json.loads(cfg_path.read_text()).get("hermes-persona", {})
     except Exception:
@@ -265,25 +268,30 @@ Only time context is injected, no additional setup required.
 ## V. Directory Structure
 
 ```
-~/.hermes/plugins/00-hermes-persona/
+~/.hermes/profiles/<name>/plugins/hermes-persona/
 ├── plugin.yaml          # Plugin declaration
 ├── __init__.py          # register(ctx) entry point
-├── injector.py          # pre_llm_call context injection engine (generic code)
-├── guard.py             # pre_tool_call safety guardrails (optional)
-└── skill.md             # Bundled skill: usage documentation
+├── injector.py          # pre_llm_call / transform_llm_output context injection
+├── guard.py             # pre_tool_call safety + post_tool_call audit
+├── dynamic_rules.py     # dynamic rule selection (time/turn/keyword)
+├── expression_vector.py # jieba-based expression vector engine
+├── variance.py          # random expression variance
+├── config.py            # config path resolution
+└── locales.py           # i18n support (zh-CN / en)
 ```
 
 ### 5.1 plugin.yaml
 
 ```yaml
 name: hermes-persona
-version: 0.1.0
+version: 1.0.0
 description: Dynamic persona context injection engine for Hermes Agent
 author: Kai.Xu & Zhihui
 provides_hooks:
   - pre_llm_call
-  - pre_tool_call       # optional
-  - post_tool_call      # optional
+  - transform_llm_output  # debug block injection
+  - pre_tool_call         # P4
+  - post_tool_call        # P4
 provides_skills:
   - persona-methodology
 ```
@@ -318,4 +326,4 @@ A: Place one `persona-config.json` in each profile directory, switching profiles
 
 ---
 
-*🦊 Zhihui & Kai.Xu · 2026-05-16 · hermes-agent-guide/docs/*
+*🦊 Zhihui & Kai.Xu · 2026-05-16 · hermes-persona/docs/*

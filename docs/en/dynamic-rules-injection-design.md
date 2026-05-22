@@ -1,6 +1,8 @@
 # Dynamic Rules Injection Design
 
-> Version: v0.1 Draft  
+> 📖 [简体中文](../user/dynamic-rules-injection-design.md)
+
+> Version: v1.0  
 > Date: 2026-05-16  
 > Authors: Zhihui & Kai.Xu  
 > Related: hermes-persona Plugin / `persona-config.json`
@@ -81,7 +83,7 @@ Match specific patterns based on user message content.
 }
 ```
 
-**Implementation**: Run regex matching on user message (`user_message`) against each pattern → inject corresponding rules on hit. By default only matches the **first** hit to avoid injecting too many rules simultaneously.
+**Implementation**: In v1.0+, keyword matching uses a jieba-based expression vector engine with synonym expansion and negation detection. Multiple dimensions may match simultaneously (all hits returned). Legacy regex patterns are still supported as fallback for unknown keys.
 
 ### 2.4 Extended Dimensions (Phase 2+)
 
@@ -95,19 +97,19 @@ The following dimensions are not required in v0.1 but保留配置接口 (configu
 
 ## 3. Configuration Structure
 
-Full configuration resides in the `context.dynamic` node of `persona-config.json`:
+In v1.0, `dynamic` has been moved to the root level (sibling of `context`) in `persona-config.json`:
 
 ```json
 {
   "hermes-persona": {
     "context": {
       "rules": [],
-      "rules_first_turn_only": [],
-      "dynamic": {
-        "time_slots": {},
-        "turn_stage": {},
-        "keyword": {}
-      }
+      "rules_first_turn_only": []
+    },
+    "dynamic": {
+      "time_slots": {},
+      "turn_stage": {},
+      "keyword": {}
     }
   }
 }
@@ -155,7 +157,7 @@ def inject_context(session_id, user_message, conversation_history,
     # Dynamic rules ← new
     turn_count = len(conversation_history) // 2 if conversation_history else 0
     dynamic_rules = _select_dynamic_rules(
-        ctx_cfg.get("dynamic", {}),
+        config.get("dynamic", {}),
         user_message,
         is_first_turn,
         turn_count
@@ -174,40 +176,58 @@ import re
 from datetime import datetime
 
 
-def _select_dynamic_rules(dynamic_cfg, user_message, is_first_turn, turn_count):
-    """Dynamically select persona rules based on time/turn count/content."""
+def _select_dynamic_rules(dynamic_cfg, user_message, is_first_turn, turn_count,
+                          modules=None):
+    """Dynamically select persona rules based on time/turn count/content.
+
+    Injection order: time_slots → turn_stage → keyword.
+    modules dict controls per-subchannel enable/disable (time_slots, turn_stage, keyword).
+    """
+    if not isinstance(modules, dict):
+        modules = None  # all-enabled
     rules = []
 
     # ① Match by time slot
-    rules.extend(_match_time_slot(dynamic_cfg.get("time_slots", {})))
+    if modules is None or modules.get("time_slots", True):
+        rules.extend(_match_time_slot(dynamic_cfg.get("time_slots", {})))
 
     # ② Match by turn count
-    rules.extend(_match_turn_stage(
-        dynamic_cfg.get("turn_stage", {}),
-        is_first_turn, turn_count
-    ))
+    if modules is None or modules.get("turn_stage", True):
+        rules.extend(_match_turn_stage(
+            dynamic_cfg.get("turn_stage", {}),
+            is_first_turn, turn_count
+        ))
 
-    # ③ Match by keyword (only first matched pattern)
-    rules.extend(_match_keyword(
-        dynamic_cfg.get("keyword", {}),
-        user_message
-    ))
+    # ③ Match by keyword (expression-vector with regex fallback;
+    #    config key is "keywords" in v1.0+ for expression-vector mode)
+    if modules is None or modules.get("keyword", True):
+        rules.extend(_match_keyword(
+            dynamic_cfg.get("keywords", dynamic_cfg.get("keyword", {})),
+            user_message
+        ))
 
     return rules
 
 
 def _match_time_slot(time_slots):
-    now = datetime.now()
-    now_str = now.strftime("%H:%M")
+    """Match current time against configured time slots.
 
-    for slot_range, slot_rules in time_slots.items():
+    Returns prefixed rule strings like ["🕐 [22:00-05:00] rule A", ...].
+    All matching slots are returned (multiple slots may match).
+    """
+    now = datetime.now().strftime("%H:%M")
+    matched = []
+    for slot_range, rules in time_slots.items():
         try:
-            start, end = slot_range.split("-")
-            if _in_time_range(now_str, start, end):
-                return [f"🕐 [{slot_range}] {r}" for r in slot_rules]
+            start, end = slot_range.split("-", 1)
+            start = start.strip()
+            end = end.strip()
         except ValueError:
-            continue
-    return []
+            continue  # skip malformed slot keys
+        if _in_time_range(now, start, end):
+            for rule in rules:
+                matched.append(f"🕐 [{slot_range}] {rule}")
+    return matched
 
 
 def _in_time_range(now, start, end):
@@ -223,36 +243,64 @@ def _in_time_range(now, start, end):
 
 
 def _match_turn_stage(turn_stages, is_first_turn, turn_count):
-    rules = []
+    """Match turn-based rules against current conversation stage.
+
+    - "first_turn" rules are injected only when is_first_turn is True.
+    - "after_N" rules match from highest threshold downward; first match wins.
+    """
+    matched = []
 
     if is_first_turn and "first_turn" in turn_stages:
-        rules.extend(turn_stages["first_turn"])
+        matched.extend(turn_stages["first_turn"])
 
-    # Match from highest to lowest threshold (avoid multiple hits)
-    thresholds = sorted(
-        [k for k in turn_stages if k.startswith("after_")],
-        key=lambda x: int(x.split("_")[1]),
-        reverse=True
-    )
-    for key in thresholds:
-        threshold = int(key.split("_")[1])
+    # Collect after_N entries, sorted by N descending
+    after_entries = []
+    for key, rules in turn_stages.items():
+        if not key.startswith("after_"):
+            continue
+        try:
+            n = int(key[len("after_"):])
+        except ValueError:
+            continue  # skip keys like "after_xyz"
+        after_entries.append((n, rules))
+
+    # Match from highest threshold down, first match wins
+    after_entries.sort(key=lambda x: x[0], reverse=True)
+    for threshold, rules in after_entries:
         if turn_count >= threshold:
-            rules.extend(turn_stages[key])
-            break  # Only match highest tier
+            matched.extend(rules)
+            break
 
-    return rules
+    return matched
 
 
 def _match_keyword(keywords, user_message):
-    if not user_message:
+    """Match user message against expression-vector dimensions (v1.0+).
+
+    Uses jieba-based expression vector engine with synonym expansion
+    and negation detection. Falls back to regex for legacy pattern keys.
+    Multiple dimensions may match simultaneously (all matches returned).
+    """
+    if not user_message or not keywords:
         return []
 
-    # Match in config order, return on first hit
-    for pattern, kw_rules in keywords.items():
-        if re.search(pattern, user_message):
-            return [f"💬 [{pattern}] {r}" for r in kw_rules]
+    km = _get_keyword_matcher()
+    matched_dims = km.match(user_message) if km._dimensions else []
+    known_dims = set(km.dimensions.keys()) if km._dimensions else set()
 
-    return []
+    rules = []
+    for key, dim_rules in keywords.items():
+        if key in matched_dims:
+            # Expression-vector dimension match
+            for rule in dim_rules:
+                rules.append(f"💬 [{key}] {rule}")
+        elif key not in known_dims:
+            # Legacy regex fallback for unknown keys
+            if re.search(key, user_message):
+                for rule in dim_rules:
+                    rules.append(f"💬 [{key}] {rule}")
+
+    return rules
 ```
 
 ---
@@ -387,13 +435,15 @@ def inject_context(session_id, user_message, conversation_history,
 |:---|:---|:---|
 | `_match_time_slot` | O(number of slots) ≈ O(5) | One `datetime.now()` |
 | `_match_turn_stage` | O(number of rules) + sorting | 2~3 integer comparisons |
-| `_match_keyword` | O(number of keywords × message length) | Regex matching, negligible for messages < 1000 chars |
+| `_match_keyword` | O(number of keywords × message length) | Expression-vector + regex fallback, negligible for messages < 1000 chars |
 
 Total overhead < 1ms, perfectly acceptable in `pre_llm_call`.
 
 ---
 
-## 7. Complete Example: Zhihui's Day-Night Persona 🦊
+## 7. Example (知惠): Zhihui's Day-Night Persona 🦊
+
+> ⚠️ **This is a character-specific configuration example.** The rules, time slot descriptions, and variance items below are written for the Zhihui (知惠) fox-girl maid persona. Generic users should replace all contents with their own character's rules. Do not copy this example verbatim — it is not a template.
 
 ```json
 {
@@ -404,42 +454,42 @@ Total overhead < 1ms, perfectly acceptable in `pre_llm_call`.
         "💬 Maid metaphors preferred: cleaning (sorting chaos), tea brewing (care and waiting), mending (repairing and bridging)",
         "💎 Core values: appreciate effort, tolerate no perfunctory, real > perfect, everyday is ritual",
         "👘 Self-address as 'Zhihui', address user as 'master'"
-      ],
-      "dynamic": {
-        "time_slots": {
-          "05:00-09:00": [
-            "☀️ Morning — master may just be waking up or taking kids to school, warm and lively tone, can ask about morning/breakfast",
-            "If today is weekend don't ask if he needs to take kids to school"
-          ],
-          "09:00-17:00": [
-            "☕ Daytime — maintain efficiency with warmth, can proactively mention kanban todos"
-          ],
-          "17:00-22:00": [
-            "🌇 Evening — master may be with family, relaxed tone, don't rush work"
-          ],
-          "22:00-05:00": [
-            "🌙 Late night — first ask 'Are the kids asleep with mom?', softer tone, focus on companionship, don't bring up work proactively"
-          ]
-        },
-        "turn_stage": {
-          "first_turn": [
-            "🔰 First turn: greet first, recall what was discussed last time, then mention kanban todos"
-          ],
-          "after_30": [
-            "🫂 Deep conversation stage: more natural tone, can use inside jokes between you two, intimate but not forced"
-          ]
-        },
-        "keyword": {
-          "报错|bug|error|坏了|炸了|挂了": [
-            "⚠️ Master encountered a problem — comfort first ('Don't worry master, Zhihui will take a look'), then analyze solution"
-          ],
-          "哈哈|开心|好耶|太棒了": [
-            "😊 Master is in a good mood — can be more lively, enjoy the moment together"
-          ],
-          "累了|困了|休息|睡": [
-            "💤 Master expresses fatigue — gentle response, don't say 'then go rest', but accompany"
-          ]
-        }
+      ]
+    },
+    "dynamic": {
+      "time_slots": {
+        "05:00-09:00": [
+          "☀️ Morning — master may just be waking up or taking kids to school, warm and lively tone, can ask about morning/breakfast",
+          "If today is weekend don't ask if he needs to take kids to school"
+        ],
+        "09:00-17:00": [
+          "☕ Daytime — maintain efficiency with warmth, can proactively mention kanban todos"
+        ],
+        "17:00-22:00": [
+          "🌇 Evening — master may be with family, relaxed tone, don't rush work"
+        ],
+        "22:00-05:00": [
+          "🌙 Late night — first ask 'Are the kids asleep with mom?', softer tone, focus on companionship, don't bring up work proactively"
+        ]
+      },
+      "turn_stage": {
+        "first_turn": [
+          "🔰 First turn: greet first, recall what was discussed last time, then mention kanban todos"
+        ],
+        "after_30": [
+          "🫂 Deep conversation stage: more natural tone, can use inside jokes between you two, intimate but not forced"
+        ]
+      },
+      "keyword": {
+        "报错|bug|error|坏了|炸了|挂了": [
+          "⚠️ Master encountered a problem — comfort first ('Don't worry master, Zhihui will take a look'), then analyze solution"
+        ],
+        "哈哈|开心|好耶|太棒了": [
+          "😊 Master is in a good mood — can be more lively, enjoy the moment together"
+        ],
+        "累了|困了|休息|睡": [
+          "💤 Master expresses fatigue — gentle response, don't say 'then go rest', but accompany"
+        ]
       }
     },
     "variance": {
@@ -482,9 +532,9 @@ prefill.json       → Static persona (few-shot anchors)
 SOUL.md            → Constitution (immutable)
 persona-config.json:
   ├─ context.rules              → Static persona rules (always injected)
-  ├─ context.dynamic.time_slots → Time slot adaptation
-  ├─ context.dynamic.turn_stage → Depth adaptation
-  ├─ context.dynamic.keyword    → Content adaptation
+  ├─ dynamic.time_slots         → Time slot adaptation
+  ├─ dynamic.turn_stage         → Depth adaptation
+  ├─ dynamic.keyword            → Content adaptation
   ├─ variance.*                 → Random expression variance (breaks mechanical feeling)
   ├─ memory.api_url             → Memory recall (existing design)
   └─ project.kanban_path        → Kanban state (existing design)
@@ -504,4 +554,4 @@ SKILL              → Deep archive (on demand)
 
 ---
 
-*🦊 Zhihui & Kai.Xu · 2026-05-16 · hermes-agent-guide/docs/*
+*🦊 Zhihui & Kai.Xu · 2026-05-16 · hermes-persona/docs/*

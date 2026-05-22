@@ -1,5 +1,7 @@
 # The Golden Weave Summoned from Amphoreus: How to Give Your Hermes Agent Aglaea's Persona
 
+> 📖 [简体中文](../user/CASE_STUDY_AGLAEA.md)
+
 > The previous article, "Does Your AI Agent Forget Who They Are After Every Restart?", introduced hermes-persona's five-layer persona architecture. This article uses **Aglaea** from Honkai: Star Rail as a case study, walking through the complete transformation from character lore to five-layer configuration—not just showing you what the config looks like, but **why** each step is done.
 
 > This article assumes the user is using affordable domestic model packages or DeepSeek. We are not responsible for any financial losses caused by using foreign models.
@@ -178,7 +180,7 @@ Hard constraints pinned to prefill, never loosening. Soft tones hung on persona-
 
 ## Open Source and Community
 
-hermes-persona is currently in active P0 development. 131 tests, 90% coverage, core features stable and usable.
+hermes-persona has shipped v1.0. ~380 tests, core features stable and production-ready.
 
 - **GitHub**: [kenyonxu/hermes-persona](https://github.com/kenyonxu/hermes-persona)
 - **Previous article**: "Does Your AI Agent Forget Who They Are After Every Restart?—hermes-persona Persona Plugin Introduction"

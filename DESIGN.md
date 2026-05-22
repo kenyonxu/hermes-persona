@@ -1,3 +1,8 @@
+<h3 align="center">
+  <a href="DESIGN.md">简体中文</a> · <a href="DESIGN_EN.md">English</a>
+</h3>
+<p align="center">— ✦ —</p>
+
 # DESIGN.md — hermes-persona 架构决策
 
 ## 核心理念

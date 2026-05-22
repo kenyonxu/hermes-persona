@@ -1,3 +1,8 @@
+<h3 align="center">
+  <a href="DESIGN.md">简体中文</a> · <a href="DESIGN_EN.md">English</a>
+</h3>
+<p align="center">— ✦ —</p>
+
 # DESIGN_EN.md — hermes-persona Architecture Decisions
 
 ## Core Philosophy
@@ -26,7 +31,27 @@ The reason for choosing `pre_llm_call` over modifying the system prompt directly
 2. JSON has strict structural constraints, reducing format ambiguity
 3. The user base is more familiar with JSON (JavaScript/TypeScript developers are the majority)
 
-## Seven-Module Design
+## File Layout
+
+All user-editable JSON configuration and runtime state files live under the plugin directory:
+
+```
+plugins/hermes-persona/
+├── persona-config.json          ← The only config file users need to edit
+├── keywords/                    ← Dimension keywords (7 JSON files, user-customizable)
+├── locales/                     ← Multi-language templates (en.json / zh.json)
+├── state/                       ← Auto-generated at runtime (expression_vector / daily_turn_count)
+└── examples/                    ← Templates (new users copy these)
+```
+
+**Path Resolution Strategy**: `config.py` provides a public `_resolve_config_path()` function with a three-tier fallback:
+1. Plugin directory (new convention, preferred)
+2. `_CONFIG_ROOT` (legacy profile root directory, backward-compatible)
+3. Caller-side handling (e.g., repo root fallback)
+
+Both `injector.py` and `guard.py` use this function to load config, avoiding duplicate path resolution logic. State files (`expression_vector.json`, `daily_turn_count.json`) are written to `state/` by default; if state files exist at the legacy path, they are auto-read and migrated on the first `save()` call.
+
+## Module Design
 
 | Module | Config Node | Design Rationale |
 |--------|-------------|------------------|

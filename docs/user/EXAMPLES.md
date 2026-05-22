@@ -1,5 +1,7 @@
 # hermes-persona 多角色配置示例
 
+> 📖 [English](../en/EXAMPLES.md)
+
 > 3 个完整可用的 `persona-config.json` 示例——黑猫 Luna / 代码审查员 / 通用助手
 
 ---

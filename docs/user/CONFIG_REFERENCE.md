@@ -1,5 +1,7 @@
 # hermes-persona 配置参考
 
+> 📖 [English](../en/CONFIG_REFERENCE.md)
+
 > 完整 `persona-config.json` 配置项说明——v1.0，覆盖全部模块
 
 ---
