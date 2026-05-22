@@ -26,4 +26,4 @@ graphify-out/cache
 state/
 
 # Persona config (dev only, not versioned)
-persona-config.json
+/persona-config.json
