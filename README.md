@@ -404,9 +404,11 @@ hermes plugins list | grep persona   # 验证
 
 > Debug 块通过 `transform_llm_output` hook 追加到 LLM 回复末尾，不消耗额外 token 用于 "要求 LLM 自己输出"，也无需 LLM 自觉配合。
 >
-> ⚠️ **上游依赖**：Hermes Agent 的 `transform_llm_output` hook 在流式平台（Discord / Telegram / ACP）上存在一个已知的**流式传输静默丢弃问题**——插件修改后的回复内容可能不会送达用户。修复 PR 已提交上游（[NousResearch/hermes-agent#29119](https://github.com/NousResearch/hermes-agent/pull/29119)），等待合并。在此期间：
-> - **CLI 模式**：Debug 块正常工作 ✅
-> - **流式平台**：可能看不到 Debug 输出，需等待上游合并
+> ✅ **上游已修复**：`transform_llm_output` hook 的流式传输问题已被上游合并。原 PR [#29119](https://github.com/NousResearch/hermes-agent/pull/29119) 经 salvage 后以 [#31433](https://github.com/NousResearch/hermes-agent/pull/31433) 合入 main。现在所有平台（CLI / Discord / Telegram / ACP）均可正常看到 Debug 输出。
+>
+> <p align="center">
+>   <img src="https://camo.githubusercontent.com/353ef986e511fa4e496b63a6c08111295601c04fdc64a944cc1590dd96c6234e/68747470733a2f2f7633622e66616c2e6d656469612f66696c65732f622f30613962376366382f6b6665553069716b67546c7355767847527577466a5f5a616d39596b48622e706e67" alt="Plugin Streaming Fix Infographic" width="80%">
+> </p>
 >
 > **已知限制**：`_PENDING_DEBUG_BLOCK` 使用模块级变量传递，非线程安全。单会话运行时无影响；多会话并发场景下 debug 块可能串话。
 
