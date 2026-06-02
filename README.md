@@ -1,6 +1,10 @@
 <h3 align="center">
   <a href="README.md">简体中文</a> · <a href="README_EN.md">English</a>
 </h3>
+<p align="center">
+  <a href="https://afdian.com/a/kai2045"><img src="https://img.shields.io/badge/赞助-爱发电-ff69b4?style=flat-square" alt="爱发电"></a>
+  <a href="https://www.paypal.com/paypalme/kai2045"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?style=flat-square&logo=paypal" alt="PayPal"></a>
+</p>
 <p align="center">— ✦ —</p>
 
 # hermes-persona
