@@ -21,14 +21,9 @@
 
 ## 3. 配置结构
 
-### 3.1 两段式开关
+### 3.1 开关机制
 
-天气模块采用与现有模块一致的两段式开关：
-
-- **`modules.weather`**（主开关）：在 `_MODULE_REGISTRY` 中 `"default": False`。用户必须在 `modules` 字典中显式设置 `"weather": true` 才能启用天气注入。由 `_is_enabled(modules, "weather")` 裁决。
-- **`weather.enabled`**（辅助开关）：配置节内的独立开关，为后续（如不同 profile 覆盖）预留。当前代码中主开关为 False 时辅助开关无效果。
-
-简而言之：**用户必须在 `modules` 中将 `weather` 设为 `true` 才能启用天气注入。**
+天气模块在 `_MODULE_REGISTRY` 中 `"default": False`。用户必须在 `modules` 字典中显式设置 `"weather": true` 才能启用。由 `_is_enabled(modules, "weather")` 裁决，与现有 `time`、`kanban` 等模块的开关方式一致。
 
 ### 3.2 `modules` 条目
 
@@ -48,7 +43,6 @@
 {
   "hermes-persona": {
     "weather": {
-      "enabled": true,
       "location": "北京",
       "detail": "brief",
       "cache_ttl_minutes": 30,
@@ -62,7 +56,6 @@
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `enabled` | bool | true | 辅助开关（保留字段，当前实现仅检查 modules.weather 主开关，此字段暂未裁决） |
 | `location` | string | "" | 城市名（中文或英文），Open-Meteo geocoding API 支持。为空时模块不注入 |
 | `detail` | string | "brief" | `"brief"` → `🌤 北京 晴 26°C`；`"full"` → `🌤 北京 晴 26°C 湿度45% 风力3级` |
 | `cache_ttl_minutes` | int | 30 | 文件缓存有效期（分钟） |
