@@ -1082,12 +1082,15 @@ def inject_context(
     Called by the Hermes runtime on every pre_llm_call hook.
 
     Injection order (immutable, per spec D2):
-        1. Time context
-        2. Static rules (context.rules + rules_first_turn_only)
-        3. Dynamic rules (time slots + turn stages + keyword)
-        4. Random variance       (stub in P1)
-        5. Memory recall         (stub in P1)
-        6. Kanban status         (stub in P1, first-turn only)
+        1.  Time context
+        1b. Weather context (Open-Meteo API + file cache)
+        2.  Static rules (context.rules + rules_first_turn_only)
+        3.  Dynamic rules (time slots + turn stages + keyword)
+        4a. Fixed signals (message_length + reply_gap + daily_turn_count)
+        4b. Expression vector (multi-dimensional topic tracking)
+        4.  Random variance
+        5.  Memory recall
+        6.  Kanban status (first-turn only)
 
     Returns {"context": "<assembled string>"} or None when there is nothing
     to inject.

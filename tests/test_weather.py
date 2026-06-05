@@ -287,7 +287,7 @@ class TestGetWeatherData:
     @patch("weather._should_refresh")
     def test_geocode_returns_none_fallback(self, mock_refresh, mock_read,
                                              mock_geocode, mock_fetch):
-        """geocoding 返回 None（城市未找到）→ 回退旧缓存。"""
+        """geocoding 返回 None 且缓存 location 不一致 → 不回退，返回 None。"""
         mock_read.return_value = {
             "location": "北京", "temperature": 26.3, "humidity": 45,
             "weather_code": 0, "wind_speed": 12.5,
@@ -295,7 +295,25 @@ class TestGetWeatherData:
         mock_refresh.return_value = True
         mock_geocode.return_value = None
         result = _get_weather_data({"location": "不存在的城市", "cache_ttl_minutes": 30})
+        assert result is None
+        mock_fetch.assert_not_called()
+
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_geocode_returns_none_same_location_fallback(self, mock_refresh, mock_read,
+                                                          mock_geocode, mock_fetch):
+        """geocoding 返回 None 但缓存 location 一致 → 可安全回退旧缓存。"""
+        mock_read.return_value = {
+            "location": "北京", "temperature": 26.3, "humidity": 45,
+            "weather_code": 0, "wind_speed": 12.5,
+        }
+        mock_refresh.return_value = True
+        mock_geocode.return_value = None
+        result = _get_weather_data({"location": "北京", "cache_ttl_minutes": 30})
         assert result is not None
+        assert result["temperature"] == 26.3
         mock_fetch.assert_not_called()
 
     @patch("weather._fetch_weather")

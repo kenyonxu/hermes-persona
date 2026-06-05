@@ -251,7 +251,10 @@ def _get_weather_data(config: dict) -> dict | None:
         if lat is None or lon is None:
             coords = _geocode(location)
             if coords is None:
-                return cache if cache else None
+                # 回退旧缓存仅当 location 一致（避免返回错误城市数据）
+                if cache and cache.get("location") == location:
+                    return cache
+                return None
             lat, lon = coords
 
         weather = _fetch_weather(lat, lon)
