@@ -62,7 +62,7 @@
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `enabled` | bool | true | 辅助开关（当前由 modules.weather 主开关裁决） |
+| `enabled` | bool | true | 辅助开关（保留字段，当前实现仅检查 modules.weather 主开关，此字段暂未裁决） |
 | `location` | string | "" | 城市名（中文或英文），Open-Meteo geocoding API 支持。为空时模块不注入 |
 | `detail` | string | "brief" | `"brief"` → `🌤 北京 晴 26°C`；`"full"` → `🌤 北京 晴 26°C 湿度45% 风力3级` |
 | `cache_ttl_minutes` | int | 30 | 文件缓存有效期（分钟） |
@@ -215,7 +215,7 @@ inject_context() 注入顺序：
 | API 失败（无缓存） | 返回 None（本轮不注入，不阻断后续模块） |
 | location 为空 | 返回 None（未配置则不注入） |
 
-**与 time 模块一致**：天气在每轮对话中持续可见。TLT 窗口内使用缓存数据，过期后自动刷新。
+**与 time 模块一致**：天气在每轮对话中持续可见。TTL 窗口内使用缓存数据，过期后自动刷新。
 
 ### 5.3 格式化输出
 
