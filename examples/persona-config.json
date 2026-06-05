@@ -2,6 +2,7 @@
   "hermes-persona": {
     "modules": {
       "time": true,
+      "weather": false,
       "static_rules": true,
       "dynamic": {
         "time_slots": true,
@@ -16,6 +17,12 @@
     "time": {
       "enabled": true,
       "format": "cn_full"
+    },
+    "weather": {
+      "location": "",
+      "detail": "brief",
+      "cache_ttl_minutes": 30,
+      "label": "🌤"
     },
     "context": {
       "rules": [

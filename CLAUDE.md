@@ -53,12 +53,15 @@ python -m pytest tests/test_modules_switch.py -v
 
 ```
 inject_context() 注入顺序（不可变）：
-  ① _time_context()          → 时间感知
-  ② _inject_static_rules()   → 静态规则
-  ③ _select_dynamic_rules()  → 动态规则（time_slots→turn_stage→keyword）
-  ④ _randomize_variance()    → 随机变化
-  ⑤ _recall_memories()       → 记忆召回
-  ⑥ _read_kanban()           → 看板注入（仅首轮）
+  ① _time_context()            → 时间感知
+  ①b _weather_context()        → 天气注入
+  ② _inject_static_rules()     → 静态规则
+  ③ _select_dynamic_rules()    → 动态规则（time_slots→turn_stage→keyword）
+  ④a _fixed_signals            → 固定信号
+  ④b _expression_vector        → 表达向量
+  ④ _randomize_variance()      → 随机变化
+  ⑤ _recall_memories()         → 记忆召回
+  ⑥ _read_kanban()             → 看板注入（仅首轮）
 ```
 
 - 异常处理：fail-open，任何模块失败不阻断后续

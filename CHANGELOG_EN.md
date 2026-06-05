@@ -5,6 +5,23 @@
 
 # Changelog
 
+## [1.1.0] — 2026-06-05
+
+> Weather context injection module. Fetches real-time weather via the free Open-Meteo API and weaves it into each LLM context turn.
+
+### Added
+
+- **Weather awareness injection**: New standalone `weather` module that fetches real-time weather for a specified city via the free Open-Meteo API and injects it into each turn's conversation context.
+- **File-based caching**: Weather data is cached to `state/weather_cache.json`. `_should_refresh()` serves as a unified decision point (TTL + location change + corrupt cache) to minimize API calls.
+- **Dual output mode**: Both direct injection (emoji-prefixed line) and translate mode (woven naturally into the narrative time line) are supported.
+- **Fail-open design**: Falls back to stale cache on API failure; silently skips when no cache exists — any exception never blocks the injection chain.
+- **Debug diagnostics**: Both compact and detailed debug modes display weather injection status; detailed mode additionally shows cache/API state.
+- **WMO code mapping + Beaufort wind scale**: Pure-function driven with full test coverage.
+
+### Improved
+
+- Documentation fully synchronized: CLAUDE.md, AGENTS.md, README, DESIGN, CONFIG_REFERENCE, and other architecture docs have updated injection ordering and module tables.
+
 ## [1.0.0] — 2026-05-22
 
 > First stable release. From modular engine to injection narrative translation, hermes-persona is production-ready.

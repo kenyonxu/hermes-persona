@@ -448,8 +448,11 @@ provides_skills:
 
 ```
 ① time               — 时间上下文
+①b weather           — 天气注入
 ② static_rules       — 静态行为守则（每轮 + 首轮专属）
 ③ dynamic            — 动态规则（time_slots → turn_stage → keyword）
+④a fixed_signals     — 固定信号
+④b expression_vector — 表达向量
 ④ variance           — 随机表达变化
 ⑤ memory             — 记忆召回（若启用）
 ⑥ kanban             — 看板状态（若启用，仅首轮）

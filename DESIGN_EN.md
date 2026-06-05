@@ -56,11 +56,14 @@ Both `injector.py` and `guard.py` use this function to load config, avoiding dup
 | Module | Config Node | Design Rationale |
 |--------|-------------|------------------|
 | Time Awareness | `time` | Basic context, cost < 1ms |
+| Weather | `weather` | Real-time weather via Open-Meteo API with file-based caching, fail-open |
 | Static Rules | `context.rules` | Hard constraints applied every turn — role identity, language taboos |
 | First-Turn Only | `context.rules_first_turn_only` | Prevents opening lines from repeating every turn |
 | Time-Slot Dynamic | `dynamic.time_slots` | The same role should behave differently at different times of day |
 | Turn-Stage Dynamic | `dynamic.turn_stage` | Naturally deepen tone over long conversations |
 | Keyword Matching | `dynamic.keywords` | Scene-driven, injected on demand — saves tokens |
+| Fixed Signals | `fixed_signals` | Auto-detection: message length, reply gap, daily turn count |
+| Expression Vector | `expression_vector` | Multi-dimensional topic tracking with score decay |
 | Random Variance | `variance` | Breaks mechanical feel; different expressions for the same scene |
 | Memory Recall | `memory` | Pluggable external memory API |
 | Project Board Injection | `project` | Injects project context on the first turn |

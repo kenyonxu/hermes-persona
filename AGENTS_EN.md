@@ -51,13 +51,16 @@ Covers core modules: static rule injection, dynamic rules (time-of-day / turn-co
 pre_llm_call hook
   ↓
 inject_context()
-  ├── _time_context()          → Time awareness
-  ├── _inject_static_rules()   → Static rules (every turn)
-  ├── _select_dynamic_rules()  → Dynamic (time-slots → turn-stage → keyword)
-  ├── _randomize_variance()    → Random expression variation
-  ├── _recall_memories()       → Memory recall
-  ├── _read_kanban()           → Kanban injection (first turn only)
-  └── _transform_narrative()   → Translate to character narrative (optional)
+  ├── _time_context()            → Time awareness
+  ├── _weather_context()         → Weather injection
+  ├── _inject_static_rules()     → Static rules (every turn)
+  ├── _select_dynamic_rules()    → Dynamic (time-slots → turn-stage → keyword)
+  ├── _fixed_signals             → Fixed signal detection
+  ├── _expression_vector         → Expression vector
+  ├── _randomize_variance()      → Random expression variation
+  ├── _recall_memories()         → Memory recall
+  ├── _read_kanban()             → Kanban injection (first turn only)
+  └── _transform_narrative()     → Translate to character narrative (optional)
   ↓
 System prompt context
 ```

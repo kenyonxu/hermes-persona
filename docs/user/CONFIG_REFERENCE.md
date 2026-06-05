@@ -13,6 +13,7 @@
   "hermes-persona": {
     "modules": { ... },
     "time": { ... },
+    "weather": { ... },
     "context": { ... },
     "dynamic": { ... },
     "expression_vector": { ... },
@@ -36,6 +37,7 @@
 | 字段 | 类型 | 默认值 | 说明 |
 |:---|:---|:---|:---|
 | `time` | `boolean` | `true` | 时间上下文注入 |
+| `weather` | `boolean` | `false` | 天气上下文注入（需配置 `weather.location`） |
 | `static_rules` | `boolean` | `true` | 静态行为守则注入 |
 | `dynamic` | `boolean` 或 `object` | `true` | 动态规则总开关。设为 `false` 关闭全部子通道。 |
 | `dynamic.time_slots` | `boolean` | `true` | 时段规则子通道 |
@@ -58,6 +60,7 @@
 {
   "modules": {
     "time": true,
+    "weather": false,
     "static_rules": true,
     "dynamic": { "time_slots": true, "turn_stage": false, "keyword": true },
     "expression_vector": true,
@@ -103,6 +106,39 @@
   }
 }
 ```
+
+---
+
+## weather — 天气注入
+
+通过 Open-Meteo 免费 API 获取指定城市的实时天气，注入到每轮对话上下文。支持文件缓存减少 API 调用。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|:---|:---|:---|:---|
+| `location` | `string` | `""` | 城市名（中文）。为空时不注入天气 |
+| `detail` | `string` | `"brief"` | `"brief"` 仅温度 + 天气描述；`"full"` 含湿度 + 风力等级 |
+| `cache_ttl_minutes` | `integer` | `30` | 文件缓存有效期（分钟），过期后重新调用 API |
+| `label` | `string` | `"🌤"` | 直接注入模式下的前缀 emoji（translate 模式下不使用） |
+
+### 示例
+
+```json
+{
+  "weather": {
+    "location": "北京",
+    "detail": "brief",
+    "cache_ttl_minutes": 30,
+    "label": "🌤"
+  }
+}
+```
+
+### 缓存策略
+
+- 缓存路径：`state/weather_cache.json`（插件目录下）
+- `_should_refresh()` 统一决策：缓存不存在 / TTL 过期 / location 变更 / fetched_at 损坏 → 重新调用 API
+- geocoding 坐标可复用：同一城市无需重复查询
+- API 失败回退：有旧缓存则返回过期数据；无缓存则静默跳过（fail-open）
 
 ---
 
@@ -539,6 +575,7 @@
 
 ```
 ① time             — 时间上下文（translate 模式时跳过独立行）
+①b weather         — 天气注入（translate 模式时融入叙事）
 ② static_rules     — 静态规则（每轮 + 首轮专属）
 ③ dynamic          — 动态规则（time_slots → turn_stage → keyword）
 ④a fixed_signals   — 固定信号（消息长度 → 回复间隔 → 每日轮数）
