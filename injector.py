@@ -341,7 +341,8 @@ def _debug_summary(
 
     # ①b Weather
     if _is_enabled(modules, "weather"):
-        if any(p.startswith("🌤") for p in parts):
+        weather_info = debug_context.get("weather", {})
+        if any(p.startswith("🌤") for p in parts) or weather_info.get("injected") == "true":
             lines.append("  ① 🌤 天气已注入")
         else:
             lines.append("  ① 🌤 未配置/API失败")
@@ -471,8 +472,11 @@ def _detailed_summary(
     if _is_enabled(modules, "weather"):
         weather_parts = [p for p in parts if p.startswith("🌤")]
         weather_info = debug_context.get("weather", {})
-        if weather_parts:
-            lines.append(f"  ① 🌤 {weather_parts[0]}")
+        if weather_parts or weather_info.get("injected") == "true":
+            if weather_parts:
+                lines.append(f"  ① 🌤 {weather_parts[0]}")
+            else:
+                lines.append("  ① 🌤 已注入（translate模式）")
             cache_state = weather_info.get("cache_state", "未知")
             api_state = weather_info.get("api_state", "未知")
             lines.append(f"      缓存: {cache_state}")
@@ -1398,15 +1402,18 @@ def inject_context(
         # Record non-debug content count before debug injection
         non_debug_count = len(parts)
 
-        # 收集 weather debug 状态（用于 detailed 模式）
+        # 收集 weather debug 状态（用于 debug 摘要）
         weather_debug: dict[str, str] = {}
         if _is_enabled(modules, "weather"):
             weather_cfg = config.get("weather", {})
             location = weather_cfg.get("location", "").strip()
             if not location:
-                weather_debug = {"cache_state": "未配置", "api_state": "-"}
+                weather_debug = {"cache_state": "未配置", "api_state": "-", "injected": "false"}
             else:
-                weather_injected = any(p.startswith("🌤") for p in parts)
+                # translate 模式下天气在 _weather_desc 中，非 translate 在 parts 中
+                weather_injected = any(p.startswith("🌤") for p in parts) or (
+                    _translate_mode and _weather_desc is not None
+                )
                 if weather_injected:
                     from weather import _read_cache, _should_refresh
                     cache = _read_cache()
@@ -1414,11 +1421,20 @@ def inject_context(
                         weather_debug = {
                             "cache_state": "已过期-刷新" if cache else "无缓存-新建",
                             "api_state": "已调用",
+                            "injected": "true",
                         }
                     else:
-                        weather_debug = {"cache_state": "有效-跳过", "api_state": "未调用"}
+                        weather_debug = {
+                            "cache_state": "有效-跳过",
+                            "api_state": "未调用",
+                            "injected": "true",
+                        }
                 else:
-                    weather_debug = {"cache_state": "API失败", "api_state": "失败"}
+                    weather_debug = {
+                        "cache_state": "API失败",
+                        "api_state": "失败",
+                        "injected": "false",
+                    }
 
         # 7. Debug summary → stored to _PENDING_DEBUG_BLOCK, appended by transform_llm_output
         global _PENDING_DEBUG_BLOCK
