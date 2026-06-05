@@ -169,30 +169,144 @@ def _should_refresh(cache: dict | None, config: dict, location: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Stubs for Task 1.2 (to be implemented next)
+# Open-Meteo API
 # ---------------------------------------------------------------------------
+
+_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+_WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 
 
 def _geocode(location: str) -> tuple[float, float] | None:
-    """[STUB] 城市名 → (lat, lon)，失败返回 None。"""
-    raise NotImplementedError
+    """城市名 → (lat, lon)，失败返回 None。"""
+    try:
+        params = urllib.parse.urlencode({
+            "name": location,
+            "count": "1",
+            "language": "zh",
+        })
+        url = f"{_GEOCODING_URL}?{params}"
+        req = urllib.request.Request(url, headers={"User-Agent": "hermes-persona/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            results = data.get("results")
+            if results and len(results) > 0:
+                r = results[0]
+                return (float(r["latitude"]), float(r["longitude"]))
+            return None
+    except Exception:
+        return None
 
 
 def _fetch_weather(lat: float, lon: float) -> dict | None:
-    """[STUB] Open-Meteo 天气 API → dict，失败返回 None。"""
-    raise NotImplementedError
+    """Open-Meteo 天气 API → dict，失败返回 None。"""
+    try:
+        params = urllib.parse.urlencode({
+            "latitude": str(lat),
+            "longitude": str(lon),
+            "current": "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+        })
+        url = f"{_WEATHER_URL}?{params}"
+        req = urllib.request.Request(url, headers={"User-Agent": "hermes-persona/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            current = data.get("current", {})
+            return {
+                "temperature": current.get("temperature_2m", 0),
+                "humidity": current.get("relative_humidity_2m", 0),
+                "weather_code": current.get("weather_code", 0),
+                "wind_speed": current.get("wind_speed_10m", 0),
+            }
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Core data pipeline
+# ---------------------------------------------------------------------------
 
 
 def _get_weather_data(config: dict) -> dict | None:
-    """[STUB] 获取天气原始数据（共享缓存+API逻辑）。"""
-    raise NotImplementedError
+    """获取天气原始数据（共享缓存+API逻辑）。
+
+    _weather_context 和 _weather_context_for_narrative 均调用此函数。
+
+    Returns:
+        dict with temperature/humidity/weather_code/wind_speed/location or None
+    """
+    location = config.get("location", "").strip()
+    if not location:
+        return None
+
+    cache = _read_cache()
+
+    if not _should_refresh(cache, config, location):
+        return cache
+
+    # 需要刷新 → 调 API
+    full_data = None
+    try:
+        lat = cache.get("latitude") if cache and cache.get("location") == location else None
+        lon = cache.get("longitude") if cache and cache.get("location") == location else None
+
+        if lat is None or lon is None:
+            coords = _geocode(location)
+            if coords is None:
+                return cache if cache else None
+            lat, lon = coords
+
+        weather = _fetch_weather(lat, lon)
+        if weather is None:
+            return cache if cache else None
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        full_data = {
+            "location": location,
+            "latitude": lat,
+            "longitude": lon,
+            "weather_code": weather["weather_code"],
+            "temperature": weather["temperature"],
+            "humidity": weather["humidity"],
+            "wind_speed": weather["wind_speed"],
+            "fetched_at": now_iso,
+        }
+    except Exception:
+        return cache if cache else None
+
+    # 缓存写入失败不影响数据返回（fail-open）
+    try:
+        _write_cache(None, full_data)
+    except Exception:
+        pass
+    return full_data
+
+
+# ---------------------------------------------------------------------------
+# Public entry points
+# ---------------------------------------------------------------------------
 
 
 def _weather_context(config: dict) -> str | None:
-    """[STUB] 获取天气上下文字符串（直接注入格式）。"""
-    raise NotImplementedError
+    """获取天气上下文字符串（直接注入格式）。
+
+    Returns:
+        "🌤 北京 晴 26°C" or None（API失败且无缓存/未配置location）
+    """
+    data = _get_weather_data(config)
+    if data is None:
+        return None
+    detail = config.get("detail", "brief")
+    label = config.get("label", "🌤")
+    return _format_weather(data, detail, label)
 
 
 def _weather_context_for_narrative(config: dict) -> str | None:
-    """[STUB] 获取天气上下文字符串（转译格式）。"""
-    raise NotImplementedError
+    """获取天气上下文字符串（转译格式）。
+
+    Returns:
+        "晴，26°C，湿度45%" or None
+    """
+    data = _get_weather_data(config)
+    if data is None:
+        return None
+    detail = config.get("detail", "brief")
+    return _format_weather_narrative(data, detail)
