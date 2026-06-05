@@ -23,6 +23,7 @@ from dynamic_rules import (
 )
 from expression_vector import _ExpressionVector, _is_background_message
 from variance import _randomize_variance
+from weather import _weather_context, _weather_context_for_narrative
 
 # ---------------------------------------------------------------------------
 # Pending debug block for transform_llm_output hook
@@ -57,6 +58,13 @@ _MODULE_REGISTRY: dict[str, dict] = {
         "phase": 1,
         "legacy_key": "time",
         "legacy_path": ("time", "enabled"),
+    },
+    "weather": {
+        "description": "天气上下文注入",
+        "default": False,
+        "phase": 1,
+        "legacy_key": None,
+        "legacy_path": None,
     },
     "static_rules": {
         "description": "静态规则注入（context.rules + rules_first_turn_only）",
@@ -331,6 +339,15 @@ def _debug_summary(
     else:
         lines.append("  ① 🕐 已停用")
 
+    # ①b Weather
+    if _is_enabled(modules, "weather"):
+        if any(p.startswith("🌤") for p in parts):
+            lines.append("  ① 🌤 天气已注入")
+        else:
+            lines.append("  ① 🌤 未配置/API失败")
+    else:
+        lines.append("  ① 🌤 已停用")
+
     # ② Static rules
     if _is_enabled(modules, "static_rules"):
         rule_count = _count_static_rules_in_parts(parts)
@@ -449,6 +466,21 @@ def _detailed_summary(
         lines.append(f"  ① 🕐 {_t('modules.time.injected')}")
     else:
         lines.append(f"  ① 🕐 {_t('modules.time.stopped')}")
+
+    # ①b Weather
+    if _is_enabled(modules, "weather"):
+        weather_parts = [p for p in parts if p.startswith("🌤")]
+        weather_info = debug_context.get("weather", {})
+        if weather_parts:
+            lines.append(f"  ① 🌤 {weather_parts[0]}")
+            cache_state = weather_info.get("cache_state", "未知")
+            api_state = weather_info.get("api_state", "未知")
+            lines.append(f"      缓存: {cache_state}")
+            lines.append(f"      API: {api_state}")
+        else:
+            lines.append("  ① 🌤 未配置/API失败")
+    else:
+        lines.append("  ① 🌤 已停用")
 
     # ② Static rules
     if _is_enabled(modules, "static_rules"):
@@ -966,6 +998,7 @@ def _assemble_narrative(
     weekday: str,
     current_time: str,
     time_slot_desc: str,
+    weather_desc: str | None,
     today_turn: int,
     turn_stage_hint: str | None,
     top3: list[tuple[str, float, str]],
@@ -974,15 +1007,18 @@ def _assemble_narrative(
 ) -> str:
     """将分散的模块注入数据拼装为一段流畅的自然语言指令。
 
-    各数据源独立，缺失项优雅跳过（不抛异常、不输出该段落）。
+    各数据源独立，缺失项优雅跳过。
+    weather_desc 为 None 时不输出天气段落。
     """
     lines: list[str] = []
 
-    # ── ① 时间感知 + 时段规则 ──
+    # ── ① 时间感知 + 时段规则 + 天气 ──
+    time_line = f"现在时间是：{weekday}，{current_time}。"
+    if weather_desc:
+        time_line += f" 当地天气：{weather_desc}。"
     if time_slot_desc:
-        lines.append(f"现在时间是：{weekday}，{current_time}。{time_slot_desc}")
-    else:
-        lines.append(f"现在时间是：{weekday}，{current_time}。")
+        time_line += f" {time_slot_desc}"
+    lines.append(time_line)
 
     # ── ② 轮数追踪 + 轮数阶段 ──
     if today_turn > 0:
@@ -1079,6 +1115,7 @@ def inject_context(
         _top3: list[tuple[str, float, str]] = []
         _variance_items: list[str] = []
         _filtered_rules: list[str] = []
+        _weather_desc: str | None = None
 
         # 1. Time context
         if _is_enabled(modules, "time"):
@@ -1089,6 +1126,16 @@ def inject_context(
             else:
                 fmt = time_cfg.get("format", "cn_full")
                 parts.append(_time_context(fmt))
+
+        # 1b. Weather context
+        if _is_enabled(modules, "weather"):
+            weather_cfg = config.get("weather", {})
+            if _translate_mode:
+                _weather_desc = _weather_context_for_narrative(weather_cfg)
+            else:
+                weather_text = _weather_context(weather_cfg)
+                if weather_text:
+                    parts.append(weather_text)
 
         # 2. Static rules
         static_rules: list[str] = []
@@ -1339,6 +1386,7 @@ def inject_context(
                 weekday=_weekday_cn,
                 current_time=_current_time,
                 time_slot_desc=_time_slot_desc,
+                weather_desc=_weather_desc,
                 today_turn=_today_turn,
                 turn_stage_hint=_turn_stage_hint,
                 top3=_top3,
@@ -1350,6 +1398,28 @@ def inject_context(
         # Record non-debug content count before debug injection
         non_debug_count = len(parts)
 
+        # 收集 weather debug 状态（用于 detailed 模式）
+        weather_debug: dict[str, str] = {}
+        if _is_enabled(modules, "weather"):
+            weather_cfg = config.get("weather", {})
+            location = weather_cfg.get("location", "").strip()
+            if not location:
+                weather_debug = {"cache_state": "未配置", "api_state": "-"}
+            else:
+                weather_injected = any(p.startswith("🌤") for p in parts)
+                if weather_injected:
+                    from weather import _read_cache, _should_refresh
+                    cache = _read_cache()
+                    if _should_refresh(cache, weather_cfg, location):
+                        weather_debug = {
+                            "cache_state": "已过期-刷新" if cache else "无缓存-新建",
+                            "api_state": "已调用",
+                        }
+                    else:
+                        weather_debug = {"cache_state": "有效-跳过", "api_state": "未调用"}
+                else:
+                    weather_debug = {"cache_state": "API失败", "api_state": "失败"}
+
         # 7. Debug summary → stored to _PENDING_DEBUG_BLOCK, appended by transform_llm_output
         global _PENDING_DEBUG_BLOCK
         _PENDING_DEBUG_BLOCK = None
@@ -1359,6 +1429,7 @@ def inject_context(
                 "fixed_signals": debug_fs,
                 "expression_vector": debug_ev,
                 "variance": {"items": var_context_items},
+                "weather": weather_debug,
                 "static_rules": static_rules,
                 "dynamic_rules": dynamic_rules,
             }
