@@ -16,9 +16,9 @@ import injector
 
 class TestModuleRegistry:
     def test_all_expected_modules_registered(self):
-        """_MODULE_REGISTRY must contain 10 module keys."""
+        """_MODULE_REGISTRY must contain 11 module keys."""
         registry = injector._MODULE_REGISTRY
-        expected_keys = {"time", "static_rules", "dynamic", "fixed_signals", "expression_vector", "variance", "memory", "kanban", "debug", "translate"}
+        expected_keys = {"time", "weather", "static_rules", "dynamic", "fixed_signals", "expression_vector", "variance", "memory", "kanban", "debug", "translate"}
         assert set(registry.keys()) == expected_keys
 
     def test_each_module_has_required_fields(self):
