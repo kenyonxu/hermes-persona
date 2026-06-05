@@ -894,7 +894,7 @@ def _daily_turn_count_hint(fixed_cfg: dict, profile_path: str = "") -> str | Non
 
 
 # ---------------------------------------------------------------------------
-# Stub functions (P2 / P3)
+# Memory & Kanban helpers
 # ---------------------------------------------------------------------------
 
 
@@ -1091,6 +1091,7 @@ def inject_context(
         4.  Random variance
         5.  Memory recall
         6.  Kanban status (first-turn only)
+        7.  Debug summary (appended to LLM output via transform_llm_output hook)
 
     Returns {"context": "<assembled string>"} or None when there is nothing
     to inject.
@@ -1328,7 +1329,7 @@ def inject_context(
                 pass  # fail-open：表达向量失败不阻断后续注入
         # ──────────────────────────────────────────────────
 
-        # 5. Random variance
+        # 4. Random variance
         var_count = 0
         var_results = []
         if _is_enabled(modules, "variance"):
