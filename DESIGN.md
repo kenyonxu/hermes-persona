@@ -51,16 +51,19 @@ plugins/hermes-persona/
 
 `injector.py` 和 `guard.py` 统一通过此函数加载配置，避免重复维护多套路径逻辑。状态文件（`expression_vector.json`、`daily_turn_count.json`）默认写入 `state/`，若旧路径存在状态文件则自动读取并在首次 `save()` 时迁移到新路径。
 
-## 七大模块设计
+## 模块设计
 
 | 模块 | 配置节点 | 设计理由 |
 |------|---------|---------|
 | 时间感知 | `time` | 基础上下文，成本 < 1ms |
+| 天气注入 | `weather` | 通过 Open-Meteo API 获取实时天气，文件缓存，fail-open |
 | 静态规则 | `context.rules` | 每轮生效的硬约束——角色身份、语言禁忌 |
 | 首轮专属 | `context.rules_first_turn_only` | 避免开场白每轮重复 |
 | 时段动态 | `dynamic.time_slots` | 同一角色在不同时段应有不同表现 |
 | 轮数动态 | `dynamic.turn_stage` | 长对话中自然深化语气 |
 | 关键词匹配 | `dynamic.keywords` | 场景驱动，按需注入——省 token |
+| 固定信号 | `fixed_signals` | 消息长度/回复间隔/每日轮数自动检测 |
+| 表达向量 | `expression_vector` | 多维度话题追踪 + 分数衰减 |
 | 随机变化 | `variance` | 打破机械感，同一场景不同表达 |
 | 记忆召回 | `memory` | 可插拔的外部记忆 API |
 | 看板注入 | `project` | 首轮注入项目上下文 |

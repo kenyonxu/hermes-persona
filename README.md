@@ -60,6 +60,7 @@ hermes plugins list | grep persona   # 验证
   "hermes-persona": {
     "modules": {
       "time": true,
+      "weather": false,
       "static_rules": true,
       "dynamic": {
         "time_slots": true,
@@ -83,6 +84,7 @@ hermes plugins list | grep persona   # 验证
 | 模块 | 类型 | 说明 |
 |------|------|------|
 | `time` | bool | 时间感知注入 |
+| `weather` | bool | 天气上下文注入（需配置 `weather.location`） |
 | `static_rules` | bool | 静态行为守则注入 |
 | `dynamic.time_slots` | bool | 时段规则（深夜/早晨等） |
 | `dynamic.turn_stage` | bool | 轮数阶段规则 |
@@ -115,6 +117,32 @@ hermes plugins list | grep persona   # 验证
 | `format` | `"cn_full"` | `2026年5月22日 周五 11:30` |
 
 > 当 `translate` 模式开启时，时间以自然语言形式拼入人格自述，而非独立注入行。
+
+---
+
+### 天气感知（`weather`）
+
+通过 Open-Meteo 免费 API 获取指定城市的实时天气，注入到每轮对话上下文。支持文件缓存减少 API 调用。
+
+```json
+{
+  "weather": {
+    "location": "北京",
+    "detail": "brief",
+    "cache_ttl_minutes": 30,
+    "label": "🌤"
+  }
+}
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `location` | string | `""` | 城市名（中文），为空时不注入天气 |
+| `detail` | string | `"brief"` | `"brief"` 仅温度 + 天气，`"full"` 含湿度 + 风力 |
+| `cache_ttl_minutes` | int | `30` | 缓存有效期（分钟），过期后重新调用 API |
+| `label` | string | `"🌤"` | 直接注入模式下的前缀 emoji |
+
+> 天气数据通过文件缓存（`state/weather_cache.json`）减少 API 调用。location 变更时自动刷新。API 失败时回退旧缓存，完全无缓存时静默跳过——不影响 Agent 正常运行。
 
 ---
 
@@ -366,7 +394,7 @@ hermes plugins list | grep persona   # 验证
 - 关闭时：LLM 收到 `☀️ 早晨——语气清爽` `🦊 狐耳轻轻抖动` 等分散指令
 - 开启时：LLM 收到一段流畅的散文——「现在是周五上午，今天已经聊了165轮…」
 
-转译模板：时间 + 轮数 + 状态 + 随机变化 + 行为守则 → 拼装为单一人格自述。
+转译模板：时间 + 天气 + 轮数 + 状态 + 随机变化 + 行为守则 → 拼装为单一人格自述。
 
 > 开启 translate 后，各模块不再独立输出带 emoji 标记的指令行，统一由 `_assemble_narrative()` 编织为一段自然语言段落。`turn_stage` 的轮数来源也切换为每日跨会话累积轮数（从磁盘状态文件读取），而非会话内轮数。
 
@@ -465,7 +493,8 @@ plugins/hermes-persona/
 │   └── zh.json
 ├── state/                       ← 运行时自动生成（不入版本控制）
 │   ├── expression_vector.json
-│   └── daily_turn_count.json
+│   ├── daily_turn_count.json
+│   └── weather_cache.json
 └── examples/
     └── persona-config.json      ← 完整配置模板
 ```

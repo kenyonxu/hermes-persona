@@ -74,12 +74,15 @@ US 审批 → 切 feature 分支 → SPEC → PLAN → CODE → 测试通过
 pre_llm_call hook
   ↓
 inject_context()
-  ├── _time_context()          → ① 时间感知
-  ├── _inject_static_rules()   → ② 静态规则（每轮注入）
-  ├── _select_dynamic_rules()  → ③ 动态规则（时段/轮数/关键词）
-  ├── _randomize_variance()    → ④ 随机变化
-  ├── _recall_memories()       → ⑤ 记忆召回
-  └── _read_kanban()           → ⑥ 看板注入（仅首轮）
+  ├── _time_context()            → ① 时间感知
+  ├── _weather_context()         → ①b 天气注入
+  ├── _inject_static_rules()     → ② 静态规则（每轮注入）
+  ├── _select_dynamic_rules()    → ③ 动态规则（时段/轮数/关键词）
+  ├── _fixed_signals             → ④a 固定信号
+  ├── _expression_vector         → ④b 表达向量
+  ├── _randomize_variance()      → ④ 随机变化
+  ├── _recall_memories()         → ⑤ 记忆召回
+  └── _read_kanban()             → ⑥ 看板注入（仅首轮）
   ↓
 系统提示上下文
 ```

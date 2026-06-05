@@ -5,6 +5,23 @@
 
 # Changelog
 
+## [1.1.0] — 2026-06-05
+
+> 天气上下文注入模块。通过 Open-Meteo 免费 API 获取实时天气，融入每轮 LLM 上下文。
+
+### 新增
+
+- **天气感知注入**：新增 `weather` 独立模块，通过 Open-Meteo 免费 API 获取指定城市实时天气并注入到每轮对话上下文。
+- **文件缓存**：天气数据写入 `state/weather_cache.json`，通过 `_should_refresh()` 统一决策（TTL + location 变更 + 缓存损坏）减少 API 调用。
+- **双模式输出**：直接注入（emoji 前缀行）和 translate 转译（自然融入叙事时间行）两种模式均支持。
+- **fail-open 设计**：API 失败回退旧缓存，无缓存时静默跳过——任何异常不阻断注入链。
+- **Debug 诊断**：compact 和 detailed 模式均显示天气注入状态，detailed 模式额外展示缓存/API 状态。
+- **WMO 码映射 + Beaufort 风力转换**：纯函数驱动，完整测试覆盖。
+
+### 改进
+
+- 文档全面同步：CLAUDE.md、AGENTS.md、README、DESIGN、CONFIG_REFERENCE 等架构文档注入顺序和模块表已更新至最新状态。
+
 ## [1.0.0] — 2026-05-22
 
 > 首个正式发布。从模块化引擎到注入规则转译，hermes-persona 已为生产环境做好准备。

@@ -84,6 +84,7 @@ Each feature module can be toggled independently. Disabled modules are skipped e
   "hermes-persona": {
     "modules": {
       "time": true,
+      "weather": false,
       "static_rules": true,
       "dynamic": {
         "time_slots": true,
@@ -107,6 +108,7 @@ Each feature module can be toggled independently. Disabled modules are skipped e
 | Module | Type | Description |
 |--------|------|-------------|
 | `time` | bool | Time awareness injection |
+| `weather` | bool | Weather context injection (requires `weather.location`) |
 | `static_rules` | bool | Static behavioral rule injection |
 | `dynamic.time_slots` | bool | Time-slot rules (late night / morning etc.) |
 | `dynamic.turn_stage` | bool | Turn-stage rules based on conversation length |
@@ -139,6 +141,32 @@ Injects the current date and time on every turn. The Agent can distinguish morni
 | `format` | `"cn_full"` | `2026年5月22日 周五 11:30` |
 
 > When `translate` mode is enabled, the time is woven into the personality narrative as natural language rather than injected as a standalone line.
+
+---
+
+### Weather Awareness (`weather`)
+
+Fetches real-time weather for a specified city via the free Open-Meteo API and injects it into each turn's context. Uses file-based caching to minimize API calls.
+
+```json
+{
+  "weather": {
+    "location": "Beijing",
+    "detail": "brief",
+    "cache_ttl_minutes": 30,
+    "label": "🌤"
+  }
+}
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `location` | string | `""` | City name. Weather injection is skipped when empty |
+| `detail` | string | `"brief"` | `"brief"` = temperature + weather only, `"full"` = includes humidity + wind level |
+| `cache_ttl_minutes` | int | `30` | Cache TTL in minutes; API is re-called when expired |
+| `label` | string | `"🌤"` | Prefix emoji used in direct injection mode |
+
+> Weather data is cached to `state/weather_cache.json` to reduce API calls. Cache auto-refreshes when the location changes. Falls back to stale cache on API failure; silently skips if there is no cache at all — never blocks the Agent.
 
 ---
 
@@ -398,7 +426,7 @@ When enabled, the engine automatically translates internal rules (emoji-prefixed
 - **Disabled**: The LLM receives scattered directives like `☀️ Morning — keep tone fresh` `🦊 fox ears twitch slightly`
 - **Enabled**: The LLM receives a single flowing paragraph — "It is Friday morning, we have talked for 165 turns today..."
 
-Translation template: time + turn count + status + random variance + behavioral rules → assembled into a single personality self-narrative.
+Translation template: time + weather + turn count + status + random variance + behavioral rules → assembled into a single personality self-narrative.
 
 > When translate is enabled, individual modules no longer output separate emoji-prefixed directive lines — everything is unified by `_assemble_narrative()` into a single natural-language paragraph. The `turn_stage` turn count source also switches to cumulative daily turns across sessions (read from the on-disk state file) rather than in-session turns.
 
@@ -489,19 +517,20 @@ Injects external kanban/project-board status on the first turn, helping the Agen
 
 | # | Module | Config Key | Description |
 |---|--------|-----------|-------------|
-| 1 | Master Switch | `modules` | Independent toggles for all 13 modules |
+| 1 | Master Switch | `modules` | Independent toggles for all 14 modules |
 | 2 | Time Awareness | `time` | Injects current date/time each turn; supports `cn_full` format |
-| 3 | Static Rules | `context` | `rules` (every turn) + `rules_first_turn_only` (first turn) |
-| 4 | Dynamic Rules | `dynamic` | Time-slot / turn-stage / keyword-triggered rule injection |
-| 5 | Expression Vector | `expression_vector` | Multi-dimensional topic tracking with configurable `score_rules` and decay |
-| 6 | Fixed Signals | `fixed_signals` | Auto-detection: message length, reply gap, daily turn count |
-| 7 | Random Variance | `variance` | Probabilistic body language, catchphrases, speech quirks |
-| 8 | Guardrails | `guard` | Tool-call safety: block / require-confirmation rules + audit logging |
-| 9 | Translate | `translate` | Converts emoji-prefixed directives into natural-language self-narrative |
-| 10 | Source Filter | `sources_blacklist` | Excludes non-conversational sources from personality injection |
-| 11 | Debug | `debug` | Appends injection breakdown to LLM output (basic/detailed modes) |
-| 12 | i18n | `locales` | Multi-language support via locale JSON files |
-| 13 | Kanban | `project` | First-turn project board status injection |
+| 3 | Weather | `weather` | Real-time weather via Open-Meteo API with file-based caching |
+| 4 | Static Rules | `context` | `rules` (every turn) + `rules_first_turn_only` (first turn) |
+| 5 | Dynamic Rules | `dynamic` | Time-slot / turn-stage / keyword-triggered rule injection |
+| 6 | Expression Vector | `expression_vector` | Multi-dimensional topic tracking with configurable `score_rules` and decay |
+| 7 | Fixed Signals | `fixed_signals` | Auto-detection: message length, reply gap, daily turn count |
+| 8 | Random Variance | `variance` | Probabilistic body language, catchphrases, speech quirks |
+| 9 | Guardrails | `guard` | Tool-call safety: block / require-confirmation rules + audit logging |
+| 10 | Translate | `translate` | Converts emoji-prefixed directives into natural-language self-narrative |
+| 11 | Source Filter | `sources_blacklist` | Excludes non-conversational sources from personality injection |
+| 12 | Debug | `debug` | Appends injection breakdown to LLM output (basic/detailed modes) |
+| 13 | i18n | `locales` | Multi-language support via locale JSON files |
+| 14 | Kanban | `project` | First-turn project board status injection |
 
 ---
 
@@ -517,7 +546,8 @@ plugins/hermes-persona/
 │   └── zh.json
 ├── state/                       ← Auto-generated at runtime (do not version-control)
 │   ├── expression_vector.json
-│   └── daily_turn_count.json
+│   ├── daily_turn_count.json
+│   └── weather_cache.json
 └── examples/
     └── persona-config.json      ← Full config template
 ```

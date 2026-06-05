@@ -948,3 +948,122 @@ class TestDebugModes:
         config = {"debug": {}}  # no detail key
         summary = _debug_summary(modules, [], config=config)
         assert "🔧 [Debug] 本轮注入:" in summary
+
+
+# ── Weather integration ─────────────────────────────────────────────────
+
+
+class TestWeatherInjection:
+    def test_weather_disabled_by_default(self, temp_config_root, write_config,
+                                          inject_context_defaults):
+        """weather 默认关闭，不注入天气。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {},
+                "weather": {"location": "北京", "detail": "brief", "label": "🌤"},
+            }
+        })
+        result = inject_context(**inject_context_defaults)
+        if result:
+            assert "🌤" not in result["context"]
+
+    def test_weather_enabled_injects(self, temp_config_root, write_config,
+                                      inject_context_defaults):
+        """weather 开启且有 location 时注入天气。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {"weather": True, "time": True},
+                "weather": {"location": "北京", "detail": "brief", "label": "🌤"},
+                "time": {"enabled": True, "format": "cn_full"},
+            }
+        })
+        with patch("weather._get_weather_data") as mock_get:
+            mock_get.return_value = {
+                "weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 12.5, "location": "北京",
+            }
+            result = inject_context(**inject_context_defaults)
+            assert result is not None
+            assert "🌤" in result["context"]
+            assert "北京" in result["context"]
+
+    def test_weather_no_location_skips(self, temp_config_root, write_config,
+                                        inject_context_defaults):
+        """location 为空时不注入天气。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {"weather": True, "time": True},
+                "weather": {"location": "", "detail": "brief", "label": "🌤"},
+                "time": {"enabled": True, "format": "cn_full"},
+            }
+        })
+        result = inject_context(**inject_context_defaults)
+        if result:
+            assert "🌤" not in result["context"]
+
+    def test_weather_translate_mode(self, temp_config_root, write_config,
+                                     inject_context_defaults):
+        """translate 模式下天气融入自然语言。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {"weather": True, "time": True, "translate": True,
+                            "dynamic": False},
+                "weather": {"location": "北京", "detail": "brief", "label": "🌤"},
+                "time": {"enabled": True, "format": "cn_full"},
+                "context": {},
+            }
+        })
+        with patch("weather._get_weather_data") as mock_get:
+            mock_get.return_value = {
+                "weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 12.5, "location": "北京",
+            }
+            result = inject_context(**inject_context_defaults)
+            assert result is not None
+            assert "当地天气" in result["context"]
+            assert "晴" in result["context"]
+
+    def test_weather_injection_order(self, temp_config_root, write_config,
+                                      inject_context_defaults):
+        """天气在时间之后、静态规则之前注入。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {"weather": True, "time": True, "static_rules": True},
+                "weather": {"location": "北京", "detail": "brief", "label": "🌤"},
+                "time": {"enabled": True, "format": "cn_full"},
+                "context": {"rules": ["测试规则"]},
+            }
+        })
+        with patch("weather._get_weather_data") as mock_get:
+            mock_get.return_value = {
+                "weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 12.5, "location": "北京",
+            }
+            result = inject_context(**inject_context_defaults)
+            assert result is not None
+            ctx = result["context"]
+            time_pos = ctx.index("🕐")
+            weather_pos = ctx.index("🌤")
+            rule_pos = ctx.index("测试规则")
+            assert time_pos < weather_pos < rule_pos
+
+    def test_weather_debug_compact(self, temp_config_root, write_config,
+                                    inject_context_defaults):
+        """compact debug 模式显示天气注入状态。"""
+        write_config({
+            "hermes-persona": {
+                "modules": {"weather": True, "time": True, "debug": True},
+                "weather": {"location": "北京", "detail": "brief", "label": "🌤"},
+                "time": {"enabled": True, "format": "cn_full"},
+                "debug": {"detail": "compact"},
+            }
+        })
+        with patch("weather._get_weather_data") as mock_get:
+            mock_get.return_value = {
+                "weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 12.5, "location": "北京",
+            }
+            injector.inject_context(**inject_context_defaults)
+            debug_block = injector._PENDING_DEBUG_BLOCK
+            assert debug_block is not None
+            assert "🌤" in debug_block

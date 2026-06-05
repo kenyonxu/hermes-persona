@@ -13,6 +13,7 @@
   "hermes-persona": {
     "modules": { ... },
     "time": { ... },
+    "weather": { ... },
     "context": { ... },
     "dynamic": { ... },
     "expression_vector": { ... },
@@ -36,6 +37,7 @@ Controls enable/disable for each functional module. Disabled modules are not exe
 | Field | Type | Default | Description |
 |:---|:---|:---|:---|
 | `time` | `boolean` | `true` | Time context injection |
+| `weather` | `boolean` | `false` | Weather context injection (requires `weather.location`) |
 | `static_rules` | `boolean` | `true` | Static behavior rules injection |
 | `dynamic` | `boolean` or `object` | `true` | Dynamic rules master switch. Set to `false` to disable all sub-channels. |
 | `dynamic.time_slots` | `boolean` | `true` | Time slot sub-channel |
@@ -58,6 +60,7 @@ Controls enable/disable for each functional module. Disabled modules are not exe
 {
   "modules": {
     "time": true,
+    "weather": false,
     "static_rules": true,
     "dynamic": { "time_slots": true, "turn_stage": false, "keyword": true },
     "expression_vector": true,
@@ -103,6 +106,39 @@ Unknown format values automatically fall back to `"cn_full"`.
   }
 }
 ```
+
+---
+
+## weather — Weather Injection
+
+Fetches real-time weather for a specified city via the free Open-Meteo API and injects it into each turn's context. Uses file-based caching to minimize API calls.
+
+| Field | Type | Default | Description |
+|:---|:---|:---|:---|
+| `location` | `string` | `""` | City name. Weather injection is skipped when empty |
+| `detail` | `string` | `"brief"` | `"brief"` = temperature + weather description only; `"full"` = includes humidity + wind level |
+| `cache_ttl_minutes` | `integer` | `30` | File cache TTL in minutes; API is re-called when expired |
+| `label` | `string` | `"🌤"` | Prefix emoji used in direct injection mode (not used in translate mode) |
+
+### Example
+
+```json
+{
+  "weather": {
+    "location": "Beijing",
+    "detail": "brief",
+    "cache_ttl_minutes": 30,
+    "label": "🌤"
+  }
+}
+```
+
+### Caching Strategy
+
+- Cache path: `state/weather_cache.json` (inside the plugin directory)
+- `_should_refresh()` unified decision: no cache / TTL expired / location changed / corrupt fetched_at → re-fetch from API
+- Geocoding coordinates are reused: no duplicate queries for the same city
+- API failure fallback: returns stale cache if available; silently skips if there is no cache at all (fail-open)
 
 ---
 
@@ -539,6 +575,7 @@ The final context for each turn is assembled in the following fixed order (not c
 
 ```
 ① time             — Time context (skipped as standalone line in translate mode)
+①b weather         — Weather injection (woven into narrative in translate mode)
 ② static_rules     — Static rules (every turn + first-turn-only)
 ③ dynamic          — Dynamic rules (time_slots -> turn_stage -> keyword)
 ④a fixed_signals   — Fixed signals (message_length -> reply_gap -> daily_turn_count)
