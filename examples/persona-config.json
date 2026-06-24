@@ -22,7 +22,10 @@
       "location": "",
       "detail": "brief",
       "cache_ttl_minutes": 30,
-      "label": "🌤"
+      "label": "🌤",
+      "validation": {
+        "thunderstorm_wind_check": true
+      }
     },
     "context": {
       "rules": [
