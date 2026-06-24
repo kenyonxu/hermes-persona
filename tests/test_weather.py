@@ -1,5 +1,6 @@
 """Tests for weather.py — pure functions and mocked integration."""
 import json
+import os
 import tempfile
 import urllib.error
 from datetime import datetime, timedelta, timezone
@@ -599,7 +600,7 @@ class TestGetDebugState:
         _get_weather_data({"location": "北京", "cache_ttl_minutes": 30})
         from weather import _get_debug_state
         state = _get_debug_state()
-        assert state["cache_state"] == "已刷新"
+        assert state["cache_state"] == "openmeteo-正常"
         assert state["api_state"] == "正常"
 
     @patch("weather._read_cache")
@@ -621,20 +622,27 @@ class TestGetDebugState:
 # ── _get_weather_data suspicious integration ───────────────────────────
 
 class TestGetWeatherDataSuspicious:
+    @patch("weather.WttrProvider.fetch")
     @patch("weather._write_cache")
     @patch("weather._fetch_weather")
     @patch("weather._geocode")
     @patch("weather._read_cache")
     @patch("weather._should_refresh")
     def test_thunderstorm_low_wind_marked_suspicious(self, mock_refresh, mock_read,
-                                                      mock_geocode, mock_fetch, mock_write):
-        """深圳雷暴+低风力场景：full_data 应标记 suspicious=True。"""
-        mock_read.return_value = None
+                                                      mock_geocode, mock_fetch, mock_write,
+                                                      mock_wttr_fetch):
+        """深圳雷暴+低风力场景：primary 可疑 + fallback 失败 → 回退缓存标记 suspicious=True。"""
+        mock_read.return_value = {
+            "location": "深圳", "temperature": 27.9, "humidity": 91,
+            "weather_code": 95, "wind_speed": 10.0,
+            "fetched_at": "2026-06-24T00:00:00",
+        }
         mock_refresh.return_value = True
         mock_geocode.return_value = (22.55, 114.07)
         mock_fetch.return_value = {
             "temperature": 27.9, "humidity": 91, "weather_code": 95, "wind_speed": 10.0,
         }
+        mock_wttr_fetch.return_value = None  # fallback 也失败
         result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
         assert result is not None
         assert result["suspicious"] is True
@@ -905,7 +913,7 @@ class TestMultiSourceFallback:
         result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
         assert result is not None
         assert result["weather_code"] == 95
-        assert result["source"] == "openmeteo"  # 用主力源
+        assert result["source"] == "wttr"  # fallback 源 + 交叉校验一致
         assert result["cross_validated"] is True  # 双源确认
         assert result["suspicious"] is False
 
@@ -983,3 +991,73 @@ class TestWttrProviderInheritance:
 
     def test_is_weather_provider_subclass(self):
         assert issubclass(WttrProvider, WeatherProvider)
+
+
+# ── Provider 注册表 ──────────────────────────────────────────────────────
+
+
+class TestProviderRegistry:
+    def test_get_known_provider_openmeteo(self):
+        from weather import _get_provider
+        provider = _get_provider("openmeteo")
+        assert provider is not None
+        assert provider.name == "openmeteo"
+        assert isinstance(provider, WeatherProvider)
+
+    def test_get_wttr_provider(self):
+        from weather import _get_provider
+        provider = _get_provider("wttr")
+        assert provider is not None
+        assert provider.name == "wttr"
+        assert isinstance(provider, WeatherProvider)
+
+    def test_get_unknown_provider_returns_none(self):
+        from weather import _get_provider
+        assert _get_provider("nonexistent") is None
+
+    def test_get_keyed_provider_without_key_returns_none(self):
+        """keyed provider 缺少环境变量时返回 None。"""
+        from weather import _get_provider, _PROVIDER_REGISTRY, WeatherProvider
+
+        # 手动注册一个测试 keyed provider
+        class FakeKeyedProvider(WeatherProvider):
+            name = "fake-keyed"
+            requires_key = True
+            env_var = "FAKE_KEY"
+
+            def fetch(self, lat, lon):
+                return None
+
+            def normalize(self, raw):
+                return None
+
+        _PROVIDER_REGISTRY["fake-keyed"] = FakeKeyedProvider
+        try:
+            with patch.dict(os.environ, {}, clear=True):
+                assert _get_provider("fake-keyed") is None
+        finally:
+            del _PROVIDER_REGISTRY["fake-keyed"]
+
+    def test_get_keyed_provider_with_key_returns_instance(self):
+        """环境变量存在时 keyed provider 返回有效实例。"""
+        from weather import _get_provider, _PROVIDER_REGISTRY, WeatherProvider
+
+        class FakeKeyedProvider(WeatherProvider):
+            name = "fake-keyed"
+            requires_key = True
+            env_var = "FAKE_KEY"
+
+            def fetch(self, lat, lon):
+                return None
+
+            def normalize(self, raw):
+                return None
+
+        _PROVIDER_REGISTRY["fake-keyed"] = FakeKeyedProvider
+        try:
+            with patch.dict(os.environ, {"FAKE_KEY": "test-key"}):
+                provider = _get_provider("fake-keyed")
+                assert provider is not None
+                assert provider.name == "fake-keyed"
+        finally:
+            del _PROVIDER_REGISTRY["fake-keyed"]

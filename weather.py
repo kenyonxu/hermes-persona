@@ -7,6 +7,7 @@ Fail-open on any API/IO error — never blocks the injection chain.
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -383,6 +384,132 @@ def _get_debug_state() -> dict[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# Provider registry + scheduling
+# ---------------------------------------------------------------------------
+
+# 内置 keyless provider 注册表（keyed provider 惰性导入后追加）
+_PROVIDER_REGISTRY: dict[str, type[WeatherProvider]] = {
+    "openmeteo": OpenMeteoProvider,
+    "wttr": WttrProvider,
+}
+
+
+def _get_provider(name: str) -> WeatherProvider | None:
+    """根据标识符获取 provider 实例。
+
+    - 内置 keyless provider：直接实例化
+    - keyed provider：检查环境变量，不存在则返回 None
+    - 未知标识符：返回 None
+    """
+    cls = _PROVIDER_REGISTRY.get(name)
+    if cls is None:
+        return None
+
+    instance = cls()
+    if instance.requires_key:
+        env_var = getattr(instance, "env_var", "")
+        if env_var:
+            key = os.environ.get(env_var, "").strip()
+            if not key:
+                return None
+    return instance
+
+
+def _resolve_coords(cache: dict | None, location: str) -> tuple[float | None, float | None]:
+    """从缓存或 geocode 解析坐标。返回 (lat, lon) 或 (None, None)。"""
+    if cache and cache.get("location") == location:
+        lat = cache.get("latitude")
+        lon = cache.get("longitude")
+        if lat is not None and lon is not None:
+            return lat, lon
+    coords = _geocode(location)
+    return coords if coords else (None, None)
+
+
+def _try_provider(
+    provider: WeatherProvider | None,
+    lat: float,
+    lon: float,
+    config: dict,
+    role: str,
+    primary_data: dict | None = None,
+) -> dict | None:
+    """调用单个 provider，通过校验则返回数据。
+
+    - provider 不可用（keyed 源缺少环境变量）→ 返回 None
+    - API 成功 + 校验通过 → 写缓存，返回数据（suspicious=False）
+    - API 成功 + 校验不通过：
+        - role=="primary" → 返回 None（让管道走 fallback）
+        - role=="fallback" → 写缓存，返回数据 + suspicious=True
+        - role=="fallback" + primary_data 存在 → 调用 _cross_validate() 交叉校验
+    - API 失败 → 返回 None
+    """
+    if provider is None:
+        return None
+
+    try:
+        data = provider.fetch(lat, lon)
+    except Exception:
+        return None
+
+    if data is None:
+        return None
+
+    suspicious = _validate_weather(data, config.get("validation"))
+
+    if suspicious and role == "primary":
+        # 主力源可疑 → 留给 fallback
+        _LAST_DEBUG_STATE.update(
+            cache_state=f"{provider.name}-可疑-待交叉校验", api_state="正常"
+        )
+        return None
+
+    # 交叉校验（仅 fallback 角色 + 有 primary 数据时执行）
+    cross_validated = False
+    if role == "fallback" and primary_data is not None:
+        if _cross_validate(primary_data, data):
+            cross_validated = True
+            _LAST_DEBUG_STATE.update(
+                cache_state=f"{provider.name}-双源一致", api_state="正常"
+            )
+        else:
+            _LAST_DEBUG_STATE.update(
+                cache_state=f"{provider.name}-交叉校验不一致",
+                api_state="正常",
+                degradation_reason="交叉校验失败：两源天气码或温差超出阈值",
+            )
+
+    # 组装完整数据
+    now_iso = datetime.now(timezone.utc).isoformat()
+    full_data = {
+        "location": config.get("location", "").strip(),
+        "latitude": lat,
+        "longitude": lon,
+        "weather_code": data["weather_code"],
+        "temperature": data["temperature"],
+        "humidity": data["humidity"],
+        "wind_speed": data["wind_speed"],
+        "fetched_at": now_iso,
+        "suspicious": suspicious,
+        "cross_validated": cross_validated,
+        "source": provider.name,
+    }
+
+    try:
+        _write_cache(None, full_data)
+    except Exception:
+        pass
+
+    # 仅在未通过交叉校验设置 debug 状态时更新
+    if not cross_validated and not (role == "fallback" and primary_data is not None):
+        _LAST_DEBUG_STATE.update(
+            cache_state=f"{provider.name}-{'可疑' if suspicious else '正常'}",
+            api_state="正常",
+        )
+    return full_data
+
+
+# ---------------------------------------------------------------------------
 # Cross-validation
 # ---------------------------------------------------------------------------
 
@@ -404,7 +531,7 @@ def _cross_validate(primary_data: dict, fallback_data: dict) -> bool:
 
 
 def _get_weather_data(config: dict) -> dict | None:
-    """获取天气原始数据（共享缓存+API逻辑 + 双源 fallback）。
+    """获取天气原始数据（provider 调度 + 缓存 + 校验 + fallback）。
 
     _weather_context 和 _weather_context_for_narrative 均调用此函数。
 
@@ -417,8 +544,8 @@ def _get_weather_data(config: dict) -> dict | None:
 
     cache = _read_cache()
 
+    # ── 缓存命中路径 ──
     if not _should_refresh(cache, config, location):
-        # 旧缓存可能无 suspicious / source 字段 → 补全
         if "suspicious" not in cache:
             cache["suspicious"] = _validate_weather(cache, config.get("validation"))
         if "source" not in cache:
@@ -426,141 +553,57 @@ def _get_weather_data(config: dict) -> dict | None:
         _LAST_DEBUG_STATE.update(cache_state="有效-跳过", api_state="未调用")
         return cache
 
-    # 需要刷新 → 调 API（双源 fallback）
-    full_data = None
+    # ── API 刷新路径（provider 调度管道）──
+    providers_cfg = config.get("providers", {})
+    primary_name = providers_cfg.get("primary", "openmeteo")
+    fallback_name = providers_cfg.get("fallback", "wttr")
+
+    primary = _get_provider(primary_name)
+    fallback = _get_provider(fallback_name)
+
+    # 解析坐标（fail-open：geocode 异常不阻断管道）
     try:
-        lat = cache.get("latitude") if cache and cache.get("location") == location else None
-        lon = cache.get("longitude") if cache and cache.get("location") == location else None
-
-        if lat is None or lon is None:
-            coords = _geocode(location)
-            if coords is None:
-                # 回退旧缓存仅当 location 一致（避免返回错误城市数据）
-                if cache and cache.get("location") == location:
-                    if "source" not in cache:
-                        cache["source"] = "openmeteo"
-                    _LAST_DEBUG_STATE.update(cache_state="失败-回退缓存", api_state="失败")
-                    return cache
-                _LAST_DEBUG_STATE.update(cache_state="无缓存", api_state="失败")
-                return None
-            lat, lon = coords
-
-        # ── 主力源：Open-Meteo ──
-        primary_data = _fetch_weather(lat, lon)
-
-        if primary_data is not None:
-            suspicious = _validate_weather(primary_data, config.get("validation"))
-            if not suspicious:
-                # 主力源正常 → 直接使用
-                weather = primary_data
-                source = "openmeteo"
-                cross_validated = False
-                _LAST_DEBUG_STATE.update(cache_state="已刷新", api_state="正常")
-            else:
-                # 主力源可疑 → 尝试 wttr.in 交叉校验
-                try:
-                    wttr = WttrProvider()
-                    wttr_data = wttr.fetch(lat, lon)
-                    if wttr_data:
-                        if _cross_validate(primary_data, wttr_data):
-                            # 双源一致 → 用主力源数据，标记双源确认
-                            weather = primary_data
-                            source = "openmeteo"
-                            cross_validated = True
-                            suspicious = False
-                            _LAST_DEBUG_STATE.update(
-                                cache_state="已刷新-双源确认", api_state="正常"
-                            )
-                        else:
-                            # 双源不一致 → 用 wttr.in 数据
-                            weather = wttr_data
-                            source = "wttr"
-                            cross_validated = False
-                            suspicious = False
-                            _LAST_DEBUG_STATE.update(
-                                cache_state="已刷新-wttr", api_state="正常"
-                            )
-                    else:
-                        # wttr 也失败 → 保留主力源数据 + 标记可疑
-                        weather = primary_data
-                        source = "openmeteo"
-                        cross_validated = False
-                        _LAST_DEBUG_STATE.update(cache_state="已刷新", api_state="正常")
-                except Exception:
-                    weather = primary_data
-                    source = "openmeteo"
-                    cross_validated = False
-                    _LAST_DEBUG_STATE.update(cache_state="已刷新", api_state="正常")
-        else:
-            # 主力源失败 → 尝试 wttr.in
-            try:
-                wttr = WttrProvider()
-                wttr_data = wttr.fetch(lat, lon)
-                if wttr_data:
-                    weather = wttr_data
-                    source = "wttr"
-                    cross_validated = False
-                    suspicious = False
-                    _LAST_DEBUG_STATE.update(
-                        cache_state="已刷新-wttr", api_state="正常"
-                    )
-                else:
-                    # 双源失败 → 回退缓存或 None
-                    if cache:
-                        if "source" not in cache:
-                            cache["source"] = "openmeteo"
-                        cache["suspicious"] = True
-                        _LAST_DEBUG_STATE.update(
-                            cache_state="失败-回退缓存", api_state="双源失败"
-                        )
-                        return cache
-                    _LAST_DEBUG_STATE.update(cache_state="无缓存", api_state="双源失败")
-                    return None
-            except Exception:
-                if cache:
-                    if "source" not in cache:
-                        cache["source"] = "openmeteo"
-                    cache["suspicious"] = True
-                    _LAST_DEBUG_STATE.update(
-                        cache_state="失败-回退缓存", api_state="双源失败"
-                    )
-                    return cache
-                _LAST_DEBUG_STATE.update(cache_state="无缓存", api_state="双源失败")
-                return None
-
-        now_iso = datetime.now(timezone.utc).isoformat()
-        full_data = {
-            "location": location,
-            "latitude": lat,
-            "longitude": lon,
-            "weather_code": weather["weather_code"],
-            "temperature": weather["temperature"],
-            "humidity": weather["humidity"],
-            "wind_speed": weather["wind_speed"],
-            "fetched_at": now_iso,
-            "suspicious": suspicious,
-            "source": source,
-            "cross_validated": cross_validated,
-        }
+        lat, lon = _resolve_coords(cache, location)
     except Exception:
-        if cache:
+        lat, lon = None, None
+
+    if lat is None:
+        if cache and cache.get("location") == location:
             if "source" not in cache:
                 cache["source"] = "openmeteo"
-        _LAST_DEBUG_STATE.update(
-            cache_state="失败-回退缓存" if cache else "无缓存", api_state="失败"
-        )
-        return cache if cache else None
+            _LAST_DEBUG_STATE.update(cache_state="失败-回退缓存", api_state="失败")
+            return cache
+        _LAST_DEBUG_STATE.update(cache_state="无缓存", api_state="失败")
+        return None
 
-    # 缓存写入失败不影响数据返回（fail-open）
-    try:
-        _write_cache(None, full_data)
-    except Exception:
-        pass
+    # ── 主力源 ──
+    result = _try_provider(primary, lat, lon, config, "primary")
+    if result:
+        return result
 
-    # 仅在不重复设置时更新（部分分支已在内部更新过 debug state）
-    # 注意：full_data 的组装只在 primary 成功或 fallback 成功的分支中到达，
-    # 此时 debug state 已经在各分支中设置，故此处不再覆盖。
-    return full_data
+    # 主力源可疑或失败 → 获取原始数据用于交叉校验
+    primary_raw = None
+    if primary:
+        try:
+            primary_raw = primary.fetch(lat, lon)
+        except Exception:
+            pass
+
+    # ── 备用源（含交叉校验）──
+    result = _try_provider(fallback, lat, lon, config, "fallback", primary_raw)
+    if result:
+        return result
+
+    # ── 最终回退 ──
+    if cache:
+        cache["suspicious"] = True
+        if "source" not in cache:
+            cache["source"] = "openmeteo"
+        _LAST_DEBUG_STATE.update(cache_state="失败-回退缓存", api_state="双源失败")
+        return cache
+
+    _LAST_DEBUG_STATE.update(cache_state="无缓存", api_state="双源失败")
+    return None
 
 
 # ---------------------------------------------------------------------------
