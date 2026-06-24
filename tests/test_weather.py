@@ -20,6 +20,8 @@ from weather import (
     _weather_context_for_narrative,
     _validate_weather,
     WttrProvider,
+    WeatherProvider,
+    OpenMeteoProvider,
 )
 
 
@@ -906,3 +908,78 @@ class TestMultiSourceFallback:
         assert result["source"] == "openmeteo"  # 用主力源
         assert result["cross_validated"] is True  # 双源确认
         assert result["suspicious"] is False
+
+
+# ── WeatherProvider 基类 + OpenMeteoProvider ─────────────────────────────
+
+
+class TestWeatherProviderBase:
+    def test_base_class_attributes(self):
+        provider = WeatherProvider()
+        assert provider.name == ""
+        assert provider.requires_key is False
+
+    def test_fetch_not_implemented(self):
+        provider = WeatherProvider()
+        with pytest.raises(NotImplementedError):
+            provider.fetch(0, 0)
+
+    def test_normalize_not_implemented(self):
+        provider = WeatherProvider()
+        with pytest.raises(NotImplementedError):
+            provider.normalize({})
+
+    def test_geocode_has_default(self):
+        """基类 geocode() 应委托给模块级 _geocode。"""
+        with patch("weather._geocode") as mock_geocode:
+            mock_geocode.return_value = (22.5, 114.0)
+            provider = WeatherProvider()
+            result = provider.geocode("深圳")
+            assert result == (22.5, 114.0)
+            mock_geocode.assert_called_once_with("深圳")
+
+
+class TestOpenMeteoProvider:
+    def test_name_and_requires_key(self):
+        provider = OpenMeteoProvider()
+        assert provider.name == "openmeteo"
+        assert provider.requires_key is False
+
+    def test_normalize_passthrough(self):
+        """Open-Meteo 已输出统一格式，normalize 原样返回。"""
+        provider = OpenMeteoProvider()
+        data = {"temperature": 26.0, "humidity": 45,
+                "weather_code": 0, "wind_speed": 12.0}
+        assert provider.normalize(data) == data
+
+    def test_normalize_none_passthrough(self):
+        provider = OpenMeteoProvider()
+        assert provider.normalize(None) is None
+
+    @patch("weather._fetch_weather")
+    def test_fetch_delegates(self, mock_fetch):
+        """OpenMeteoProvider.fetch() 委托给 _fetch_weather()。"""
+        mock_fetch.return_value = {
+            "temperature": 26.0, "humidity": 45,
+            "weather_code": 0, "wind_speed": 12.0,
+        }
+        provider = OpenMeteoProvider()
+        result = provider.fetch(39.9, 116.4)
+        assert result == mock_fetch.return_value
+        mock_fetch.assert_called_once_with(39.9, 116.4)
+
+    @patch("weather._geocode")
+    def test_geocode_delegates(self, mock_geocode):
+        """OpenMeteoProvider.geocode() 委托给 _geocode()。"""
+        mock_geocode.return_value = (22.5, 114.0)
+        provider = OpenMeteoProvider()
+        result = provider.geocode("深圳")
+        assert result == (22.5, 114.0)
+        mock_geocode.assert_called_once_with("深圳")
+
+
+class TestWttrProviderInheritance:
+    """验证 WttrProvider 继承自 WeatherProvider。"""
+
+    def test_is_weather_provider_subclass(self):
+        assert issubclass(WttrProvider, WeatherProvider)

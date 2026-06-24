@@ -273,11 +273,54 @@ def _fetch_weather(lat: float, lon: float) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
+# Weather Provider abstract layer
+# ---------------------------------------------------------------------------
+
+
+class WeatherProvider:
+    """天气数据源协议。
+
+    子类实现 fetch() 和 normalize()。geocode() 有默认实现
+    （复用 Open-Meteo geocoding API）。
+    """
+
+    name: str = ""
+    requires_key: bool = False
+
+    def geocode(self, location: str) -> tuple[float, float] | None:
+        """城市名 → (lat, lon)。默认使用 Open-Meteo geocoding API。"""
+        return _geocode(location)
+
+    def fetch(self, lat: float, lon: float) -> dict | None:
+        """获取天气原始数据 → 统一格式 dict，失败返回 None。"""
+        raise NotImplementedError
+
+    def normalize(self, raw: dict) -> dict | None:
+        """Provider 原始响应 → 统一格式 dict。子类必须实现。"""
+        raise NotImplementedError
+
+
+class OpenMeteoProvider(WeatherProvider):
+    """Open-Meteo 天气数据源 — 免费，无需 API key。"""
+
+    name = "openmeteo"
+    requires_key = False
+
+    def fetch(self, lat: float, lon: float) -> dict | None:
+        """委托给模块级 _fetch_weather()。"""
+        return _fetch_weather(lat, lon)
+
+    def normalize(self, raw: dict) -> dict | None:
+        """Open-Meteo 已输出统一格式，原样返回。"""
+        return raw
+
+
+# ---------------------------------------------------------------------------
 # wttr.in Provider (keyless fallback source)
 # ---------------------------------------------------------------------------
 
 
-class WttrProvider:
+class WttrProvider(WeatherProvider):
     """wttr.in 天气数据源 — 免费，无需 API key。
 
     API 端点：https://wttr.in/{lat},{lon}?format=j1
@@ -286,10 +329,6 @@ class WttrProvider:
 
     name: str = "wttr"
     requires_key: bool = False
-
-    def geocode(self, location: str) -> tuple[float, float] | None:
-        """城市名 → (lat, lon)。复用 Open-Meteo geocoding API。"""
-        return _geocode(location)
 
     def fetch(self, lat: float, lon: float) -> dict | None:
         """wttr.in API → 统一格式 dict，失败返回 None。"""
