@@ -996,6 +996,60 @@ class TestWttrProviderInheritance:
 # ── Provider 注册表 ──────────────────────────────────────────────────────
 
 
+# ── _format_weather 增强（source/cross_validated 标注）────────────────
+
+
+class TestFormatWeatherSource:
+    def test_brief_normal_no_suffix(self):
+        data = {"weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 20.0, "location": "北京", "suspicious": False,
+                "source": "openmeteo", "cross_validated": False}
+        assert _format_weather(data, "brief", "🌤") == "🌤 北京 晴 26°C"
+
+    def test_brief_wttr_source(self):
+        """source != openmeteo → 标注来源。"""
+        data = {"weather_code": 1, "temperature": 27.0, "humidity": 85,
+                "wind_speed": 14.0, "location": "深圳", "suspicious": False,
+                "source": "wttr", "cross_validated": False}
+        result = _format_weather(data, "brief", "🌤")
+        assert result == "🌤 深圳 多云 27°C（来源: wttr）"
+
+    def test_brief_cross_validated(self):
+        """cross_validated → 标注双源确认。"""
+        data = {"weather_code": 1, "temperature": 27.0, "humidity": 85,
+                "wind_speed": 14.0, "location": "深圳", "suspicious": False,
+                "source": "wttr", "cross_validated": True}
+        result = _format_weather(data, "brief", "🌤")
+        assert "来源: wttr" in result
+        assert "双源确认" in result
+
+    def test_brief_suspicious_with_source(self):
+        """suspicious + source 同时标注。"""
+        data = {"weather_code": 95, "temperature": 27.9, "humidity": 91,
+                "wind_speed": 10.0, "location": "深圳", "suspicious": True,
+                "source": "openmeteo", "cross_validated": False}
+        result = _format_weather(data, "brief", "🌤")
+        assert "天气数据可能不准确" in result
+        assert "来源:" not in result  # openmeteo 不标来源
+
+
+class TestFormatWeatherNarrativeSource:
+    def test_brief_wttr_source(self):
+        data = {"weather_code": 1, "temperature": 27.0, "humidity": 85,
+                "wind_speed": 14.0, "suspicious": False,
+                "source": "wttr", "cross_validated": False}
+        result = _format_weather_narrative(data, "brief")
+        assert result == "多云，27°C（来源: wttr）"
+
+    def test_brief_cross_validated(self):
+        data = {"weather_code": 1, "temperature": 27.0, "humidity": 85,
+                "wind_speed": 14.0, "suspicious": False,
+                "source": "wttr", "cross_validated": True}
+        result = _format_weather_narrative(data, "brief")
+        assert "来源: wttr" in result
+        assert "双源确认" in result
+
+
 class TestProviderRegistry:
     def test_get_known_provider_openmeteo(self):
         from weather import _get_provider

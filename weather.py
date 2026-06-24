@@ -117,13 +117,28 @@ def _format_weather(data: dict, detail: str, label: str) -> str:
 
     brief: "🌤 北京 晴 26°C"
     full:  "🌤 北京 晴 26°C 湿度45% 风力3级"
+
+    含数据源标注：
+    - suspicious → "（天气数据可能不准确）"
+    - source ≠ openmeteo → "（来源: {source}）"
+    - cross_validated → "（双源确认）"
     """
     cn_desc, _ = _weather_code_to_cn(data["weather_code"])
     temp = round(data["temperature"])
     loc = data.get("location", "")
     suspicious = data.get("suspicious", False)
+    source = data.get("source", "")
+    cross_validated = data.get("cross_validated", False)
 
-    suffix = "（天气数据可能不准确）" if suspicious else ""
+    suffix_parts = []
+    if suspicious:
+        suffix_parts.append("天气数据可能不准确")
+    if source and source != "openmeteo":
+        suffix_parts.append(f"来源: {source}")
+    if cross_validated:
+        suffix_parts.append("双源确认")
+
+    suffix = f"（{'，'.join(suffix_parts)}）" if suffix_parts else ""
     base = f"{label} {loc} {cn_desc} {temp}°C{suffix}"
 
     if detail == "full":
@@ -140,12 +155,24 @@ def _format_weather_narrative(data: dict, detail: str) -> str:
 
     brief: "晴，26°C"
     full:  "晴，26°C，湿度45%，风力3级"
+
+    含数据源标注（同 _format_weather）。
     """
     cn_desc, _ = _weather_code_to_cn(data["weather_code"])
     temp = round(data["temperature"])
     suspicious = data.get("suspicious", False)
+    source = data.get("source", "")
+    cross_validated = data.get("cross_validated", False)
 
-    suffix = "（天气数据可能不准确）" if suspicious else ""
+    suffix_parts = []
+    if suspicious:
+        suffix_parts.append("天气数据可能不准确")
+    if source and source != "openmeteo":
+        suffix_parts.append(f"来源: {source}")
+    if cross_validated:
+        suffix_parts.append("双源确认")
+
+    suffix = f"（{'，'.join(suffix_parts)}）" if suffix_parts else ""
     base = f"{cn_desc}，{temp}°C{suffix}"
 
     if detail == "full":
