@@ -44,6 +44,48 @@ def _weather_code_to_cn(code: int) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# Data validation (logical consistency checks)
+# ---------------------------------------------------------------------------
+
+_THUNDERSTORM_CODES = (95, 96, 99)
+# 雷暴通常伴随阵风（≥ 风力 3 级 = 12 km/h）
+_MIN_THUNDERSTORM_WIND_KMH = 12
+
+
+def _validate_weather(data: dict, validation_cfg: dict | None = None) -> bool:
+    """校验天气数据逻辑自洽性。
+
+    返回 True 表示数据可疑（suspicious）。校验规则可通过 validation_cfg
+    逐条禁用。纯函数，不修改输入 data。
+
+    规则：
+    - 雷暴码 + 风力 < 12 km/h → 可疑（模型可能误判对流活动范围）
+    - weather_code is None 或越界（不在 0-99 范围）→ 可疑
+    - temperature is None → 可疑
+    """
+    cfg = validation_cfg or {}
+    code = data.get("weather_code")
+    wind = data.get("wind_speed")
+    temp = data.get("temperature")
+
+    # 雷暴风力矛盾（可禁用）
+    if cfg.get("thunderstorm_wind_check", True):
+        if (code in _THUNDERSTORM_CODES
+                and isinstance(wind, (int, float)) and wind < _MIN_THUNDERSTORM_WIND_KMH):
+            return True
+
+    # 天气码无效
+    if code is None or not isinstance(code, int) or not (0 <= code <= 99):
+        return True
+
+    # 温度缺失
+    if temp is None:
+        return True
+
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Beaufort wind scale (km/h → level 0-12)
 # ---------------------------------------------------------------------------
 
@@ -78,8 +120,10 @@ def _format_weather(data: dict, detail: str, label: str) -> str:
     cn_desc, _ = _weather_code_to_cn(data["weather_code"])
     temp = round(data["temperature"])
     loc = data.get("location", "")
+    suspicious = data.get("suspicious", False)
 
-    base = f"{label} {loc} {cn_desc} {temp}°C"
+    suffix = "（天气数据可能不准确）" if suspicious else ""
+    base = f"{label} {loc} {cn_desc} {temp}°C{suffix}"
 
     if detail == "full":
         humidity = data.get("humidity", 0)
@@ -98,8 +142,10 @@ def _format_weather_narrative(data: dict, detail: str) -> str:
     """
     cn_desc, _ = _weather_code_to_cn(data["weather_code"])
     temp = round(data["temperature"])
+    suspicious = data.get("suspicious", False)
 
-    base = f"{cn_desc}，{temp}°C"
+    suffix = "（天气数据可能不准确）" if suspicious else ""
+    base = f"{cn_desc}，{temp}°C{suffix}"
 
     if detail == "full":
         humidity = data.get("humidity", 0)
@@ -174,6 +220,7 @@ def _should_refresh(cache: dict | None, config: dict, location: str) -> bool:
 
 _GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 _WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
+_WTTR_URL = "https://wttr.in"
 
 
 def _geocode(location: str) -> tuple[float, float] | None:
@@ -210,14 +257,90 @@ def _fetch_weather(lat: float, lon: float) -> dict | None:
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             current = data.get("current", {})
+            # 任一字段缺失或 None → 视为 API 失败（触发 _get_weather_data 缓存回退）
+            required = ["temperature_2m", "relative_humidity_2m",
+                        "weather_code", "wind_speed_10m"]
+            if not all(k in current and current[k] is not None for k in required):
+                return None
             return {
-                "temperature": current.get("temperature_2m", 0),
-                "humidity": current.get("relative_humidity_2m", 0),
-                "weather_code": current.get("weather_code", 0),
-                "wind_speed": current.get("wind_speed_10m", 0),
+                "temperature": current["temperature_2m"],
+                "humidity": current["relative_humidity_2m"],
+                "weather_code": current["weather_code"],
+                "wind_speed": current["wind_speed_10m"],
             }
     except Exception:
         return None
+
+
+# ---------------------------------------------------------------------------
+# wttr.in Provider (keyless fallback source)
+# ---------------------------------------------------------------------------
+
+
+class WttrProvider:
+    """wttr.in 天气数据源 — 免费，无需 API key。
+
+    API 端点：https://wttr.in/{lat},{lon}?format=j1
+    对无效坐标返回 HTML 错误页（Content-Type: text/html），需检测。
+    """
+
+    name: str = "wttr"
+    requires_key: bool = False
+
+    def geocode(self, location: str) -> tuple[float, float] | None:
+        """城市名 → (lat, lon)。复用 Open-Meteo geocoding API。"""
+        return _geocode(location)
+
+    def fetch(self, lat: float, lon: float) -> dict | None:
+        """wttr.in API → 统一格式 dict，失败返回 None。"""
+        try:
+            url = f"{_WTTR_URL}/{lat},{lon}?format=j1"
+            req = urllib.request.Request(url, headers={"User-Agent": "hermes-persona/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                # wttr.in 错误时返回 HTML，检测 Content-Type
+                content_type = resp.headers.get("Content-Type", "")
+                if "json" not in content_type:
+                    return None
+                raw = json.loads(resp.read().decode("utf-8"))
+                return self.normalize(raw)
+        except Exception:
+            return None
+
+    def normalize(self, raw: dict) -> dict | None:
+        """wttr.in JSON → 统一格式 dict。
+
+        返回 {"temperature": float, "humidity": float,
+               "weather_code": int, "wind_speed": float}
+        或 None（字段缺失/类型错误）。
+        """
+        try:
+            current = raw.get("current_condition", [])
+            if not current:
+                return None
+            c = current[0]
+            return {
+                "temperature": int(c["temp_C"]),
+                "humidity": int(c["humidity"]),
+                "weather_code": int(c["weatherCode"]),
+                "wind_speed": int(c["windspeedKmph"]),
+            }
+        except (KeyError, ValueError, TypeError, IndexError):
+            return None
+
+
+# ---------------------------------------------------------------------------
+# Debug state (module-level, for debug summary in injector.py)
+# ---------------------------------------------------------------------------
+
+_LAST_DEBUG_STATE: dict[str, str] = {}
+
+
+def _get_debug_state() -> dict[str, str]:
+    """返回上次 _get_weather_data 调用采集的 debug 状态（供 debug 摘要读取）。
+
+    避免 injector.py 在注入后重读缓存导致的时序误报。
+    """
+    return dict(_LAST_DEBUG_STATE)
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +363,10 @@ def _get_weather_data(config: dict) -> dict | None:
     cache = _read_cache()
 
     if not _should_refresh(cache, config, location):
+        # 旧缓存可能无 suspicious 字段 → 补校验
+        if "suspicious" not in cache:
+            cache["suspicious"] = _validate_weather(cache, config.get("validation"))
+        _LAST_DEBUG_STATE.update(cache_state="有效-跳过", api_state="未调用")
         return cache
 
     # 需要刷新 → 调 API
@@ -253,12 +380,15 @@ def _get_weather_data(config: dict) -> dict | None:
             if coords is None:
                 # 回退旧缓存仅当 location 一致（避免返回错误城市数据）
                 if cache and cache.get("location") == location:
+                    _LAST_DEBUG_STATE.update(cache_state="失败-回退缓存", api_state="失败")
                     return cache
+                _LAST_DEBUG_STATE.update(cache_state="无缓存", api_state="失败")
                 return None
             lat, lon = coords
 
         weather = _fetch_weather(lat, lon)
         if weather is None:
+            _LAST_DEBUG_STATE.update(cache_state="失败-回退缓存" if cache else "无缓存", api_state="失败")
             return cache if cache else None
 
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -271,8 +401,10 @@ def _get_weather_data(config: dict) -> dict | None:
             "humidity": weather["humidity"],
             "wind_speed": weather["wind_speed"],
             "fetched_at": now_iso,
+            "suspicious": _validate_weather(weather, config.get("validation")),
         }
     except Exception:
+        _LAST_DEBUG_STATE.update(cache_state="失败-回退缓存" if cache else "无缓存", api_state="失败")
         return cache if cache else None
 
     # 缓存写入失败不影响数据返回（fail-open）
@@ -280,6 +412,7 @@ def _get_weather_data(config: dict) -> dict | None:
         _write_cache(None, full_data)
     except Exception:
         pass
+    _LAST_DEBUG_STATE.update(cache_state="已刷新", api_state="正常")
     return full_data
 
 

@@ -1,9 +1,10 @@
 """Tests for weather.py — pure functions and mocked integration."""
 import json
 import tempfile
+import urllib.error
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from weather import (
@@ -17,6 +18,8 @@ from weather import (
     _get_weather_data,
     _weather_context,
     _weather_context_for_narrative,
+    _validate_weather,
+    WttrProvider,
 )
 
 
@@ -379,3 +382,374 @@ class TestWeatherContextPublic:
     def test_weather_context_for_narrative_returns_none(self, mock_get):
         mock_get.return_value = None
         assert _weather_context_for_narrative({"location": "北京"}) is None
+
+
+# ── _validate_weather ─────────────────────────────────────────────────
+
+class TestValidateWeather:
+    def test_thunderstorm_low_wind_suspicious(self):
+        """雷暴码 + 风力 < 12 km/h → 可疑。"""
+        data = {"weather_code": 95, "wind_speed": 10.0, "temperature": 28.0}
+        assert _validate_weather(data) is True
+
+    def test_thunderstorm_all_codes_low_wind(self):
+        for code in (95, 96, 99):
+            data = {"weather_code": code, "wind_speed": 5.0, "temperature": 20.0}
+            assert _validate_weather(data) is True
+
+    def test_thunderstorm_normal_wind_not_suspicious(self):
+        """雷暴码 + 风力 ≥ 12 km/h → 不可疑。"""
+        data = {"weather_code": 95, "wind_speed": 20.0, "temperature": 28.0}
+        assert _validate_weather(data) is False
+
+    def test_thunderstorm_wind_boundary(self):
+        """风力正好 12 km/h（≥ 阈值）→ 不可疑。"""
+        data = {"weather_code": 95, "wind_speed": 12.0, "temperature": 28.0}
+        assert _validate_weather(data) is False
+
+    def test_thunderstorm_check_disabled(self):
+        """禁用雷暴风力检查 → 雷暴低风力不再可疑。"""
+        data = {"weather_code": 95, "wind_speed": 10.0, "temperature": 28.0}
+        assert _validate_weather(data, {"thunderstorm_wind_check": False}) is False
+
+    def test_code_none_suspicious(self):
+        data = {"weather_code": None, "wind_speed": 10.0, "temperature": 28.0}
+        assert _validate_weather(data) is True
+
+    def test_code_out_of_range_suspicious(self):
+        data = {"weather_code": 999, "wind_speed": 10.0, "temperature": 28.0}
+        assert _validate_weather(data) is True
+
+    def test_code_negative_suspicious(self):
+        data = {"weather_code": -1, "wind_speed": 10.0, "temperature": 28.0}
+        assert _validate_weather(data) is True
+
+    def test_temperature_none_suspicious(self):
+        data = {"weather_code": 0, "wind_speed": 10.0, "temperature": None}
+        assert _validate_weather(data) is True
+
+    def test_normal_data_not_suspicious(self):
+        data = {"weather_code": 0, "wind_speed": 12.0, "temperature": 26.0}
+        assert _validate_weather(data) is False
+
+    def test_rain_not_suspicious(self):
+        """非雷暴的降水码不受风力检查影响。"""
+        data = {"weather_code": 61, "wind_speed": 3.0, "temperature": 18.0}
+        assert _validate_weather(data) is False
+
+    def test_does_not_mutate_input(self):
+        """纯函数：不修改输入 data。"""
+        data = {"weather_code": 95, "wind_speed": 10.0, "temperature": 28.0}
+        _validate_weather(data)
+        assert data == {"weather_code": 95, "wind_speed": 10.0, "temperature": 28.0}
+
+
+# ── _fetch_weather field validation ────────────────────────────────────
+
+class TestFetchWeatherFields:
+    def _mock_response(self, current_dict):
+        """构造 _fetch_weather 的 urllib mock。"""
+        from io import BytesIO
+        resp_data = json.dumps({"current": current_dict}).encode("utf-8")
+        return resp_data
+
+    @patch("urllib.request.urlopen")
+    def test_complete_fields_returns_dict(self, mock_urlopen):
+        from weather import _fetch_weather
+        mock_resp = type("M", (), {
+            "read": lambda self: self._data,
+            "__enter__": lambda self: self,
+            "__exit__": lambda *a: None,
+            "_data": self._mock_response({
+                "temperature_2m": 26.3, "relative_humidity_2m": 45,
+                "weather_code": 0, "wind_speed_10m": 12.5,
+            }),
+        })()
+        mock_urlopen.return_value = mock_resp
+        result = _fetch_weather(39.9, 116.4)
+        assert result is not None
+        assert result["weather_code"] == 0
+        assert result["temperature"] == 26.3
+
+    @patch("urllib.request.urlopen")
+    def test_weather_code_missing_returns_none(self, mock_urlopen):
+        from weather import _fetch_weather
+        mock_resp = type("M", (), {
+            "read": lambda self: self._data,
+            "__enter__": lambda self: self,
+            "__exit__": lambda *a: None,
+            "_data": self._mock_response({
+                "temperature_2m": 26.3, "relative_humidity_2m": 45,
+                "wind_speed_10m": 12.5,
+            }),
+        })()
+        mock_urlopen.return_value = mock_resp
+        assert _fetch_weather(39.9, 116.4) is None
+
+    @patch("urllib.request.urlopen")
+    def test_weather_code_null_returns_none(self, mock_urlopen):
+        from weather import _fetch_weather
+        mock_resp = type("M", (), {
+            "read": lambda self: self._data,
+            "__enter__": lambda self: self,
+            "__exit__": lambda *a: None,
+            "_data": self._mock_response({
+                "temperature_2m": 26.3, "relative_humidity_2m": 45,
+                "weather_code": None, "wind_speed_10m": 12.5,
+            }),
+        })()
+        mock_urlopen.return_value = mock_resp
+        assert _fetch_weather(39.9, 116.4) is None
+
+    @patch("urllib.request.urlopen")
+    def test_temperature_missing_returns_none(self, mock_urlopen):
+        from weather import _fetch_weather
+        mock_resp = type("M", (), {
+            "read": lambda self: self._data,
+            "__enter__": lambda self: self,
+            "__exit__": lambda *a: None,
+            "_data": self._mock_response({
+                "relative_humidity_2m": 45,
+                "weather_code": 0, "wind_speed_10m": 12.5,
+            }),
+        })()
+        mock_urlopen.return_value = mock_resp
+        assert _fetch_weather(39.9, 116.4) is None
+
+
+# ── _format_weather suspicious suffix ──────────────────────────────────
+
+class TestFormatWeatherSuspicious:
+    def test_brief_normal_no_suffix(self):
+        data = {"weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 20.0, "location": "北京", "suspicious": False}
+        assert _format_weather(data, "brief", "🌤") == "🌤 北京 晴 26°C"
+
+    def test_brief_suspicious_has_suffix(self):
+        data = {"weather_code": 95, "temperature": 27.9, "humidity": 91,
+                "wind_speed": 10.0, "location": "深圳", "suspicious": True}
+        assert _format_weather(data, "brief", "🌤") == "🌤 深圳 雷暴 28°C（天气数据可能不准确）"
+
+    def test_full_suspicious_has_suffix(self):
+        data = {"weather_code": 95, "temperature": 27.9, "humidity": 91,
+                "wind_speed": 10.0, "location": "深圳", "suspicious": True}
+        result = _format_weather(data, "full", "🌤")
+        assert "（天气数据可能不准确）" in result
+        assert "湿度91%" in result
+
+    def test_no_suspicious_field_defaults_false(self):
+        """旧数据无 suspicious 字段 → 默认 False，无 suffix。"""
+        data = {"weather_code": 0, "temperature": 26.0, "humidity": 50,
+                "wind_speed": 5.0, "location": "北京"}
+        assert "（天气数据可能不准确）" not in _format_weather(data, "brief", "🌤")
+
+
+class TestFormatWeatherNarrativeSuspicious:
+    def test_brief_narrative_normal(self):
+        data = {"weather_code": 0, "temperature": 26.3, "humidity": 45,
+                "wind_speed": 20.0, "suspicious": False}
+        assert _format_weather_narrative(data, "brief") == "晴，26°C"
+
+    def test_brief_narrative_suspicious(self):
+        data = {"weather_code": 95, "temperature": 27.9, "humidity": 91,
+                "wind_speed": 10.0, "suspicious": True}
+        assert _format_weather_narrative(data, "brief") == "雷暴，28°C（天气数据可能不准确）"
+
+    def test_full_narrative_suspicious(self):
+        data = {"weather_code": 95, "temperature": 27.9, "humidity": 91,
+                "wind_speed": 10.0, "suspicious": True}
+        result = _format_weather_narrative(data, "full")
+        assert "（天气数据可能不准确）" in result
+        assert "风力2级" in result
+
+
+# ── _get_debug_state ───────────────────────────────────────────────────
+
+class TestGetDebugState:
+    def test_cache_valid_state(self):
+        """缓存有效时 debug 状态为 有效-跳过。"""
+        with patch("weather._read_cache") as mock_read, \
+             patch("weather._should_refresh") as mock_refresh:
+            mock_read.return_value = {
+                "location": "北京", "temperature": 26.0, "humidity": 45,
+                "weather_code": 0, "wind_speed": 12.0,
+            }
+            mock_refresh.return_value = False
+            _get_weather_data({"location": "北京", "cache_ttl_minutes": 30})
+        from weather import _get_debug_state
+        state = _get_debug_state()
+        assert state["cache_state"] == "有效-跳过"
+        assert state["api_state"] == "未调用"
+
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_api_success_state(self, mock_refresh, mock_read, mock_geocode,
+                                mock_fetch, mock_write):
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (39.9, 116.4)
+        mock_fetch.return_value = {
+            "temperature": 26.0, "humidity": 60, "weather_code": 1, "wind_speed": 5.0,
+        }
+        _get_weather_data({"location": "北京", "cache_ttl_minutes": 30})
+        from weather import _get_debug_state
+        state = _get_debug_state()
+        assert state["cache_state"] == "已刷新"
+        assert state["api_state"] == "正常"
+
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_api_fail_with_cache_state(self, mock_refresh, mock_read):
+        mock_read.return_value = {
+            "location": "北京", "temperature": 26.0, "humidity": 45,
+            "weather_code": 0, "wind_speed": 12.0, "fetched_at": "2026-01-01T00:00:00",
+        }
+        mock_refresh.return_value = True
+        with patch("weather._geocode", side_effect=Exception("network error")):
+            _get_weather_data({"location": "北京", "cache_ttl_minutes": 30})
+        from weather import _get_debug_state
+        state = _get_debug_state()
+        assert state["cache_state"] == "失败-回退缓存"
+        assert state["api_state"] == "失败"
+
+
+# ── _get_weather_data suspicious integration ───────────────────────────
+
+class TestGetWeatherDataSuspicious:
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_thunderstorm_low_wind_marked_suspicious(self, mock_refresh, mock_read,
+                                                      mock_geocode, mock_fetch, mock_write):
+        """深圳雷暴+低风力场景：full_data 应标记 suspicious=True。"""
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.55, 114.07)
+        mock_fetch.return_value = {
+            "temperature": 27.9, "humidity": 91, "weather_code": 95, "wind_speed": 10.0,
+        }
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["suspicious"] is True
+
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_normal_data_not_suspicious(self, mock_refresh, mock_read,
+                                         mock_geocode, mock_fetch, mock_write):
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (39.9, 116.4)
+        mock_fetch.return_value = {
+            "temperature": 26.0, "humidity": 45, "weather_code": 0, "wind_speed": 12.0,
+        }
+        result = _get_weather_data({"location": "北京", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["suspicious"] is False
+
+    def test_old_cache_without_suspicious_backfilled(self):
+        """旧缓存无 suspicious 字段 → 读取时补校验。"""
+        with patch("weather._read_cache") as mock_read, \
+             patch("weather._should_refresh") as mock_refresh:
+            mock_read.return_value = {
+                "location": "深圳", "temperature": 27.9, "humidity": 91,
+                "weather_code": 95, "wind_speed": 10.0,
+            }
+            mock_refresh.return_value = False
+            result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["suspicious"] is True
+
+
+# ── WttrProvider ───────────────────────────────────────────────────────
+
+
+class TestWttrProviderNormalize:
+    def test_normalize_valid_response(self):
+        provider = WttrProvider()
+        raw = {
+            "current_condition": [{
+                "temp_C": "28",
+                "humidity": "85",
+                "windspeedKmph": "15",
+                "weatherCode": "116",
+            }]
+        }
+        result = provider.normalize(raw)
+        assert result is not None
+        assert result["temperature"] == 28
+        assert result["humidity"] == 85
+        assert result["weather_code"] == 116
+        assert result["wind_speed"] == 15
+
+    def test_normalize_empty_current_condition(self):
+        provider = WttrProvider()
+        result = provider.normalize({"current_condition": []})
+        assert result is None
+
+    def test_normalize_missing_field(self):
+        provider = WttrProvider()
+        raw = {
+            "current_condition": [{
+                "temp_C": "28",
+                "humidity": "85",
+                # windspeedKmph 缺失
+            }]
+        }
+        result = provider.normalize(raw)
+        assert result is None
+
+    def test_normalize_missing_current_condition(self):
+        provider = WttrProvider()
+        result = provider.normalize({})
+        assert result is None
+
+    def test_name_and_requires_key(self):
+        provider = WttrProvider()
+        assert provider.name == "wttr"
+        assert provider.requires_key is False
+
+
+class TestWttrProviderFetch:
+    @patch("weather.urllib.request.urlopen")
+    def test_fetch_success(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.read.return_value = json.dumps({
+            "current_condition": [{
+                "temp_C": "28", "humidity": "85",
+                "windspeedKmph": "15", "weatherCode": "116",
+            }]
+        }).encode()
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        provider = WttrProvider()
+        result = provider.fetch(22.5, 114.0)
+        assert result is not None
+        assert result["temperature"] == 28
+
+    @patch("weather.urllib.request.urlopen")
+    def test_fetch_html_error_response(self, mock_urlopen):
+        """wttr.in 错误时返回 HTML，应返回 None。"""
+        mock_response = MagicMock()
+        mock_response.headers = {"Content-Type": "text/html"}
+        mock_response.read.return_value = b"<html>Error</html>"
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        provider = WttrProvider()
+        result = provider.fetch(22.5, 114.0)
+        assert result is None
+
+    @patch("weather.urllib.request.urlopen")
+    def test_fetch_network_error(self, mock_urlopen):
+        mock_urlopen.side_effect = urllib.error.URLError("timeout")
+        provider = WttrProvider()
+        result = provider.fetch(22.5, 114.0)
+        assert result is None
