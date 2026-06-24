@@ -1419,20 +1419,10 @@ def inject_context(
                     _translate_mode and _weather_desc is not None
                 )
                 if weather_injected:
-                    from weather import _read_cache, _should_refresh
-                    cache = _read_cache()
-                    if _should_refresh(cache, weather_cfg, location):
-                        weather_debug = {
-                            "cache_state": "已过期-刷新" if cache else "无缓存-新建",
-                            "api_state": "已调用",
-                            "injected": "true",
-                        }
-                    else:
-                        weather_debug = {
-                            "cache_state": "有效-跳过",
-                            "api_state": "未调用",
-                            "injected": "true",
-                        }
+                    # 读取 weather 模块在注入时采集的状态（避免事后重读缓存的时序误报）
+                    from weather import _get_debug_state
+                    weather_debug = _get_debug_state()
+                    weather_debug["injected"] = "true"
                 else:
                     weather_debug = {
                         "cache_state": "API失败",
