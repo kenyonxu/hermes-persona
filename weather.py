@@ -6,6 +6,7 @@ Fail-open on any API/IO error — never blocks the injection chain.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import urllib.request
@@ -441,6 +442,28 @@ def _get_provider(name: str) -> WeatherProvider | None:
                 return None
     return instance
 
+def _register_keyed_providers() -> None:
+    """惰性导入并注册 keyed provider（仅当环境变量存在时）。
+
+    模块加载时自动调用。导入失败（模块不存在/依赖缺失）静默忽略，
+    不阻塞启动。
+    """
+    for env_var, module_name, provider_cls in [
+        ("QWEATHER_KEY", "weather_providers.qweather", "QWeatherProvider"),
+        ("OWM_KEY", "weather_providers.openweather", "OpenWeatherProvider"),
+        ("SENIVERSE_KEY", "weather_providers.seniverse", "SeniverseProvider"),
+    ]:
+        if os.environ.get(env_var, "").strip():
+            try:
+                mod = importlib.import_module(module_name)
+                cls = getattr(mod, provider_cls)
+                _PROVIDER_REGISTRY[cls.name] = cls
+            except (ImportError, AttributeError):
+                pass
+
+
+# 模块加载时惰性注册 keyed provider
+_register_keyed_providers()
 
 def _resolve_coords(cache: dict | None, location: str) -> tuple[float | None, float | None]:
     """从缓存或 geocode 解析坐标。返回 (lat, lon) 或 (None, None)。"""
