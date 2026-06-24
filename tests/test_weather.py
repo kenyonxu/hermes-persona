@@ -753,3 +753,156 @@ class TestWttrProviderFetch:
         provider = WttrProvider()
         result = provider.fetch(22.5, 114.0)
         assert result is None
+
+
+# ── 双源 fallback 测试 ──────────────────────────────────────────────────
+
+
+class TestMultiSourceFallback:
+    @patch("weather.WttrProvider.fetch")
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_primary_normal_no_fallback(self, mock_refresh, mock_read,
+                                         mock_geocode, mock_fetch, mock_write,
+                                         mock_wttr_fetch):
+        """主力源正常时，不调用 wttr.in。"""
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.5, 114.0)
+        mock_fetch.return_value = {
+            "temperature": 26.0, "humidity": 45,
+            "weather_code": 0, "wind_speed": 15.0,
+        }
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["weather_code"] == 0
+        assert result["source"] == "openmeteo"
+        mock_wttr_fetch.assert_not_called()
+
+    @patch("weather.WttrProvider.fetch")
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_primary_suspicious_fallback_used(self, mock_refresh, mock_read,
+                                               mock_geocode, mock_fetch,
+                                               mock_write, mock_wttr_fetch):
+        """主力源返回可疑数据（雷暴+低风），走 wttr.in fallback。"""
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.5, 114.0)
+        mock_fetch.return_value = {
+            "temperature": 27.9, "humidity": 91,
+            "weather_code": 95, "wind_speed": 10.0,  # 雷暴 + 低风 → 可疑
+        }
+        mock_wttr_fetch.return_value = {
+            "temperature": 28.0, "humidity": 85,
+            "weather_code": 1, "wind_speed": 14.0,  # wttr 显示多云
+        }
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["weather_code"] == 1  # 用了 wttr.in 的数据
+        assert result["source"] == "wttr"
+        mock_wttr_fetch.assert_called_once()
+
+    @patch("weather.WttrProvider.fetch")
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_primary_fails_fallback_used(self, mock_refresh, mock_read,
+                                          mock_geocode, mock_fetch,
+                                          mock_write, mock_wttr_fetch):
+        """主力源失败，走 wttr.in fallback。"""
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.5, 114.0)
+        mock_fetch.return_value = None  # Open-Meteo 失败
+        mock_wttr_fetch.return_value = {
+            "temperature": 28.0, "humidity": 85,
+            "weather_code": 1, "wind_speed": 14.0,
+        }
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["source"] == "wttr"
+
+    @patch("weather.WttrProvider")
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_both_fail_cache_fallback(self, mock_refresh, mock_read,
+                                       mock_geocode, mock_fetch, mock_write,
+                                       mock_wttr_class):
+        """双源失败 → 回退旧缓存。"""
+        mock_read.return_value = {
+            "location": "深圳", "temperature": 26.0, "humidity": 45,
+            "weather_code": 0, "wind_speed": 15.0,
+            "fetched_at": "2026-06-24T00:00:00",
+        }
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.5, 114.0)
+        mock_fetch.return_value = None  # primary 失败
+        mock_wttr_provider = MagicMock()
+        mock_wttr_provider.fetch.return_value = None  # fallback 也失败
+        mock_wttr_class.return_value = mock_wttr_provider
+
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["weather_code"] == 0  # 回退到旧缓存
+        assert result.get("suspicious") is True  # 标记可疑
+
+    @patch("weather.WttrProvider")
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_both_fail_no_cache_returns_none(self, mock_refresh, mock_read,
+                                              mock_geocode, mock_fetch,
+                                              mock_write, mock_wttr_class):
+        """双源失败 + 无缓存 → 返回 None。"""
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.5, 114.0)
+        mock_fetch.return_value = None
+        mock_wttr_provider = MagicMock()
+        mock_wttr_provider.fetch.return_value = None
+        mock_wttr_class.return_value = mock_wttr_provider
+
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is None
+
+    @patch("weather.WttrProvider.fetch")
+    @patch("weather._write_cache")
+    @patch("weather._fetch_weather")
+    @patch("weather._geocode")
+    @patch("weather._read_cache")
+    @patch("weather._should_refresh")
+    def test_primary_suspicious_wttr_consistent_cross_validated(
+            self, mock_refresh, mock_read, mock_geocode, mock_fetch,
+            mock_write, mock_wttr_fetch):
+        """主力源可疑但 wttr 交叉校验一致 → 用主力源，标记双源确认。"""
+        mock_read.return_value = None
+        mock_refresh.return_value = True
+        mock_geocode.return_value = (22.5, 114.0)
+        mock_fetch.return_value = {
+            "temperature": 28.0, "humidity": 85,
+            "weather_code": 95, "wind_speed": 10.0,  # 雷暴 + 低风 → 可疑
+        }
+        mock_wttr_fetch.return_value = {
+            "temperature": 30.0, "humidity": 80,
+            "weather_code": 95, "wind_speed": 20.0,  # wttr 也显示雷暴
+        }
+        result = _get_weather_data({"location": "深圳", "cache_ttl_minutes": 30})
+        assert result is not None
+        assert result["weather_code"] == 95
+        assert result["source"] == "openmeteo"  # 用主力源
+        assert result["cross_validated"] is True  # 双源确认
+        assert result["suspicious"] is False
